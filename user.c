@@ -32,7 +32,7 @@ void retrieve_command(char*);
 // other
 void get_DSIP(char*, char*);
 void get_first_word(char*, char*);
-void get_nth_word(char*, int, char*);
+void get_nth_token(char*, int, char*);
 
 // Global variables
 int fd;
@@ -153,21 +153,38 @@ int main(int argc, char *argv[]) {
 
 void reg_command(char* command) {
 
+    int number_of_tokens_message = 0;
+    int number_of_tokens_reply = 0;
     ssize_t n;
     char message[MAX_SIZE] = "";
     char UID_string[MAX_SIZE];
+    char aux[MAX_SIZE];
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
 
-    get_nth_word(command, 2, UID_string);
+    number_of_tokens_message = sscanf(command, "%s %s %s", aux, UID_string, pass);
+    
+    if (number_of_tokens_message != 3) {
+        fprintf(stderr, "ERROR: reg_command(): Wrong number of arguments in input.\n");
+        exit(EXIT_FAILURE);
+    }
+
     UID = atoi(UID_string);
-    get_nth_word(command, 3, pass);
+
+    if (strlen(UID_string) != 5) {
+        fprintf(stderr, "ERROR: reg_command(): Invalid user ID.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strlen(pass) != 8) {
+        fprintf(stderr, "ERROR: reg_command(): Invalid user password.\n");
+        exit(EXIT_FAILURE);
+    }
 
     sprintf(message, "REG %s %s\n", UID_string, pass);
 
     n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
     if(n == -1) {
-        perror("ERROR: sendto().\n");
+        perror("ERROR: sendto()\n");
         exit(EXIT_FAILURE);
     }
 
@@ -178,10 +195,21 @@ void reg_command(char* command) {
         exit(EXIT_FAILURE);
     } 
 
+    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+
+    if (number_of_tokens_reply != 2) {
+        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strcmp(aux, aux)) {
+        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
     /* DEBUG */
     printf("servidor: %s\n", reply);
 
-    get_nth_word(reply, 2, status);
+    /* get_nth_token(reply, 2, status); */
 
     if (strcmp(status, "OK") == 0) {
         printf("User successfully registered.\n");
@@ -191,6 +219,10 @@ void reg_command(char* command) {
     }
     else if (strcmp(status, "NOK") == 0) {
         printf("Failed to register user.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
     }
 
     return;
@@ -250,10 +282,10 @@ void get_first_word(char* string, char* ret) {
     ret[i] = '\0';
 }
 
-void get_nth_word(char* string, int n, char* ret) {
+void get_nth_token(char* string, int n, char* ret) {
 
     if (n == 0) {
-        fprintf(stderr, "ERROR: get_nth_word(): invalid input.\n");
+        fprintf(stderr, "ERROR: get_nth_token(): invalid input.\n");
     }
     
     int i = 0;
@@ -273,7 +305,7 @@ void get_nth_word(char* string, int n, char* ret) {
     ret[k] = '\0';
 
     if (strcmp(ret, "") == 0) {
-        fprintf(stderr, "ERROR: get_nth_word(): string doesn't have that many words.\n");
+        fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many words.\n");
         exit(EXIT_FAILURE);
     }
 }
