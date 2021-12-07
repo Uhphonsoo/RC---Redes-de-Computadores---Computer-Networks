@@ -34,7 +34,9 @@ void retrieve_command(char*);
 void get_DSIP(char*, char*);
 void get_first_word(char*, char*);
 void get_nth_token(char*, int, char*);
-void test_registration_command_validity(int, char*, char*);
+int validate_registration_command(int, char*, char*);
+void validate_sendto(int);
+void validate_recvfrom(int);
 
 // Global variables
 int fd;
@@ -165,24 +167,20 @@ void reg_command(char* command) {
     ssize_t n;
 
     number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID_string, pass);
-    test_registration_command_validity(number_of_tokens_command, UID_string, pass);
+    if(!validate_registration_command(number_of_tokens_command, UID_string, pass)) {
+        return;
+    }
     
     /* UID = atoi(UID_string); */
 
     sprintf(message, "REG %s %s\n", UID_string, pass);
 
     n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    if(n == -1) {
-        perror("ERROR: sendto()\n");
-        exit(EXIT_FAILURE);
-    }
+    validate_sendto(n);
 
     addrlen = sizeof(addr);
     n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
-    if (n == -1) {
-        perror("ERROR: reg_command(): recvfrom().\n");    
-        exit(EXIT_FAILURE);
-    } 
+    validate_recvfrom(n);
 
     number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
 
@@ -220,16 +218,52 @@ void reg_command(char* command) {
 void unregister_command(char* command) {
 
     int number_of_tokens_command = 0;
-    //int number_of_tokens_reply = 0;
-    //ssize_t n;
-    //char message[MAX_SIZE] = "";
+    int number_of_tokens_reply = 0;
+    char message[MAX_SIZE] = "";
     char UID_string[MAX_SIZE];
-    //char reply[MAX_SIZE];
+    char reply[MAX_SIZE];
     char aux[MAX_SIZE];
-    //char status[MAX_SIZE];
+    char status[MAX_SIZE];
+    ssize_t n;
 
     number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID_string, pass);
-    test_registration_command_validity(number_of_tokens_command, UID_string, pass);
+    if (!validate_registration_command(number_of_tokens_command, UID_string, pass)) {
+        return;
+    }
+
+    sprintf(message, "UNR %s %s\n", UID_string, pass);
+
+    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    validate_sendto(n);
+
+    addrlen = sizeof(addr);
+    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
+
+    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+
+    if (number_of_tokens_reply != 2) {
+        fprintf(stderr, "ERROR: unregister_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strcmp("RUN", aux)) {
+        fprintf(stderr, "ERROR: unregister_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* DEBUG */
+    printf("servidor: %s\n", reply);
+
+    if (strcmp(status, "OK") == 0) {
+        printf("User successfully unregistered.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("Failed to unregister user.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
 
     return;
 }
@@ -312,17 +346,33 @@ void get_nth_token(char* string, int n, char* ret) {
     }
 }
 
-void test_registration_command_validity(int number_of_tokens_command, char* UID_string, char* pass) {
+int validate_registration_command(int number_of_tokens_command, char* UID_string, char* pass) {
     if (number_of_tokens_command != 3) {
         fprintf(stderr, "ERROR: reg_command(): Wrong number of arguments in input.\n");
-        exit(EXIT_FAILURE);
+        return 0;
     }
     if (strlen(UID_string) != 5) {
         fprintf(stderr, "ERROR: reg_command(): Invalid user ID.\n");
-        exit(EXIT_FAILURE);
+        return 0;
     }
     if (strlen(pass) != 8) {
         fprintf(stderr, "ERROR: reg_command(): Invalid user password.\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+void validate_sendto(int n) {
+    if(n == -1) {
+        perror("ERROR: sendto(): Unable to send message.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void validate_recvfrom(int n) {
+    if(n == -1) {
+        perror("ERROR: recvfrom(): Unable to receive message.\n");
         exit(EXIT_FAILURE);
     }
 }
