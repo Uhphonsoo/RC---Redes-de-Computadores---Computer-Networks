@@ -1,4 +1,4 @@
-// branch afonso v1
+// branch afonso v2
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,47 +10,53 @@
 #include <ctype.h>
 #define MAX_SIZE 240
 #define PORT_CONST 58000
-#define PORT_CONST_STRING itoa(PORT_CONST)
 #define FENIX_GROUP_NUMBER 20
 #define MAX_PASS_SIZE 8
+
+// Global variables
+int fd;
+int errcode;
+/* int UID; */
+char DSIP[MAX_SIZE];
+char DSport[MAX_SIZE];
+char logged_in_UID[MAX_SIZE];
+char logged_in_pass[MAX_PASS_SIZE];
+/* ssize_t n; */
+socklen_t addrlen;
+struct addrinfo hints, *res;
+struct sockaddr_in addr;
+/* char buffer[128]; */
 
 // registration commands
 void reg_command(char*);
 void unregister_command(char*);
+
 // user identification and session termination commands
 void login_command(char*);
 void logout_command(char*);
 void exit_command(char*);
+
 // group management commads
 void groups_command(char*);
 void subscribe_command(char*);
 void unsubscribe_command(char*);
 void my_groups_command(char*);
 void select_command(char*);
+
 // messaging commands
 void post_command(char*);
 void retrieve_command(char*);
-// other
+
+// misc
 /* void get_DSIP(char*, char*); */
-void get_first_word(char*, char*);
+void get_first_token(char*, char*);
 void get_nth_token(char*, int, char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
 int validate_registration_command(int, char*, char*);
 int validate_login_command(int, char*, char*);
-
-// Global variables
-int fd;
-/* int UID; */
-char pass[MAX_PASS_SIZE];
-char DSIP[MAX_SIZE];
-char DSport[MAX_SIZE];
-int errcode;
-/* ssize_t n; */
-socklen_t addrlen;
-struct addrinfo hints, *res;
-struct sockaddr_in addr;
-/* char buffer[128]; */
+int validate_logout_command(int);
+void clear_string(char*);
 
 
 int main(int argc, char *argv[]) {
@@ -106,7 +112,7 @@ int main(int argc, char *argv[]) {
 
     while(1) {
         fgets(command, MAX_SIZE, stdin);
-        get_first_word(command, keyword);
+        get_first_token(command, keyword);
 
         /* DEBUG */
         /* printf("command: %s\n", command); */
@@ -160,14 +166,17 @@ void reg_command(char* command) {
 
     int number_of_tokens_command = 0;
     int number_of_tokens_reply = 0;
+    char aux[MAX_SIZE];
     char UID[MAX_SIZE];
+    char pass[MAX_PASS_SIZE];
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
-    char aux[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
 
     number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    /* DEBUG */
+    printf("UID: %s\n", UID);
     if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
@@ -218,10 +227,11 @@ void unregister_command(char* command) {
 
     int number_of_tokens_command = 0;
     int number_of_tokens_reply = 0;
+    char aux[MAX_SIZE];
     char message[MAX_SIZE] = "";
     char UID[MAX_SIZE];
+    char pass[MAX_PASS_SIZE];
     char reply[MAX_SIZE];
-    char aux[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
 
@@ -271,10 +281,11 @@ void login_command(char* command) {
 
     int number_of_tokens_command = 0;
     int number_of_tokens_reply = 0;
+    char aux[MAX_SIZE];
     char UID[MAX_SIZE];
+    char pass[MAX_PASS_SIZE];
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
-    char aux[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
 
@@ -282,6 +293,9 @@ void login_command(char* command) {
     if (!validate_login_command(number_of_tokens_command, UID, pass)) {
         return;
     }
+
+    strcpy(logged_in_UID, UID);
+    strcpy(logged_in_pass, pass);
 
     sprintf(message, "LOG %s %s\n", UID, pass);
 
@@ -321,6 +335,54 @@ void login_command(char* command) {
 }
 
 void logout_command(char* command) {
+
+    int number_of_tokens_command = 0;
+    int number_of_tokens_reply = 0;
+    char aux[MAX_SIZE];
+    char message[MAX_SIZE] = "";
+    char reply[MAX_SIZE];
+    char status[MAX_SIZE];
+    ssize_t n;
+
+    number_of_tokens_command = sscanf(command, "%s", aux);
+    if (!validate_logout_command(number_of_tokens_command)) {
+        return;
+    }
+
+    sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
+
+    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    validate_sendto(n);
+
+    addrlen = sizeof(addr);
+    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
+
+    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+
+    if (number_of_tokens_reply != 2) {
+        fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strcmp("ROU", aux)) {
+        fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* DEBUG */
+    printf("servidor: %s\n", reply);
+
+    if (strcmp(status, "OK") == 0) {
+        printf("User successfully logged out.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("Failed to logout. User ID or password not valid.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    
     return;
 }
 
@@ -356,7 +418,7 @@ void retrieve_command(char* command) {
     return;
 }
 
-void get_first_word(char* string, char* ret) {
+void get_first_token(char* string, char* ret) {
     int i = 0;
 
     while(!isspace(string[i])) {
@@ -395,6 +457,8 @@ void get_nth_token(char* string, int n, char* ret) {
 }
 
 int validate_registration_command(int number_of_tokens_command, char* UID, char* pass) {
+    /* DEBUG */
+    printf("UID: %s\n", UID);
     if (number_of_tokens_command != 3) {
         fprintf(stderr, "ERROR: (unr)registration: Wrong number of arguments in input.\n");
         return 0;
@@ -428,6 +492,15 @@ int validate_login_command(int number_of_tokens_command, char* UID, char* pass) 
     return 1;
 }
 
+int validate_logout_command(int number_of_tokens_command) {
+    if (number_of_tokens_command != 1) {
+        fprintf(stderr, "ERROR: logout_command(): Wrong number of arguments in input.\n");
+        return 0;
+    }
+
+    return 1;
+}
+
 void validate_sendto(int n) {
     if(n == -1) {
         perror("ERROR: sendto(): Unable to send message.\n");
@@ -440,6 +513,14 @@ void validate_recvfrom(int n) {
         perror("ERROR: recvfrom(): Unable to receive message.\n");
         exit(EXIT_FAILURE);
     }
+}
+
+void clear_string(char* string) {
+    if (string != NULL) {
+        string[0] = '\n';
+    }
+
+    return;
 }
 
 /* void get_DSIP(char* command, char* ret) {
