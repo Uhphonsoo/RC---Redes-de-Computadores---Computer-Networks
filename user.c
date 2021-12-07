@@ -31,16 +31,17 @@ void select_command(char*);
 void post_command(char*);
 void retrieve_command(char*);
 // other
-void get_DSIP(char*, char*);
+/* void get_DSIP(char*, char*); */
 void get_first_word(char*, char*);
 void get_nth_token(char*, int, char*);
-int validate_registration_command(int, char*, char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
+int validate_registration_command(int, char*, char*);
+int validate_login_command(int, char*, char*);
 
 // Global variables
 int fd;
-int UID;
+/* int UID; */
 char pass[MAX_PASS_SIZE];
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
@@ -159,21 +160,19 @@ void reg_command(char* command) {
 
     int number_of_tokens_command = 0;
     int number_of_tokens_reply = 0;
-    char UID_string[MAX_SIZE];
+    char UID[MAX_SIZE];
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
     char aux[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID_string, pass);
-    if(!validate_registration_command(number_of_tokens_command, UID_string, pass)) {
+    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
-    
-    /* UID = atoi(UID_string); */
 
-    sprintf(message, "REG %s %s\n", UID_string, pass);
+    sprintf(message, "REG %s %s\n", UID, pass);
 
     n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
     validate_sendto(n);
@@ -220,18 +219,18 @@ void unregister_command(char* command) {
     int number_of_tokens_command = 0;
     int number_of_tokens_reply = 0;
     char message[MAX_SIZE] = "";
-    char UID_string[MAX_SIZE];
+    char UID[MAX_SIZE];
     char reply[MAX_SIZE];
     char aux[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID_string, pass);
-    if (!validate_registration_command(number_of_tokens_command, UID_string, pass)) {
+    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    if (!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
 
-    sprintf(message, "UNR %s %s\n", UID_string, pass);
+    sprintf(message, "UNR %s %s\n", UID, pass);
 
     n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
     validate_sendto(n);
@@ -243,11 +242,11 @@ void unregister_command(char* command) {
     number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
 
     if (number_of_tokens_reply != 2) {
-        fprintf(stderr, "ERROR: unregister_command(): Invalid reply from server.\n");
+        fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
     if (strcmp("RUN", aux)) {
-        fprintf(stderr, "ERROR: unregister_command(): Invalid reply from server.\n");
+        fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -261,7 +260,7 @@ void unregister_command(char* command) {
         printf("Failed to unregister user.\n");
     }
     else {
-        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -269,6 +268,55 @@ void unregister_command(char* command) {
 }
 
 void login_command(char* command) {
+
+    int number_of_tokens_command = 0;
+    int number_of_tokens_reply = 0;
+    char UID[MAX_SIZE];
+    char message[MAX_SIZE] = "";
+    char reply[MAX_SIZE];
+    char aux[MAX_SIZE];
+    char status[MAX_SIZE];
+    ssize_t n;
+
+    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    if (!validate_login_command(number_of_tokens_command, UID, pass)) {
+        return;
+    }
+
+    sprintf(message, "LOG %s %s\n", UID, pass);
+
+    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    validate_sendto(n);
+
+    addrlen = sizeof(addr);
+    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
+
+    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+
+    if (number_of_tokens_reply != 2) {
+        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strcmp("RLO", aux)) {
+        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    /* DEBUG */
+    printf("servidor: %s\n", reply);
+
+    if (strcmp(status, "OK") == 0) {
+        printf("User successfully logged in.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("Failed to login. User ID or password not valid.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
     return;
 }
 
@@ -346,17 +394,34 @@ void get_nth_token(char* string, int n, char* ret) {
     }
 }
 
-int validate_registration_command(int number_of_tokens_command, char* UID_string, char* pass) {
+int validate_registration_command(int number_of_tokens_command, char* UID, char* pass) {
     if (number_of_tokens_command != 3) {
-        fprintf(stderr, "ERROR: reg_command(): Wrong number of arguments in input.\n");
+        fprintf(stderr, "ERROR: (unr)registration: Wrong number of arguments in input.\n");
         return 0;
     }
-    if (strlen(UID_string) != 5) {
-        fprintf(stderr, "ERROR: reg_command(): Invalid user ID.\n");
+    if (strlen(UID) != 5) {
+        fprintf(stderr, "ERROR: (unr)registration: Invalid user ID.\n");
         return 0;
     }
     if (strlen(pass) != 8) {
-        fprintf(stderr, "ERROR: reg_command(): Invalid user password.\n");
+        fprintf(stderr, "ERROR: (unr)registration: Invalid user password.\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+int validate_login_command(int number_of_tokens_command, char* UID, char* pass) {
+    if (number_of_tokens_command != 3) {
+        fprintf(stderr, "ERROR: login_command(): Wrong number of arguments in input.\n");
+        return 0;
+    }
+    if (strlen(UID) != 5) {
+        fprintf(stderr, "ERROR: login_command(): Invalid user ID.\n");
+        return 0;
+    }
+    if (strlen(pass) != 8) {
+        fprintf(stderr, "ERROR: login_command(): Invalid user password.\n");
         return 0;
     }
 
@@ -377,7 +442,7 @@ void validate_recvfrom(int n) {
     }
 }
 
-void get_DSIP(char* command, char* ret) {
+/* void get_DSIP(char* command, char* ret) {
     int i = 0, j = 0;
 
     while(command[i] != 'n') {
@@ -389,4 +454,4 @@ void get_DSIP(char* command, char* ret) {
         ret[j++] = command[i++];
     }
     ret[j] = '\0';
-}
+} */
