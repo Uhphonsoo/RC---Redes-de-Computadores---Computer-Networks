@@ -174,9 +174,10 @@ void reg_command(char* command) {
     char status[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
     /* DEBUG */
     printf("command: %s\n", command);
+    
+    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
     if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
