@@ -17,6 +17,7 @@
 int fd;
 int errcode;
 /* int UID; */
+char pass[MAX_PASS_SIZE];
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
@@ -168,25 +169,21 @@ void reg_command(char* command) {
     int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    char pass[MAX_PASS_SIZE];
+    /* char pass[MAX_PASS_SIZE]; */
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
 
     /* DEBUG */
-    printf("command: %s\n", command);
+    /* printf("command: %s\n", command); */
 
     number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
 
-    /* !!!!!!!!!! por agora (DEBUG) */
-    /* get_nth_token(command, 2, UID);
-    get_nth_token(command, 3, pass); */
-
     /* DEBUG */
-    printf("command: %s\n", command);
+    /* printf("command: %s\n", command);
     printf("UID: %s\n", UID);
-    printf("pass: %s\n", pass);
+    printf("pass: %s\n", pass); */
 
     if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
@@ -241,7 +238,7 @@ void unregister_command(char* command) {
     char aux[MAX_SIZE];
     char message[MAX_SIZE] = "";
     char UID[MAX_SIZE];
-    char pass[MAX_PASS_SIZE];
+    /* char pass[MAX_PASS_SIZE]; */
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
@@ -294,7 +291,7 @@ void login_command(char* command) {
     int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    char pass[MAX_PASS_SIZE];
+    /* char pass[MAX_PASS_SIZE]; */
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
@@ -468,8 +465,6 @@ void get_nth_token(char* string, int n, char* ret) {
 }
 
 int validate_registration_command(int number_of_tokens_command, char* UID, char* pass) {
-    /* DEBUG */
-    printf("UID: %s\n", UID);
     if (number_of_tokens_command != 3) {
         fprintf(stderr, "ERROR: (unr)registration: Wrong number of arguments in input.\n");
         return 0;
