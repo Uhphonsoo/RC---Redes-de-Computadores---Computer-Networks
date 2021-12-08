@@ -11,17 +11,18 @@
 #define MAX_SIZE 240
 #define PORT_CONST 58000
 #define FENIX_GROUP_NUMBER 20
-#define MAX_PASS_SIZE 8
+/* #define MAX_PASS_SIZE 8 */
 
 // Global variables
 int fd;
 int errcode;
+int logged_in;
 /* int UID; */
-char pass[MAX_PASS_SIZE];
+/* char pass[MAX_PASS_SIZE]; */
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
-char logged_in_pass[MAX_PASS_SIZE];
+char logged_in_pass[MAX_SIZE];
 /* ssize_t n; */
 socklen_t addrlen;
 struct addrinfo hints, *res;
@@ -57,6 +58,7 @@ void validate_recvfrom(int);
 int validate_registration_command(int, char*, char*);
 int validate_login_command(int, char*, char*);
 int validate_logout_command(int);
+int is_empty(char*);
 void clear_string(char*);
 
 
@@ -169,7 +171,7 @@ void reg_command(char* command) {
     int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    /* char pass[MAX_PASS_SIZE]; */
+    char pass[MAX_SIZE];
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
@@ -183,7 +185,7 @@ void reg_command(char* command) {
     /* DEBUG */
     /* printf("command: %s\n", command);
     printf("UID: %s\n", UID);
-    printf("pass: %s\n", pass); */
+    printf("pass_: %s\n", pass); */
 
     if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
@@ -236,9 +238,9 @@ void unregister_command(char* command) {
     int number_of_tokens_command = 0;
     int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
-    char message[MAX_SIZE] = "";
     char UID[MAX_SIZE];
-    /* char pass[MAX_PASS_SIZE]; */
+    char pass[MAX_SIZE];
+    char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
@@ -291,11 +293,16 @@ void login_command(char* command) {
     int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    /* char pass[MAX_PASS_SIZE]; */
+    char pass[MAX_SIZE];
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
+
+    if (logged_in) {
+        printf("[-] Already logged in.\n");
+        return;
+    }
 
     number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_login_command(number_of_tokens_command, UID, pass)) {
@@ -304,6 +311,10 @@ void login_command(char* command) {
 
     strcpy(logged_in_UID, UID);
     strcpy(logged_in_pass, pass);
+
+    /* DEBUG */
+    printf("logged_in_UID: %s\n", logged_in_UID);
+    printf("logged_in_pass: %s\n", logged_in_pass);
 
     sprintf(message, "LOG %s %s\n", UID, pass);
 
@@ -329,6 +340,7 @@ void login_command(char* command) {
     printf("servidor: %s\n", reply);
 
     if (strcmp(status, "OK") == 0) {
+        logged_in = 1;
         printf("User successfully logged in.\n");
     }
     else if (strcmp(status, "NOK") == 0) {
@@ -351,6 +363,11 @@ void logout_command(char* command) {
     char reply[MAX_SIZE];
     char status[MAX_SIZE];
     ssize_t n;
+
+    if (is_empty(logged_in_UID) && is_empty(logged_in_pass)) {
+        printf("ERROR: No user is currently logged in.\n");
+        return;
+    }
 
     number_of_tokens_command = sscanf(command, "%s", aux);
     if (!validate_logout_command(number_of_tokens_command)) {
@@ -381,6 +398,9 @@ void logout_command(char* command) {
     printf("servidor: %s\n", reply);
 
     if (strcmp(status, "OK") == 0) {
+        clear_string(logged_in_UID);
+        clear_string(logged_in_pass);
+        logged_in = 0;
         printf("User successfully logged out.\n");
     }
     else if (strcmp(status, "NOK") == 0) {
@@ -390,6 +410,10 @@ void logout_command(char* command) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
+
+    /* DEBUG */
+    printf("logged_in_UID: %s\n", logged_in_UID);
+    printf("logged_in_pass: %s\n", logged_in_pass);
     
     return;
 }
@@ -523,10 +547,18 @@ void validate_recvfrom(int n) {
 
 void clear_string(char* string) {
     if (string != NULL) {
-        string[0] = '\n';
+        string[0] = '\0';
     }
 
     return;
+}
+
+int is_empty(char* string) {
+    if (string == NULL) {
+        return 1;
+    }
+    
+    return string[0] == '\0';
 }
 
 /* void get_DSIP(char* command, char* ret) {
