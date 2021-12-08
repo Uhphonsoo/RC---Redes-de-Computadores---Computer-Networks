@@ -176,8 +176,18 @@ void reg_command(char* command) {
 
     /* DEBUG */
     printf("command: %s\n", command);
-    
+
     number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+
+    /* !!!!!!!!!! por agora (DEBUG) */
+    /* get_nth_token(command, 2, UID);
+    get_nth_token(command, 3, pass); */
+
+    /* DEBUG */
+    printf("command: %s\n", command);
+    printf("UID: %s\n", UID);
+    printf("pass: %s\n", pass);
+
     if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
