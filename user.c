@@ -1,4 +1,3 @@
-// branch afonso v3
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
