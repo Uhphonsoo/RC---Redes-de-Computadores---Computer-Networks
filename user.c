@@ -53,13 +53,14 @@ void retrieve_command(char*);
 /* void get_DSIP(char*, char*); */
 void get_first_token(char*, char*);
 void get_nth_token(char*, int, char*);
+int get_number_of_tokens(char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
 int  validate_registration_command(int, char*, char*);
 int  validate_login_command(int, char*, char*);
 int  validate_logout_command(int);
 int  validate_UID(char*);
-int validate_pass(char*);
+int  validate_pass(char*);
 int  is_empty_string(char*);
 void clear_string(char*);
 
@@ -183,7 +184,8 @@ void reg_command(char* command) {
     /* DEBUG */
     /* printf("command: %s\n", command); */
 
-    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    number_of_tokens_command = get_number_of_tokens(command);
+    sscanf(command, "%s %s %s", aux, UID, pass);
 
     /* DEBUG */
     /* printf("command: %s\n", command);
@@ -203,7 +205,8 @@ void reg_command(char* command) {
     n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     validate_recvfrom(n);
 
-    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+    number_of_tokens_reply = get_number_of_tokens(reply);
+    sscanf(reply, "%s %s", aux, status);
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
@@ -248,7 +251,8 @@ void unregister_command(char* command) {
     char status[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    number_of_tokens_command = get_number_of_tokens(command);
+    sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
@@ -262,7 +266,13 @@ void unregister_command(char* command) {
     n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     validate_recvfrom(n);
 
-    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+    number_of_tokens_reply = get_number_of_tokens(reply);
+    sscanf(reply, "%s %s", aux, status);
+
+    /* DEBUG */
+    /* printf("reply: %s\n", reply);
+    printf("number_of_tokens_reply: %d\n", number_of_tokens_reply);
+    printf("aux: %s\n", aux); */
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
@@ -307,7 +317,8 @@ void login_command(char* command) {
         return;
     }
 
-    number_of_tokens_command = sscanf(command, "%s %s %s", aux, UID, pass);
+    number_of_tokens_command = get_number_of_tokens(command);
+    sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_login_command(number_of_tokens_command, UID, pass)) {
         return;
     }
@@ -328,7 +339,8 @@ void login_command(char* command) {
     n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     validate_recvfrom(n);
 
-    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+    number_of_tokens_reply = get_number_of_tokens(reply);
+    sscanf(reply, "%s %s", aux, status);
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
@@ -371,8 +383,9 @@ void logout_command(char* command) {
         printf("ERROR: No user is currently logged in.\n");
         return;
     }
-
-    number_of_tokens_command = sscanf(command, "%s", aux);
+    
+    number_of_tokens_command = get_number_of_tokens(command);
+    sscanf(command, "%s", aux);
     if (!validate_logout_command(number_of_tokens_command)) {
         return;
     }
@@ -386,7 +399,8 @@ void logout_command(char* command) {
     n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     validate_recvfrom(n);
 
-    number_of_tokens_reply = sscanf(reply, "%s %s", aux, status);
+    number_of_tokens_reply = get_number_of_tokens(reply);
+    sscanf(reply, "%s %s", aux, status);
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
@@ -491,6 +505,23 @@ void get_nth_token(char* string, int n, char* ret) {
     }
 }
 
+int get_number_of_tokens(char* string) {
+    int ret = 0;
+    int length = strlen(string);
+
+    if (string == NULL) {
+        return 0;
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (isspace(string[i])) {
+            ret++;
+        }
+    }
+
+    return ret;
+}
+
 int validate_registration_command(int number_of_tokens_command, char* UID, char* pass) {
     if (number_of_tokens_command != 3) {
         fprintf(stderr, "(unr)registration: Wrong number of arguments in input.\n");
@@ -548,22 +579,6 @@ void validate_recvfrom(int n) {
     }
 }
 
-void clear_string(char* string) {
-    if (string != NULL) {
-        string[0] = '\0';
-    }
-
-    return;
-}
-
-int is_empty_string(char* string) {
-    if (string == NULL) {
-        return 1;
-    }
-    
-    return string[0] == '\0';
-}
-
 int validate_UID(char* UID) {
     int length = strlen(UID);
 
@@ -596,6 +611,22 @@ int validate_pass(char* pass) {
     }
 
     return 1;
+}
+
+void clear_string(char* string) {
+    if (string != NULL) {
+        string[0] = '\0';
+    }
+
+    return;
+}
+
+int is_empty_string(char* string) {
+    if (string == NULL) {
+        return 1;
+    }
+    
+    return string[0] == '\0';
 }
 
 /* void get_DSIP(char* command, char* ret) {
