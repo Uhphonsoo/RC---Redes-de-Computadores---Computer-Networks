@@ -497,11 +497,11 @@ int validate_registration_command(int number_of_tokens_command, char* UID, char*
         return 0;
     }
     if (!validate_UID(UID)) {
-        fprintf(stderr, "(unr)registration: Invalid UID.\n");
+        fprintf(stderr, "(unr)registration: Invalid user ID.\n");
         return 0;
     }
     if (!validate_pass(pass)) {
-        fprintf(stderr, "(unr)registration: Invalid password.\n");
+        fprintf(stderr, "(unr)registration: Invalid user password.\n");
         return 0;
     }
 
@@ -510,15 +510,15 @@ int validate_registration_command(int number_of_tokens_command, char* UID, char*
 
 int validate_login_command(int number_of_tokens_command, char* UID, char* pass) {
     if (number_of_tokens_command != 3) {
-        fprintf(stderr, "ERROR: login_command(): Wrong number of arguments in input.\n");
+        fprintf(stderr, "login_command: Wrong number of arguments in input.\n");
         return 0;
     }
-    if (strlen(UID) != 5) {
-        fprintf(stderr, "ERROR: login_command(): Invalid user ID.\n");
+    if (!validate_UID(UID)) {
+        fprintf(stderr, "login_command: Invalid user ID.\n");
         return 0;
     }
-    if (strlen(pass) != 8) {
-        fprintf(stderr, "ERROR: login_command(): Invalid user password.\n");
+    if (!validate_pass(pass)) {
+        fprintf(stderr, "login_command: Invalid user password.\n");
         return 0;
     }
 
