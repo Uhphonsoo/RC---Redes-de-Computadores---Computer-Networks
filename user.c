@@ -78,18 +78,18 @@ int main(int argc, char *argv[]) {
     }
     else if (argc == 5) {
         if (strcmp(argv[1], "-n")){
-            fprintf(stderr, "ERROR: Invalid input. Input should be ./user -n [DSIP] -p [DSport].\n");
+            fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
             exit(EXIT_FAILURE);
         }
         if (strcmp(argv[3], "-p")){
-            fprintf(stderr, "ERROR: Invalid input. Input should be ./user -n [DSIP] -p [DSport].\n");
+            fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
             exit(EXIT_FAILURE);
         }
         strcpy(DSIP, argv[2]);
         strcpy(DSport, argv[4]);
     }
     else {
-        fprintf(stderr, "ERROR: Invalid input. Input should be ./user -n [DSIP] -p [DSport].\n");
+        fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
         exit(EXIT_FAILURE);
     }
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
     fd = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
     if(fd == -1) {
-        perror("ERROR: socket(): can't open socket.\n");
+        perror("ERROR: socket: can't open socket.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 
     errcode = getaddrinfo(DSIP, DSport, &hints, &res);
     if(errcode != 0) {
-        perror("ERROR: getaddrinfo()\n");
+        perror("ERROR: getaddrinfo\n");
         exit(1);
     }
 
@@ -208,6 +208,9 @@ void reg_command(char* command) {
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
+    /* DEBUG */
+    printf("reply: %s\n", reply);
+
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -216,9 +219,6 @@ void reg_command(char* command) {
         fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-
-    /* DEBUG */
-    printf("servidor: %s\n", reply);
 
     /* get_nth_token(reply, 2, status); */
 
@@ -274,6 +274,9 @@ void unregister_command(char* command) {
     printf("number_of_tokens_reply: %d\n", number_of_tokens_reply);
     printf("aux: %s\n", aux); */
 
+    /* DEBUG */
+    printf("reply: %s\n", reply);
+
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -282,9 +285,6 @@ void unregister_command(char* command) {
         fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-
-    /* DEBUG */
-    printf("servidor: %s\n", reply);
 
     if (strcmp(status, "OK") == 0) {
         printf("User successfully unregistered.\n");
