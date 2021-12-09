@@ -55,11 +55,14 @@ void get_first_token(char*, char*);
 void get_nth_token(char*, int, char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
-int validate_registration_command(int, char*, char*);
-int validate_login_command(int, char*, char*);
-int validate_logout_command(int);
-int is_empty(char*);
+int  validate_registration_command(int, char*, char*);
+int  validate_login_command(int, char*, char*);
+int  validate_logout_command(int);
+int  validate_UID(char*);
+int validate_pass(char*);
+int  is_empty_string(char*);
 void clear_string(char*);
+
 
 
 int main(int argc, char *argv[]) {
@@ -364,7 +367,7 @@ void logout_command(char* command) {
     char status[MAX_SIZE];
     ssize_t n;
 
-    if (is_empty(logged_in_UID) && is_empty(logged_in_pass)) {
+    if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
         printf("ERROR: No user is currently logged in.\n");
         return;
     }
@@ -490,15 +493,15 @@ void get_nth_token(char* string, int n, char* ret) {
 
 int validate_registration_command(int number_of_tokens_command, char* UID, char* pass) {
     if (number_of_tokens_command != 3) {
-        fprintf(stderr, "ERROR: (unr)registration: Wrong number of arguments in input.\n");
+        fprintf(stderr, "(unr)registration: Wrong number of arguments in input.\n");
         return 0;
     }
-    if (strlen(UID) != 5) {
-        fprintf(stderr, "ERROR: (unr)registration: Invalid user ID.\n");
+    if (!validate_UID(UID)) {
+        fprintf(stderr, "(unr)registration: Invalid UID.\n");
         return 0;
     }
-    if (strlen(pass) != 8) {
-        fprintf(stderr, "ERROR: (unr)registration: Invalid user password.\n");
+    if (!validate_pass(pass)) {
+        fprintf(stderr, "(unr)registration: Invalid password.\n");
         return 0;
     }
 
@@ -553,12 +556,46 @@ void clear_string(char* string) {
     return;
 }
 
-int is_empty(char* string) {
+int is_empty_string(char* string) {
     if (string == NULL) {
         return 1;
     }
     
     return string[0] == '\0';
+}
+
+int validate_UID(char* UID) {
+    int length = strlen(UID);
+
+    if (length != 5) {
+        fprintf(stderr, "Invalid user ID.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (!isdigit(UID[i])) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int validate_pass(char* pass) {
+    int length = strlen(pass);
+
+    if (strlen(pass) != 8) {
+        fprintf(stderr, "Invalid user password.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (!(isalpha(pass[i]) || isdigit(pass[i]))) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 /* void get_DSIP(char* command, char* ret) {
