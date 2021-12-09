@@ -53,7 +53,7 @@ void retrieve_command(char*);
 /* void get_DSIP(char*, char*); */
 void get_first_token(char*, char*);
 void get_nth_token(char*, int, char*);
-int get_number_of_tokens(char*);
+int  get_number_of_tokens(char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
 int  validate_registration_command(int, char*, char*);
