@@ -65,7 +65,6 @@ int  is_empty_string(char*);
 void clear_string(char*);
 
 
-
 int main(int argc, char *argv[]) {
 
     int GN = 1;
@@ -275,14 +274,17 @@ void unregister_command(char* command) {
     printf("aux: %s\n", aux); */
 
     /* DEBUG */
-    printf("reply: %s\n", reply);
+    /* printf("reply: %s\n", reply);
+    for (int i = 0; i < strlen(reply); i++) {
+        printf("- %c\n", reply[i]);
+    } */
 
     if (number_of_tokens_reply != 2) {
-        fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
+        fprintf(stderr, "ERROR: (unr)egister_command: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
     if (strcmp("RUN", aux)) {
-        fprintf(stderr, "ERROR: (unr)egister_command(): Invalid reply from server.\n");
+        fprintf(stderr, "ERROR: (unr)egister_command: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -380,7 +382,7 @@ void logout_command(char* command) {
     ssize_t n;
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
-        printf("ERROR: No user is currently logged in.\n");
+        printf("No user is currently logged in.\n");
         return;
     }
     
