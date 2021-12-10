@@ -58,10 +58,13 @@ void validate_recvfrom(int);
 int  validate_registration_command(int, char*, char*);
 int  validate_login_command(int, char*, char*);
 int  validate_logout_command(int);
+int  validate_exit_command(int);
 int  validate_UID(char*);
 int  validate_pass(char*);
 int  is_empty_string(char*);
 void clear_string(char*);
+void terminate_string(char*);
+void close_TCP_connections();
 
 
 int main(int argc, char *argv[]) {
@@ -159,8 +162,8 @@ int main(int argc, char *argv[]) {
             retrieve_command(command);
         }
         else {
-            fprintf(stderr, "ERROR: invalid command.\n");
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "Invalid command.\n");
+            continue;
         }
     }
 
@@ -267,16 +270,18 @@ void unregister_command(char* command) {
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
+    terminate_string(reply);
+
     /* DEBUG */
     /* printf("reply: %s\n", reply);
     printf("number_of_tokens_reply: %d\n", number_of_tokens_reply);
     printf("aux: %s\n", aux); */
 
     /* DEBUG */
-    /* printf("reply: %s\n", reply);
+    printf("reply: %s\n", reply);
     for (int i = 0; i < strlen(reply); i++) {
         printf("- %c\n", reply[i]);
-    } */
+    }
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: (unr)egister_command: Invalid reply from server.\n");
@@ -403,6 +408,8 @@ void logout_command(char* command) {
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
+    terminate_string(reply);
+
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -437,7 +444,20 @@ void logout_command(char* command) {
 }
 
 void exit_command(char* command) {
-    return;
+
+    int number_of_tokens_command = 0;
+    char aux[MAX_SIZE];
+    ssize_t n;
+
+    number_of_tokens_command = get_number_of_tokens(command);
+    sscanf(command, "%s", aux);
+
+    if (!validate_exit_command(number_of_tokens_command)) {
+        return;
+    }
+
+    close_TCP_connections();
+    exit(EXIT_SUCCESS);
 }
 
 void groups_command(char* command) {
@@ -559,7 +579,16 @@ int validate_login_command(int number_of_tokens_command, char* UID, char* pass) 
 
 int validate_logout_command(int number_of_tokens_command) {
     if (number_of_tokens_command != 1) {
-        fprintf(stderr, "ERROR: logout_command(): Wrong number of arguments in input.\n");
+        fprintf(stderr, "logout_command: Wrong number of arguments in input.\n");
+        return 0;
+    }
+
+    return 1;
+}
+
+int validate_exit_command(int number_of_tokens_command) {
+    if (number_of_tokens_command != 1) {
+        fprintf(stderr, "exit_command: Invalid input.\n");
         return 0;
     }
 
@@ -622,12 +651,22 @@ void clear_string(char* string) {
     return;
 }
 
+void terminate_string(char* string) {
+    int length = strlen(string);
+    string[length] = '\0';
+} 
+
 int is_empty_string(char* string) {
     if (string == NULL) {
         return 1;
     }
     
     return string[0] == '\0';
+}
+
+void close_TCP_connections() {
+    // TODO
+    return;
 }
 
 /* void get_DSIP(char* command, char* ret) {
