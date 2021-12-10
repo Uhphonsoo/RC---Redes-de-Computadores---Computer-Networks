@@ -400,7 +400,7 @@ void logout_command(char* command) {
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    terminate_string(reply);
+    /* terminate_string(reply); */
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
@@ -571,7 +571,7 @@ int validate_login_command(int number_of_tokens_command, char* UID, char* pass) 
 
 int validate_logout_command(int number_of_tokens_command) {
     if (number_of_tokens_command != 1) {
-        fprintf(stderr, "logout_command: Wrong number of arguments in input.\n");
+        fprintf(stderr, "logout_command: Invalid input.\n");
         return 0;
     }
 
@@ -678,8 +678,6 @@ void close_TCP_connections() {
 void sendreceive(char * message, char * reply){
 
     validate_sendto(sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen));
-
     addrlen = sizeof(addr);
-
     validate_recvfrom(recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen));
 }
