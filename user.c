@@ -63,6 +63,9 @@ int  validate_pass(char*);
 int  is_empty_string(char*);
 void clear_string(char*);
 
+// SERVER COMMANDS
+void sendreceive(char * message, char * reply);
+
 
 int main(int argc, char *argv[]) {
 
@@ -196,12 +199,8 @@ void reg_command(char* command) {
 
     sprintf(message, "REG %s %s\n", UID, pass);
 
-    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    validate_sendto(n);
-
-    addrlen = sizeof(addr);
-    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
-    validate_recvfrom(n);
+    // Server comunication
+    sendreceive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -257,12 +256,8 @@ void unregister_command(char* command) {
 
     sprintf(message, "UNR %s %s\n", UID, pass);
 
-    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    validate_sendto(n);
-
-    addrlen = sizeof(addr);
-    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
-    validate_recvfrom(n);
+    // Server comunication
+    sendreceive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -333,12 +328,8 @@ void login_command(char* command) {
 
     sprintf(message, "LOG %s %s\n", UID, pass);
 
-    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    validate_sendto(n);
-
-    addrlen = sizeof(addr);
-    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
-    validate_recvfrom(n);
+    // Server comunication
+    sendreceive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -393,12 +384,13 @@ void logout_command(char* command) {
 
     sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
-    n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    validate_sendto(n);
+    // n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    // validate_sendto(n);
 
-    addrlen = sizeof(addr);
-    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
-    validate_recvfrom(n);
+    // addrlen = sizeof(addr);
+    // n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    // validate_recvfrom(n);
+    sendreceive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -643,3 +635,12 @@ int is_empty_string(char* string) {
     }
     ret[j] = '\0';
 } */
+
+void sendreceive(char * message, char * reply){
+
+    validate_sendto(sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen));
+
+    addrlen = sizeof(addr);
+
+    validate_recvfrom(recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen));
+}
