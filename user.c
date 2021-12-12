@@ -67,7 +67,7 @@ void terminate_string(char*);
 void close_TCP_connections();
 
 // SERVER COMMANDS
-void sendreceive(char * message, char * reply);
+void send_and_receive(char * message, char * reply);
 
 
 int main(int argc, char *argv[]) {
@@ -203,7 +203,7 @@ void reg_command(char* command) {
     sprintf(message, "REG %s %s\n", UID, pass);
 
     // Server comunication
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -260,7 +260,7 @@ void unregister_command(char* command) {
     sprintf(message, "UNR %s %s\n", UID, pass);
 
     // Server comunication
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -334,7 +334,7 @@ void login_command(char* command) {
     sprintf(message, "LOG %s %s\n", UID, pass);
 
     // Server comunication
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -395,7 +395,7 @@ void logout_command(char* command) {
     // addrlen = sizeof(addr);
     // n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     // validate_recvfrom(n);
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -675,7 +675,7 @@ void close_TCP_connections() {
     ret[j] = '\0';
 } */
 
-void sendreceive(char * message, char * reply){
+void send_and_receive(char * message, char * reply){
 
     validate_sendto(sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen));
     addrlen = sizeof(addr);
