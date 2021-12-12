@@ -644,6 +644,8 @@ void clear_string(char* string) {
 void terminate_string(char* string) {
     int length = strlen(string);
     string[length] = '\0';
+
+    return;
 } 
 
 int is_empty_string(char* string) {
