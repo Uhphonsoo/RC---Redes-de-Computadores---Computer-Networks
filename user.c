@@ -65,9 +65,7 @@ int  is_empty_string(char*);
 void clear_string(char*);
 void terminate_string(char*);
 void close_TCP_connections();
-
-// SERVER COMMANDS
-void send_and_receive(char * message, char * reply);
+void send_and_receive(char*, char*);
 
 
 int main(int argc, char *argv[]) {
@@ -676,7 +674,7 @@ void close_TCP_connections() {
 } */
 
 void send_and_receive(char * message, char * reply){
-    
+
     int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
     validate_sendto(n);
 
