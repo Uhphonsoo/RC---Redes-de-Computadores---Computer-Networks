@@ -676,8 +676,11 @@ void close_TCP_connections() {
 } */
 
 void send_and_receive(char * message, char * reply){
+    
+    int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    validate_sendto(n);
 
-    validate_sendto(sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen));
     addrlen = sizeof(addr);
-    validate_recvfrom(recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen));
+    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
 }
