@@ -675,7 +675,7 @@ void close_TCP_connections() {
     ret[j] = '\0';
 } */
 
-void send_and_receive(char * message, char * reply){
+void send_and_receive(char* message, char* reply){
 
     int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
     validate_sendto(n);
