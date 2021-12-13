@@ -1,3 +1,4 @@
+// branch afonso v7
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -65,9 +66,7 @@ int  is_empty_string(char*);
 void clear_string(char*);
 void terminate_string(char*);
 void close_TCP_connections();
-
-// SERVER COMMANDS
-void sendreceive(char * message, char * reply);
+void send_and_receive(char*, char*);
 
 
 int main(int argc, char *argv[]) {
@@ -203,7 +202,7 @@ void reg_command(char* command) {
     sprintf(message, "REG %s %s\n", UID, pass);
 
     // Server comunication
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -260,7 +259,7 @@ void unregister_command(char* command) {
     sprintf(message, "UNR %s %s\n", UID, pass);
 
     // Server comunication
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -334,7 +333,7 @@ void login_command(char* command) {
     sprintf(message, "LOG %s %s\n", UID, pass);
 
     // Server comunication
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
@@ -395,12 +394,12 @@ void logout_command(char* command) {
     // addrlen = sizeof(addr);
     // n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
     // validate_recvfrom(n);
-    sendreceive(message, reply);
+    send_and_receive(message, reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    terminate_string(reply);
+    /* terminate_string(reply); */
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
@@ -521,6 +520,7 @@ void get_nth_token(char* string, int n, char* ret) {
 int get_number_of_tokens(char* string) {
     int ret = 0;
     int length = strlen(string);
+    int last_read_character_was_space = 0;
 
     if (string == NULL) {
         return 0;
@@ -528,7 +528,13 @@ int get_number_of_tokens(char* string) {
 
     for (int i = 0; i < length; i++) {
         if (isspace(string[i])) {
-            ret++;
+            if (!last_read_character_was_space) {
+                ret++;
+            }
+            last_read_character_was_space = 1;
+        }
+        else {
+            last_read_character_was_space = 0;
         }
     }
 
@@ -571,7 +577,7 @@ int validate_login_command(int number_of_tokens_command, char* UID, char* pass) 
 
 int validate_logout_command(int number_of_tokens_command) {
     if (number_of_tokens_command != 1) {
-        fprintf(stderr, "logout_command: Wrong number of arguments in input.\n");
+        fprintf(stderr, "logout_command: Invalid input.\n");
         return 0;
     }
 
@@ -646,6 +652,8 @@ void clear_string(char* string) {
 void terminate_string(char* string) {
     int length = strlen(string);
     string[length] = '\0';
+
+    return;
 } 
 
 int is_empty_string(char* string) {
@@ -675,11 +683,12 @@ void close_TCP_connections() {
     ret[j] = '\0';
 } */
 
-void sendreceive(char * message, char * reply){
+void send_and_receive(char* message, char* reply){
 
-    validate_sendto(sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen));
+    int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    validate_sendto(n);
 
     addrlen = sizeof(addr);
-
-    validate_recvfrom(recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen));
+    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
 }
