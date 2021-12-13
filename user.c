@@ -519,6 +519,7 @@ void get_nth_token(char* string, int n, char* ret) {
 int get_number_of_tokens(char* string) {
     int ret = 0;
     int length = strlen(string);
+    int last_read_character_was_space = 0;
 
     if (string == NULL) {
         return 0;
@@ -526,7 +527,13 @@ int get_number_of_tokens(char* string) {
 
     for (int i = 0; i < length; i++) {
         if (isspace(string[i])) {
-            ret++;
+            if (!last_read_character_was_space) {
+                ret++;
+            }
+            last_read_character_was_space = 1;
+        }
+        else {
+            last_read_character_was_space = 0;
         }
     }
 
