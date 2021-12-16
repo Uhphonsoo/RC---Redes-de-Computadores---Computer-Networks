@@ -67,7 +67,7 @@ int validate_groups_command(char*);
 int validate_groups_reply(char*);
 int  validate_UID(char*);
 int  validate_pass(char*);
-int  is_empty(char*);
+int  is_empty_string(char*);
 void clear_string(char*);
 void terminate_string(char*);
 void close_TCP_connections();
@@ -213,7 +213,7 @@ void unregister_command(char* command) {
 
     sprintf(message, "UNR %s %s\n", UID, pass);
 
-    // Server comunication
+    // communication with server
     send_and_receive(message, reply);
     terminate_string(reply);
 
@@ -248,7 +248,7 @@ void login_command(char* command) {
 
     sprintf(message, "LOG %s %s\n", UID, pass);
 
-    // Server comunication
+    // communication with server
     send_and_receive(message, reply);
     terminate_string(reply);
 
@@ -266,7 +266,7 @@ void logout_command(char* command) {
     char status[MAX_SIZE];
     ssize_t n;
 
-    if (is_empty(logged_in_UID) && is_empty(logged_in_pass)) {
+    if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
         printf("> No user is currently logged in.\n");
         return;
     }
@@ -278,6 +278,7 @@ void logout_command(char* command) {
 
     sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
+    // communication with server
     send_and_receive(message, reply);
     terminate_string(reply);
 
@@ -321,6 +322,7 @@ void groups_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
+    terminate_string(reply);
 
     validate_groups_reply(reply);
     
@@ -647,7 +649,7 @@ void terminate_string(char* string) {
     return;
 } 
 
-int is_empty(char* string) {
+int is_empty_string(char* string) {
     if (string == NULL) {
         return 1;
     }
