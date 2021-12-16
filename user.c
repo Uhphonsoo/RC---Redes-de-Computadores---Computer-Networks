@@ -59,6 +59,7 @@ int  validate_registration_command(int, char*, char*);
 void validate_register_reply(int, char*, char*);
 void validate_unregister_reply(int,char*, char*);
 int  validate_login_command(int, char*, char*);
+void validate_login_reply(int, char*, char*);
 int  validate_logout_command(int);
 int  validate_exit_command(int);
 int validate_groups_command(int);
@@ -171,7 +172,6 @@ int main(int argc, char *argv[]) {
             continue;
         }
     }
-
     return 0;
 }
 
@@ -204,7 +204,6 @@ void reg_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
 
     validate_register_reply(number_of_tokens_reply, aux, status);
-
     return;
 }
 
@@ -236,7 +235,6 @@ void unregister_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
 
     validate_unregister_reply(number_of_tokens_reply, aux, status);
-
     return;
 }
 
@@ -275,23 +273,7 @@ void login_command(char* command) {
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
-        fprintf(stderr, "login_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(status, "OK") == 0) {
-        logged_in = 1;
-        printf("User successfully logged in.\n");
-    }
-    else if (strcmp(status, "NOK") == 0) {
-        printf("Failed to login. User ID or password not valid.\n");
-    }
-    else {
-        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
+    validate_login_reply(number_of_tokens_reply, aux, status);
     return;
 }
 
@@ -318,19 +300,11 @@ void logout_command(char* command) {
 
     sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
-    // n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    // validate_sendto(n);
-
-    // addrlen = sizeof(addr);
-    // n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
-    // validate_recvfrom(n);
     send_and_receive(message, reply);
     terminate_string(reply);
 
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
-
-    /* terminate_string(reply); */
 
     if (number_of_tokens_reply != 2) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
@@ -559,6 +533,7 @@ void validate_unregister_reply(int number_of_tokens_reply,char* aux, char* statu
 }
 
 int validate_login_command(int number_of_tokens_command, char* UID, char* pass) {
+
     if (number_of_tokens_command != 3) {
         fprintf(stderr, "login_command: Wrong number of arguments in input.\n");
         return 0;
@@ -573,6 +548,27 @@ int validate_login_command(int number_of_tokens_command, char* UID, char* pass) 
     }
 
     return 1;
+}
+
+void validate_login_reply(int number_of_tokens_reply, char* aux, char* status) {
+
+    if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
+        fprintf(stderr, "login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0) {
+        logged_in = 1;
+        printf("User successfully logged in.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("Failed to login. User ID or password not valid.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
 }
 
 int validate_logout_command(int number_of_tokens_command) {
