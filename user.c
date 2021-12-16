@@ -55,15 +55,15 @@ void get_nth_token(char*, int, char*);
 int  get_number_of_tokens(char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
-int  validate_registration_command(int, char*, char*);
-void validate_register_reply(int, char*, char*);
-void validate_unregister_reply(int,char*, char*);
-int  validate_login_command(int, char*, char*);
-void validate_login_reply(int, char*, char*);
-int  validate_logout_command(int);
-void validate_logout_reply(int, char*, char*);
-int  validate_exit_command(int);
-int validate_groups_command(int);
+int  validate_registration_command(char*, char*, char*);
+void validate_register_reply(char*, char*, char*);
+void validate_unregister_reply(char*,char*, char*);
+int  validate_login_command(char*, char*, char*);
+void validate_login_reply(char*, char*, char*);
+int  validate_logout_command(char*);
+void validate_logout_reply(char*, char*, char*);
+int  validate_exit_command(char*);
+int validate_groups_command(char*);
 int validate_groups_reply(char*);
 int  validate_UID(char*);
 int  validate_pass(char*);
@@ -171,8 +171,6 @@ int main(int argc, char *argv[]) {
 
 void register_command(char* command) {
 
-    int number_of_tokens_command = 0;
-    int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
@@ -181,9 +179,8 @@ void register_command(char* command) {
     char status[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s %s %s", aux, UID, pass);
-    if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
+    if(!validate_registration_command(command, UID, pass)) {
         return;
     }
 
@@ -193,17 +190,14 @@ void register_command(char* command) {
     send_and_receive(message, reply);
     terminate_string(reply);
 
-    number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    validate_register_reply(number_of_tokens_reply, aux, status);
+    validate_register_reply(reply, aux, status);
     return;
 }
 
 void unregister_command(char* command) {
 
-    int number_of_tokens_command = 0;
-    int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
@@ -212,9 +206,8 @@ void unregister_command(char* command) {
     char status[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s %s %s", aux, UID, pass);
-    if (!validate_registration_command(number_of_tokens_command, UID, pass)) {
+    if (!validate_registration_command(command, UID, pass)) {
         return;
     }
 
@@ -224,17 +217,14 @@ void unregister_command(char* command) {
     send_and_receive(message, reply);
     terminate_string(reply);
 
-    number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    validate_unregister_reply(number_of_tokens_reply, aux, status);
+    validate_unregister_reply(reply, aux, status);
     return;
 }
 
 void login_command(char* command) {
 
-    int number_of_tokens_command = 0;
-    int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
@@ -248,9 +238,8 @@ void login_command(char* command) {
         return;
     }
 
-    number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s %s %s", aux, UID, pass);
-    if (!validate_login_command(number_of_tokens_command, UID, pass)) {
+    if (!validate_login_command(command, UID, pass)) {
         return;
     }
 
@@ -263,17 +252,14 @@ void login_command(char* command) {
     send_and_receive(message, reply);
     terminate_string(reply);
 
-    number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    validate_login_reply(number_of_tokens_reply, aux, status);
+    validate_login_reply(reply, aux, status);
     return;
 }
 
 void logout_command(char* command) {
 
-    int number_of_tokens_command = 0;
-    int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE];
@@ -285,9 +271,8 @@ void logout_command(char* command) {
         return;
     }
     
-    number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s", aux);
-    if (!validate_logout_command(number_of_tokens_command)) {
+    if (!validate_logout_command(command)) {
         return;
     }
 
@@ -296,23 +281,20 @@ void logout_command(char* command) {
     send_and_receive(message, reply);
     terminate_string(reply);
 
-    number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    validate_logout_reply(number_of_tokens_reply, aux, status);
+    validate_logout_reply(reply, aux, status);
     return;
 }
 
 void exit_command(char* command) {
 
-    int number_of_tokens_command = 0;
     char aux[MAX_SIZE];
     ssize_t n;
 
-    number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s", aux);
 
-    if (!validate_exit_command(number_of_tokens_command)) {
+    if (!validate_exit_command(command)) {
         return;
     }
 
@@ -322,8 +304,6 @@ void exit_command(char* command) {
 
 void groups_command(char* command) {
 
-    int number_of_tokens_command = 0;
-    int number_of_tokens_reply = 0;
     char aux[MAX_SIZE];
     //char UID[MAX_SIZE];
     //char pass[MAX_SIZE];
@@ -332,9 +312,8 @@ void groups_command(char* command) {
     //char status[MAX_SIZE];
     //ssize_t n;
 
-    number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s", aux);
-    if(!validate_groups_command(number_of_tokens_command)) {
+    if(!validate_groups_command(command)) {
         return;
     }
 
@@ -343,7 +322,6 @@ void groups_command(char* command) {
     // communication with server
     send_and_receive(message, reply);
 
-    number_of_tokens_reply = get_number_of_tokens(reply);
     validate_groups_reply(reply);
     
     return;
@@ -445,25 +423,27 @@ int get_number_of_tokens(char* string) {
     return ret;
 }
 
-int validate_registration_command(int number_of_tokens_command, char* UID, char* pass) {
+int validate_registration_command(/* int number_of_tokens_command,  */char* command, char* UID, char* pass) {
 
+    int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 3) {
-        fprintf(stderr, "(unr)registration: Wrong number of arguments in input.\n");
+        fprintf(stderr, "> (unr)registration: Wrong number of arguments in input.\n");
         return 0;
     }
     if (!validate_UID(UID)) {
-        fprintf(stderr, "(unr)registration: Invalid user ID.\n");
+        fprintf(stderr, "> (unr)registration: Invalid user ID.\n");
         return 0;
     }
     if (!validate_pass(pass)) {
-        fprintf(stderr, "(unr)registration: Invalid user password.\n");
+        fprintf(stderr, "> (unr)registration: Invalid user password.\n");
         return 0;
     }
     return 1;
 }
 
-void validate_register_reply(int number_of_tokens_reply, char* aux, char* status) {
+void validate_register_reply(char* reply, char* aux, char* status) {
 
+    int number_of_tokens_reply = get_number_of_tokens(reply);
     if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
         fprintf(stderr, "> register_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -485,8 +465,9 @@ void validate_register_reply(int number_of_tokens_reply, char* aux, char* status
     return;
 }
 
-void validate_unregister_reply(int number_of_tokens_reply,char* aux, char* status) {
+void validate_unregister_reply(char* reply,char* aux, char* status) {
 
+    int number_of_tokens_reply = get_number_of_tokens(reply);
     if ((number_of_tokens_reply != 2) || strcmp("RUN", aux)) {
         fprintf(stderr, "> unregister_command: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -505,8 +486,9 @@ void validate_unregister_reply(int number_of_tokens_reply,char* aux, char* statu
     return;
 }
 
-int validate_login_command(int number_of_tokens_command, char* UID, char* pass) {
+int validate_login_command(char* command, char* UID, char* pass) {
 
+    int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 3) {
         fprintf(stderr, "login_command: Wrong number of arguments in input.\n");
         return 0;
@@ -523,8 +505,9 @@ int validate_login_command(int number_of_tokens_command, char* UID, char* pass) 
     return 1;
 }
 
-void validate_login_reply(int number_of_tokens_reply, char* aux, char* status) {
+void validate_login_reply(char* reply, char* aux, char* status) {
 
+    int number_of_tokens_reply = get_number_of_tokens(reply);
     if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
         fprintf(stderr, "login_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -544,8 +527,9 @@ void validate_login_reply(int number_of_tokens_reply, char* aux, char* status) {
     return;
 }
 
-int validate_logout_command(int number_of_tokens_command) {
+int validate_logout_command(char* command) {
     
+    int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 1) {
         fprintf(stderr, "logout_command: Invalid input.\n");
         return 0;
@@ -553,8 +537,9 @@ int validate_logout_command(int number_of_tokens_command) {
     return 1;
 }
 
-void validate_logout_reply(int number_of_tokens_reply, char* aux, char* status) {
+void validate_logout_reply(char* reply, char* aux, char* status) {
 
+    int number_of_tokens_reply = get_number_of_tokens(reply);
     if (number_of_tokens_reply != 2 || strcmp("ROU", aux)) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -576,8 +561,9 @@ void validate_logout_reply(int number_of_tokens_reply, char* aux, char* status) 
     return;
 }
 
-int validate_exit_command(int number_of_tokens_command) {
+int validate_exit_command(char* command) {
 
+    int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 1) {
         fprintf(stderr, "exit_command: Invalid input.\n");
         return 0;
@@ -586,13 +572,15 @@ int validate_exit_command(int number_of_tokens_command) {
     return 1;
 }
 
-int validate_groups_command(int number_of_tokens_command) {
+int validate_groups_command(char* command) {
     // TODO
+    int number_of_tokens_command = get_number_of_tokens(command);
     return 1;
 }
 
 int validate_groups_reply(char* reply) {
     // TODO
+    int number_of_tokens_reply = get_number_of_tokens(reply);
     return 1;
 }
 
