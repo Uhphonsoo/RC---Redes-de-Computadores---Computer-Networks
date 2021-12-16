@@ -56,6 +56,7 @@ int  get_number_of_tokens(char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
 int  validate_registration_command(int, char*, char*);
+void validate_register_reply(int, char*, char*);
 int  validate_login_command(int, char*, char*);
 int  validate_logout_command(int);
 int  validate_exit_command(int);
@@ -191,11 +192,6 @@ void reg_command(char* command) {
     number_of_tokens_command = get_number_of_tokens(command);
     sscanf(command, "%s %s %s", aux, UID, pass);
 
-    /* DEBUG */
-    /* printf("command: %s\n", command);
-    printf("UID: %s\n", UID);
-    printf("pass_: %s\n", pass); */
-
     if(!validate_registration_command(number_of_tokens_command, UID, pass)) {
         return;
     }
@@ -208,33 +204,7 @@ void reg_command(char* command) {
     number_of_tokens_reply = get_number_of_tokens(reply);
     sscanf(reply, "%s %s", aux, status);
 
-    /* DEBUG */
-    /* printf("reply: %s\n", reply); */
-
-    if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
-        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-    /* if (strcmp("RRG", aux)) {
-        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    } */
-
-    /* get_nth_token(reply, 2, status); */
-
-    if (strcmp(status, "OK") == 0) {
-        printf("User successfully registered.\n");
-    }
-    else if (strcmp(status, "DUP") == 0) {
-        printf("Failed to register user. User already registered.\n");
-    }
-    else if (strcmp(status, "NOK") == 0) {
-        printf("Failed to register user.\n");
-    }
-    else {
-        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
+    validate_register_reply(number_of_tokens_reply, aux, status);
 
     return;
 }
@@ -579,6 +549,29 @@ int validate_registration_command(int number_of_tokens_command, char* UID, char*
     }
 
     return 1;
+}
+
+void validate_register_reply(int number_of_tokens_reply, char* aux, char* status) {
+
+    if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
+        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0) {
+        printf("User successfully registered.\n");
+    }
+    else if (strcmp(status, "DUP") == 0) {
+        printf("Failed to register user. User already registered.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("Failed to register user.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: reg_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
 }
 
 int validate_login_command(int number_of_tokens_command, char* UID, char* pass) {
