@@ -8,9 +8,15 @@
 #include <netdb.h> 
 #include <ctype.h>
 #define MAX_SIZE 240
+#define MAX_SIZE_GROUPS 5000/* 7+99*(3+24+6)*sizeof(char) */
 #define PORT_CONST 58000
 #define FENIX_GROUP_NUMBER 20
 /* #define MAX_PASS_SIZE 8 */
+
+// TODO
+/* 
+ * improve invalid input messages
+ */
 
 // Global variables
 int fd;
@@ -53,25 +59,26 @@ void retrieve_command(char*);
 void get_first_token(char*, char*);
 void get_nth_token(char*, int, char*);
 int  get_number_of_tokens(char*);
+void send_and_receive(char*, char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
-int  validate_registration_command(char*, char*, char*);
-void validate_register_reply(char*, char*, char*);
-void validate_unregister_reply(char*,char*, char*);
-int  validate_login_command(char*, char*, char*);
-void validate_login_reply(char*, char*, char*);
-int  validate_logout_command(char*);
-void validate_logout_reply(char*, char*, char*);
-int  validate_exit_command(char*);
-int validate_groups_command(char*);
-int validate_groups_reply(char*);
 int  validate_UID(char*);
 int  validate_pass(char*);
+int  validate_registration_command(char*, char*, char*);
+int  validate_login_command(char*, char*, char*);
+int  validate_logout_command(char*);
+int  validate_exit_command(char*);
+int  validate_groups_command(char*);
+void validate_register_reply(char*, char*, char*);
+void validate_unregister_reply(char*,char*, char*);
+void validate_login_reply(char*, char*, char*);
+void validate_logout_reply(char*, char*, char*);
+int  validate_groups_reply(char*, char*, char*);
+void show_groups(char*, char*);
 int  is_empty_string(char*);
 void clear_string(char*);
 void terminate_string(char*);
 void close_TCP_connections();
-void send_and_receive(char*, char*);
 
 
 int main(int argc, char *argv[]) {
@@ -306,10 +313,11 @@ void exit_command(char* command) {
 void groups_command(char* command) {
 
     char aux[MAX_SIZE];
+    char N[MAX_SIZE];
     //char UID[MAX_SIZE];
     //char pass[MAX_SIZE];
     char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE];
+    char reply[MAX_SIZE_GROUPS];
     //char status[MAX_SIZE];
     //ssize_t n;
 
@@ -324,7 +332,13 @@ void groups_command(char* command) {
     send_and_receive(message, reply);
     terminate_string(reply);
 
-    validate_groups_reply(reply);
+    /* DEBUG */
+    /* printf("Groups:\n %s\n", reply); */
+
+    sscanf(reply, "%s %s", aux, N);
+
+    validate_groups_reply(reply, aux, N);
+    show_groups(reply, N);
     
     return;
 }
@@ -395,7 +409,7 @@ void get_nth_token(char* string, int n, char* ret) {
     ret[k] = '\0';
 
     if (strcmp(ret, "") == 0) {
-        fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many words.\n");
+        fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many tokens.\n");
         exit(EXIT_FAILURE);
     }
     return;
@@ -425,7 +439,7 @@ int get_number_of_tokens(char* string) {
     return ret;
 }
 
-int validate_registration_command(/* int number_of_tokens_command,  */char* command, char* UID, char* pass) {
+int validate_registration_command(char* command, char* UID, char* pass) {
 
     int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 3) {
@@ -533,7 +547,7 @@ int validate_logout_command(char* command) {
     
     int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 1) {
-        fprintf(stderr, "logout_command: Invalid input.\n");
+        fprintf(stderr, "> logout_command: Invalid input.\n");
         return 0;
     }
     return 1;
@@ -567,7 +581,7 @@ int validate_exit_command(char* command) {
 
     int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 1) {
-        fprintf(stderr, "exit_command: Invalid input.\n");
+        fprintf(stderr, "> exit_command: Invalid input.\n");
         return 0;
     }
 
@@ -575,14 +589,28 @@ int validate_exit_command(char* command) {
 }
 
 int validate_groups_command(char* command) {
-    // TODO
+
     int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 1) {
+        fprintf(stderr, "> validate_groups_command: Invalid input.\n");
+        return 0;
+    }
     return 1;
 }
 
-int validate_groups_reply(char* reply) {
-    // TODO
+int validate_groups_reply(char* reply, char* aux, char* N) {
+
     int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (number_of_tokens_reply < 2) {
+        fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
+        return 0;
+    }
+
+    if (number_of_tokens_reply == 2 && (strcmp("RGL", aux) || strcmp(N, "0"))) {
+        fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    
     return 1;
 }
 
@@ -634,6 +662,23 @@ int validate_pass(char* pass) {
     return 1;
 }
 
+void show_groups(char* reply, char* N_string) {
+
+    int N = atoi(N_string);
+    int i = 0;
+    char GID[MAX_SIZE];
+    char GName[MAX_SIZE];
+
+    for (i = 3; i < 3*N + 1; i++) {
+        get_nth_token(reply, i++, GID);
+        get_nth_token(reply, i++, GName);
+
+        printf("> Group ID: %s | Group Name: %s\n", GID, GName);
+    }
+
+    return;
+}
+
 void clear_string(char* string) {
     if (string != NULL) {
         string[0] = '\0';
@@ -662,26 +707,12 @@ void close_TCP_connections() {
     return;
 }
 
-/* void get_DSIP(char* command, char* ret) {
-    int i = 0, j = 0;
-
-    while(command[i] != 'n') {
-        i++;
-    }
-    i += 2;
-
-    while(!(isspace(command[i]))) {
-        ret[j++] = command[i++];
-    }
-    ret[j] = '\0';
-} */
-
 void send_and_receive(char* message, char* reply){
 
     int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
     validate_sendto(n);
 
     addrlen = sizeof(addr);
-    n = recvfrom(fd, reply, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    n = recvfrom(fd, reply, MAX_SIZE_GROUPS, 0, (struct sockaddr*)&addr, &addrlen);
     validate_recvfrom(n);
 }
