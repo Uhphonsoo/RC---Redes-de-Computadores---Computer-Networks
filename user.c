@@ -22,8 +22,6 @@
 int fd;
 int errcode;
 int logged_in;
-/* int UID; */
-/* char pass[MAX_PASS_SIZE]; */
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
@@ -55,17 +53,6 @@ void post_command(char*);
 void retrieve_command(char*);
 
 // misc
-/* void get_DSIP(char*, char*); */
-void get_first_token(char*, char*);
-void get_nth_token(char*, int, char*);
-int  get_number_of_tokens(char*);
-void send_and_receive(char*, char*);
-void validate_sendto(int);
-void validate_recvfrom(int);
-int  validate_UID(char*);
-int  validate_pass(char*);
-int  validate_GID(char*);
-int validate_GName(char*);
 int  validate_registration_command(char*, char*, char*);
 int  validate_login_command(char*, char*, char*);
 int  validate_logout_command(char*);
@@ -76,12 +63,22 @@ void validate_register_reply(char*, char*, char*);
 void validate_unregister_reply(char*,char*, char*);
 void validate_login_reply(char*, char*, char*);
 void validate_logout_reply(char*, char*, char*);
-int  validate_groups_reply(char*, char*, char*);
-int validate_subscribe_reply(char*, char*, char*);
+void validate_groups_reply(char*, char*, char*);
+void validate_subscribe_reply(char*, char*, char*);
+void validate_sendto(int);
+void validate_recvfrom(int);
+int  validate_UID(char*);
+int  validate_pass(char*);
+int  validate_GID(char*);
+int  validate_GName(char*);
+void get_first_token(char*, char*);
+void get_nth_token(char*, int, char*);
+int  get_number_of_tokens(char*);
+void send_and_receive(char*, char*);
 void show_groups(char*, char*);
 int  is_empty_string(char*);
 void clear_string(char*);
-void terminate_string(char*);
+// void terminate_string(char*);
 void terminate_string_after_n_tokens(char*, int);
 void close_TCP_connections();
 
@@ -177,7 +174,7 @@ int main(int argc, char *argv[]) {
             retrieve_command(command);
         }
         else {
-            fprintf(stderr, "Invalid command.\n");
+            fprintf(stderr, "> Invalid command.\n");
             continue;
         }
     }
@@ -333,7 +330,6 @@ void groups_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
-    /* terminate_string(reply); */
 
     sscanf(reply, "%s %s", aux, N);
 
@@ -352,6 +348,11 @@ void subscribe_command(char* command) {
     char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
+    if (!logged_in) {
+        printf("> No user is currently logged in.\n");
+        return;
+    }
+
     sscanf(command, "%s %s %s", aux, GID, GName);
     if(!validate_subscribe_command(command, GID, GName)) {
         return;
@@ -369,7 +370,7 @@ void subscribe_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
 
     /* DEBUG */
-    printf("Subscribe: Reply:%sT\n", reply);
+    /* printf("Subscribe: Reply:%sT\n", reply); */
 
     validate_subscribe_reply(reply, aux, status);
     return;
@@ -398,6 +399,330 @@ void post_command(char* command) {
 void retrieve_command(char* command) {
     // TODO
     return;
+}
+
+
+int validate_registration_command(char* command, char* UID, char* pass) {
+
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 3) {
+        fprintf(stderr, "> (unr)registration: Wrong number of arguments in input.\n");
+        return 0;
+    }
+    if (!validate_UID(UID)) {
+        fprintf(stderr, "> (unr)registration: Invalid user ID.\n");
+        return 0;
+    }
+    if (!validate_pass(pass)) {
+        fprintf(stderr, "> (unr)registration: Invalid user password.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+int validate_login_command(char* command, char* UID, char* pass) {
+
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 3) {
+        fprintf(stderr, "login_command: Wrong number of arguments in input.\n");
+        return 0;
+    }
+    if (!validate_UID(UID)) {
+        fprintf(stderr, "login_command: Invalid user ID.\n");
+        return 0;
+    }
+    if (!validate_pass(pass)) {
+        fprintf(stderr, "login_command: Invalid user password.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+int validate_logout_command(char* command) {
+    
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 1) {
+        fprintf(stderr, "> logout_command: Invalid input.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+int validate_exit_command(char* command) {
+
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 1) {
+        fprintf(stderr, "> exit_command: Invalid input.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+int validate_groups_command(char* command) {
+
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 1) {
+        fprintf(stderr, "> validate_groups_command: Invalid input.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+int validate_subscribe_command(char* command, char* GID, char* GName) {
+
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 3) {
+        fprintf(stderr, "> validate_subscribe_command: Invalid input.\n");
+        return 0;
+    }
+    if (!validate_GID(GID)) {
+        fprintf(stderr, "validate_subscribe_command: Invalid group ID.\n");
+        return 0;
+    }
+    if (!validate_GName(GName)) {
+        fprintf(stderr, "validate_subscribe_command: Invalid group name.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+void validate_register_reply(char* reply, char* aux, char* status) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+
+    /* DEBUG */
+    // printf("validate_register_reply: reply:%sT\n", reply);
+    // printf("number_of_tokens=%d\n", number_of_tokens_reply);
+    // printf("length=%lu\n", strlen(reply));
+
+    if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
+        fprintf(stderr, "> register_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0) {
+        printf("> User successfully registered.\n");
+    }
+    else if (strcmp(status, "DUP") == 0) {
+        printf("> Failed to register user. User already registered.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("> Failed to register user.\n");
+    }
+    else {
+        fprintf(stderr, "> ERROR: register_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
+void validate_unregister_reply(char* reply,char* aux, char* status) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if ((number_of_tokens_reply != 2) || strcmp("RUN", aux)) {
+        fprintf(stderr, "> unregister_command: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0) {
+        printf("> User successfully unregistered.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("> Failed to unregister user.\n");
+    }
+    else {
+        fprintf(stderr, "> unregister_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
+
+void validate_login_reply(char* reply, char* aux, char* status) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
+
+        /* DEBUG */
+        printf("reply:%sT\n", reply);
+
+        fprintf(stderr, "login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0) {
+        logged_in = 1;
+        printf("> User successfully logged in.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("> Failed to login. User ID or password not valid.\n");
+    }
+    else {
+        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
+
+void validate_logout_reply(char* reply, char* aux, char* status) {
+    
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (number_of_tokens_reply != 2 || strcmp("ROU", aux)) {
+        fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0) {
+        clear_string(logged_in_UID);
+        clear_string(logged_in_pass);
+        logged_in = 0;
+        printf("> User successfully logged out.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("> Failed to logout. User ID or password not valid.\n");
+    }
+    else {
+        fprintf(stderr, "logout_command(): ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void validate_groups_reply(char* reply, char* aux, char* N) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (number_of_tokens_reply < 2) {
+        fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (number_of_tokens_reply == 2 && (strcmp("RGL", aux) || strcmp(N, "0"))) {
+        fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void validate_subscribe_reply(char* reply, char* aux, char* status) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (number_of_tokens_reply > 3 || strcmp(aux, "RGS")) {
+        fprintf(stderr, "> validate_subscribe_reply: ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0 && number_of_tokens_reply == 2) {
+        printf("> Successfully subscribed to group.\n");
+    }
+    else if (strcmp(status, "NEW") == 0 && number_of_tokens_reply == 3) {
+        printf("> Successfully created new group and subscribed to it.\n");
+    }
+    else if (strcmp(status, "E_USR") == 0 && number_of_tokens_reply == 2) {
+        printf("> Invalid user ID.\n");
+    }
+    else if (strcmp(status, "E_GRP") == 0 && number_of_tokens_reply == 2) {
+        printf("> Invalid group ID.\n");
+    }
+    else if (strcmp(status, "E_GNAME") == 0 && number_of_tokens_reply == 2) {
+        printf("> Invalid group name.\n");
+    }
+    else if (strcmp(status, "E_FULL") == 0  && number_of_tokens_reply == 2) {
+        printf("> Could not create group. Group limit reached.\n");
+    }
+    else if (strcmp(status, "NOK") == 0 && number_of_tokens_reply == 2) {
+        printf("> Failed to subscribe to group.\n");
+    }
+    else {
+        fprintf(stderr, "> ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void validate_sendto(int n) {
+    if(n == -1) {
+        perror("ERROR: sendto(): Unable to send message.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void validate_recvfrom(int n) {
+    if(n == -1) {
+        perror("ERROR: recvfrom(): Unable to receive message.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int validate_UID(char* UID) {
+    int length = strlen(UID);
+
+    if (length != 5) {
+        fprintf(stderr, "Invalid user ID.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (!isdigit(UID[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validate_pass(char* pass) {
+
+    int length = strlen(pass);
+
+    if (strlen(pass) != 8) {
+        fprintf(stderr, "> Invalid user password.\n");
+        return 0;
+    }
+
+    for (int i = 0; i < length; i++) {
+        if (!(isalpha(pass[i]) || isdigit(pass[i]))) {
+            // printf TODO
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validate_GID(char* GID) {
+
+    int length = strlen(GID);
+
+    if (strlen(GID) != 2) {
+        fprintf(stderr, "> Invalid group ID.");
+        return 0;
+    }
+    for (int i = 0; i < length; i++) {
+        if (!isdigit(GID[i])) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int validate_GName(char* GName) {
+
+    int length = strlen(GName);
+
+    if (strlen(GName) == 0 || strlen(GName) > 24) {
+        fprintf(stderr, "> Invalid group name.");
+        return 0;
+    }
+    for (int i = 0; i < length; i++) {
+        if (!(isalpha(GName[i]) || isdigit(GName[i]) || GName[i] != '-' || GName[i] != '_')) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void get_first_token(char* string, char* ret) {
@@ -488,327 +813,19 @@ int get_number_of_tokens(char* string) {
     return ret;
 }
 
-int validate_registration_command(char* command, char* UID, char* pass) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 3) {
-        fprintf(stderr, "> (unr)registration: Wrong number of arguments in input.\n");
-        return 0;
-    }
-    if (!validate_UID(UID)) {
-        fprintf(stderr, "> (unr)registration: Invalid user ID.\n");
-        return 0;
-    }
-    if (!validate_pass(pass)) {
-        fprintf(stderr, "> (unr)registration: Invalid user password.\n");
-        return 0;
-    }
-    return 1;
-}
+void send_and_receive(char* message, char* reply){
 
-void validate_register_reply(char* reply, char* aux, char* status) {
+    int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
+    validate_sendto(n);
 
-    int number_of_tokens_reply = get_number_of_tokens(reply);
+    addrlen = sizeof(addr);
+    n = recvfrom(fd, reply, MAX_SIZE_REPLY, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
 
-    /* DEBUG */
-    // printf("validate_register_reply: reply:%sT\n", reply);
-    // printf("number_of_tokens=%d\n", number_of_tokens_reply);
-    // printf("length=%lu\n", strlen(reply));
-
-    if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
-        fprintf(stderr, "> register_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(status, "OK") == 0) {
-        printf("> User successfully registered.\n");
-    }
-    else if (strcmp(status, "DUP") == 0) {
-        printf("> Failed to register user. User already registered.\n");
-    }
-    else if (strcmp(status, "NOK") == 0) {
-        printf("> Failed to register user.\n");
-    }
-    else {
-        fprintf(stderr, "> ERROR: register_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
     return;
 }
 
-void validate_unregister_reply(char* reply,char* aux, char* status) {
-
-    int number_of_tokens_reply = get_number_of_tokens(reply);
-    if ((number_of_tokens_reply != 2) || strcmp("RUN", aux)) {
-        fprintf(stderr, "> unregister_command: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(status, "OK") == 0) {
-        printf("> User successfully unregistered.\n");
-    }
-    else if (strcmp(status, "NOK") == 0) {
-        printf("> Failed to unregister user.\n");
-    }
-    else {
-        fprintf(stderr, "> unregister_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-    return;
-}
-
-int validate_login_command(char* command, char* UID, char* pass) {
-
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 3) {
-        fprintf(stderr, "login_command: Wrong number of arguments in input.\n");
-        return 0;
-    }
-    if (!validate_UID(UID)) {
-        fprintf(stderr, "login_command: Invalid user ID.\n");
-        return 0;
-    }
-    if (!validate_pass(pass)) {
-        fprintf(stderr, "login_command: Invalid user password.\n");
-        return 0;
-    }
-
-    return 1;
-}
-
-void validate_login_reply(char* reply, char* aux, char* status) {
-
-    int number_of_tokens_reply = get_number_of_tokens(reply);
-    if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
-
-        /* DEBUG */
-        printf("reply:%sT\n", reply);
-
-        fprintf(stderr, "login_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(status, "OK") == 0) {
-        logged_in = 1;
-        printf("> User successfully logged in.\n");
-    }
-    else if (strcmp(status, "NOK") == 0) {
-        printf("> Failed to login. User ID or password not valid.\n");
-    }
-    else {
-        fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-    return;
-}
-
-int validate_logout_command(char* command) {
-    
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> logout_command: Invalid input.\n");
-        return 0;
-    }
-    return 1;
-}
-
-void validate_logout_reply(char* reply, char* aux, char* status) {
-    
-    int number_of_tokens_reply = get_number_of_tokens(reply);
-    if (number_of_tokens_reply != 2 || strcmp("ROU", aux)) {
-        fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(status, "OK") == 0) {
-        clear_string(logged_in_UID);
-        clear_string(logged_in_pass);
-        logged_in = 0;
-        printf("> User successfully logged out.\n");
-    }
-    else if (strcmp(status, "NOK") == 0) {
-        printf("> Failed to logout. User ID or password not valid.\n");
-    }
-    else {
-        fprintf(stderr, "logout_command(): ERROR: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-    return;
-}
-
-int validate_exit_command(char* command) {
-
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> exit_command: Invalid input.\n");
-        return 0;
-    }
-
-    return 1;
-}
-
-int validate_groups_command(char* command) {
-
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> validate_groups_command: Invalid input.\n");
-        return 0;
-    }
-    return 1;
-}
-
-int validate_groups_reply(char* reply, char* aux, char* N) {
-
-    int number_of_tokens_reply = get_number_of_tokens(reply);
-    if (number_of_tokens_reply < 2) {
-        fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (number_of_tokens_reply == 2 && (strcmp("RGL", aux) || strcmp(N, "0"))) {
-        fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    return 1;
-}
-
-int validate_subscribe_command(char* command, char* GID, char* GName) {
-
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 3) {
-        fprintf(stderr, "> validate_subscribe_command: Invalid input.\n");
-        return 0;
-    }
-    if (!validate_GID(GID)) {
-        fprintf(stderr, "validate_subscribe_command: Invalid group ID.\n");
-        return 0;
-    }
-    if (!validate_GName(GName)) {
-        fprintf(stderr, "validate_subscribe_command: Invalid group name.\n");
-        return 0;
-    }
-    
-    return 1;
-}
-
-int validate_subscribe_reply(char* reply, char* aux, char* status) {
-
-    int number_of_tokens_reply = get_number_of_tokens(reply);
-    if (number_of_tokens_reply > 3 || strcmp(aux, "RGS")) {
-        fprintf(stderr, "> validate_subscribe_reply: ERROR: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    if (strcmp(status, "OK") == 0 && number_of_tokens_reply == 2) {
-        printf("> Successfully subscribed to group.\n");
-    }
-    else if (strcmp(status, "NEW") == 0 && number_of_tokens_reply == 3) {
-        printf("> Successfully created new group and subscribed to it.\n");
-    }
-    else if (strcmp(status, "E_USR") == 0 && number_of_tokens_reply == 2) {
-        printf("> Invalid user ID.\n");
-    }
-    else if (strcmp(status, "E_GRP") == 0 && number_of_tokens_reply == 2) {
-        printf("> Invalid group ID.\n");
-    }
-    else if (strcmp(status, "E_GNAME") == 0 && number_of_tokens_reply == 2) {
-        printf("> Invalid group name.\n");
-    }
-    else if (strcmp(status, "E_FULL") == 0  && number_of_tokens_reply == 2) {
-        printf("> Could not create group. Group limit reached.\n");
-    }
-    else if (strcmp(status, "NOK") == 0 && number_of_tokens_reply == 2) {
-        printf("> Failed to subscribe to group.\n");
-    }
-    else {
-        fprintf(stderr, "> ERROR: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    }
-    
-    return 1;
-}
-
-void validate_sendto(int n) {
-    if(n == -1) {
-        perror("ERROR: sendto(): Unable to send message.\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void validate_recvfrom(int n) {
-    if(n == -1) {
-        perror("ERROR: recvfrom(): Unable to receive message.\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-int validate_UID(char* UID) {
-    int length = strlen(UID);
-
-    if (length != 5) {
-        fprintf(stderr, "Invalid user ID.\n");
-        return 0;
-    }
-
-    for (int i = 0; i < length; i++) {
-        if (!isdigit(UID[i])) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-int validate_pass(char* pass) {
-
-    int length = strlen(pass);
-
-    if (strlen(pass) != 8) {
-        fprintf(stderr, "> Invalid user password.\n");
-        return 0;
-    }
-
-    for (int i = 0; i < length; i++) {
-        if (!(isalpha(pass[i]) || isdigit(pass[i]))) {
-            // printf TODO
-            return 0;
-        }
-    }
-    return 1;
-}
-
-int validate_GID(char* GID) {
-
-    int length = strlen(GID);
-
-    if (strlen(GID) != 2) {
-        fprintf(stderr, "> Invalid group ID.");
-        return 0;
-    }
-    for (int i = 0; i < length; i++) {
-        if (!isdigit(GID[i])) {
-            return 0;
-        }
-    }
-    return 1;
-}
-
-int validate_GName(char* GName) {
-
-    int length = strlen(GName);
-
-    if (strlen(GName) == 0 || strlen(GName) > 24) {
-        fprintf(stderr, "> Invalid group name.");
-        return 0;
-    }
-    for (int i = 0; i < length; i++) {
-        if (!(isalpha(GName[i]) || isdigit(GName[i]) || GName[i] != '-' || GName[i] != '_')) {
-            return 0;
-        }
-    }
-    return 1;
-}
 
 void show_groups(char* reply, char* N_string) {
 
@@ -823,7 +840,6 @@ void show_groups(char* reply, char* N_string) {
 
         printf("> Group ID: %s | Group Name: %s\n", GID, GName);
     }
-
     return;
 }
 
@@ -835,14 +851,14 @@ void clear_string(char* string) {
     return;
 }
 
-void terminate_string(char* string) {
+/* void terminate_string(char* string) {
     int length = strlen(string);
 
     if (isspace(string[length-1])) {
         string[length-1] = '\0';
     }
     return;
-} 
+}  */
 
 void terminate_string_after_n_tokens(char* string, int n) {
 
@@ -896,14 +912,4 @@ int is_empty_string(char* string) {
 void close_TCP_connections() {
     // TODO
     return;
-}
-
-void send_and_receive(char* message, char* reply){
-
-    int n = sendto(fd, message, strlen(message), 0, res->ai_addr, res->ai_addrlen);
-    validate_sendto(n);
-
-    addrlen = sizeof(addr);
-    n = recvfrom(fd, reply, MAX_SIZE_REPLY, 0, (struct sockaddr*)&addr, &addrlen);
-    validate_recvfrom(n);
 }
