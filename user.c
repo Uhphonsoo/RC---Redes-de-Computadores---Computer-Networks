@@ -202,7 +202,7 @@ void register_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
-    terminate_string(reply);
+    terminate_string_after_n_tokens(reply, 2);
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -228,7 +228,7 @@ void unregister_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
-    terminate_string(reply);
+    terminate_string_after_n_tokens(reply, 2);
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -262,7 +262,7 @@ void login_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
-    terminate_string(reply);
+    terminate_string_after_n_tokens(reply, 2);
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -291,7 +291,7 @@ void logout_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
-    terminate_string(reply);
+    terminate_string_after_n_tokens(reply, 2);
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -333,7 +333,7 @@ void groups_command(char* command) {
 
     // communication with server
     send_and_receive(message, reply);
-    terminate_string(reply);
+    /* terminate_string(reply); */
 
     sscanf(reply, "%s %s", aux, N);
 
@@ -360,11 +360,11 @@ void subscribe_command(char* command) {
     sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
 
     /* DEBUG */
-    printf("Subscribe: Message:%sT\n", message);
+    /* printf("Subscribe: Message:%sT\n", message); */
 
     // communication with server
     send_and_receive(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    /* terminate_string_after_n_tokens(reply, 3); */
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -695,30 +695,30 @@ int validate_subscribe_command(char* command, char* GID, char* GName) {
 int validate_subscribe_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
-    if (number_of_tokens_reply != 2 || strcmp(aux, "RGS")) {
+    if (number_of_tokens_reply > 3 || strcmp(aux, "RGS")) {
         fprintf(stderr, "> validate_subscribe_reply: ERROR: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
 
-    if (strcmp(status, "OK") == 0) {
+    if (strcmp(status, "OK") == 0 && number_of_tokens_reply == 2) {
         printf("> Successfully subscribed to group.\n");
     }
-    else if (strcmp(status, "NEW GID") == 0) {
+    else if (strcmp(status, "NEW") == 0 && number_of_tokens_reply == 3) {
         printf("> Successfully created new group and subscribed to it.\n");
     }
-    else if (strcmp(status, "E_USR") == 0) {
+    else if (strcmp(status, "E_USR") == 0 && number_of_tokens_reply == 2) {
         printf("> Invalid user ID.\n");
     }
-    else if (strcmp(status, "E_GRP") == 0) {
+    else if (strcmp(status, "E_GRP") == 0 && number_of_tokens_reply == 2) {
         printf("> Invalid group ID.\n");
     }
-    else if (strcmp(status, "E_GNAME") == 0) {
+    else if (strcmp(status, "E_GNAME") == 0 && number_of_tokens_reply == 2) {
         printf("> Invalid group name.\n");
     }
-    else if (strcmp(status, "E_FULL") == 0) {
+    else if (strcmp(status, "E_FULL") == 0  && number_of_tokens_reply == 2) {
         printf("> Could not create group. Group limit reached.\n");
     }
-    else if (strcmp(status, "NOK") == 0) {
+    else if (strcmp(status, "NOK") == 0 && number_of_tokens_reply == 2) {
         printf("> Failed to subscribe to group.\n");
     }
     else {
@@ -845,7 +845,44 @@ void terminate_string(char* string) {
 } 
 
 void terminate_string_after_n_tokens(char* string, int n) {
-    // TODO
+
+    int ret = 0;
+    int length = strlen(string);
+    int i = 0;
+    int last_read_character_was_space = 0;
+    int number_of_tokens = get_number_of_tokens(string);
+
+    if (string == NULL) {
+        return;
+    }
+    if (n == 0) {
+        string[0] = '\0';
+        return;
+    }
+    if (number_of_tokens < n) {
+        fprintf(stderr, "terminate_string_after_n_tokens: n must be smaller than the total number of tokens\n");
+        return;
+    }
+
+    for (i = 0; i < length; i++) {
+        if (i != 0 && !isspace(string[i]) && last_read_character_was_space) {
+            ret++;
+        }
+        if (i == 0 && !isspace(string[i])) {
+            ret++;
+        }
+        if (ret == n + 1) {
+            break;
+        }
+
+        if (isspace(string[i])) {
+            last_read_character_was_space = 1;
+        }
+        else {
+            last_read_character_was_space = 0;
+        }
+    }
+    string[i-1] = '\0';
 }
 
 int is_empty_string(char* string) {
