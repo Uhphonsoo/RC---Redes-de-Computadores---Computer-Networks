@@ -64,7 +64,7 @@ int  validate_subscribe_command(char*, char*, char*);
 int  validate_unsubscribe_command(char*, char*);
 int  validate_my_groups_command(char*);
 int  validate_select_command(char*, char*);
-int  validate_post_command(char*, int);
+int  validate_post_command(char*, char*, char*, char*, int*);
 void validate_register_reply(char*, char*, char*);
 void validate_unregister_reply(char*,char*, char*);
 void validate_login_reply(char*, char*, char*);
@@ -91,7 +91,6 @@ int  get_number_of_tokens(char*);
 void send_and_receive_UDP(char*, char*);
 void send_and_receive_TCP(char*, char*);
 void show_groups(char*, char*);
-/* void show_my_groups(char*, char*); */
 int  is_empty_string(char*);
 void clear_string(char*);
 // void terminate_string(char*);
@@ -364,6 +363,12 @@ void groups_command(char* command) {
     sscanf(reply, "%s %s", aux, N);
 
     validate_groups_reply(reply, aux, N);
+
+    if (strcmp(N, "0") == 0) {
+        printf("> There are no available groups.\n");
+        return;
+    }
+
     show_groups(reply, N);
     
     return;
@@ -438,7 +443,7 @@ void unsubscribe_command(char* command) {
 }
 
 void my_groups_command(char* command) {
-    // TODO
+
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
     // char GID[MAX_SIZE];
@@ -466,9 +471,16 @@ void my_groups_command(char* command) {
     sscanf(reply, "%s %s", aux, N);
 
     validate_my_groups_reply(reply, aux, N);
+
+    if (strcmp(N, "0") == 0) {
+        printf("> Currently not subscribed to any group.\n");
+        return;
+    }
+
     show_groups(reply, N);
     return;
 }
+
 
 void select_command(char* command) {
     // TODO
@@ -494,8 +506,13 @@ void select_command(char* command) {
     /* sscanf(reply, "%s %s", aux, N);
 
     validate_my_groups_reply(reply, aux, N); */
+
+    // TODO: Testar se GID existe???
+
     strcpy(active_GID, GID);
     has_active_group = 1;
+
+    printf("> Group %s selected.\n", active_GID);
 }
 
 void post_command(char* command) {
@@ -505,7 +522,6 @@ void post_command(char* command) {
     int Fsize = 0;
     char aux[MAX_SIZE];
     char text[MAX_SIZE];
-    char file_name[MAX_SIZE];
     char Fname[MAX_SIZE];
     char data[MAX_SIZE];
     // char GID[MAX_SIZE];
@@ -523,31 +539,34 @@ void post_command(char* command) {
         return;
     }
 
-    if (!file_is_being_sent) {
-        sscanf(command, "%s %s", aux, text);
-    }
-    else {
-        sscanf(command, "%s %s %s", aux, text, file_name);
-    }
-
-    if(!validate_post_command(command, file_is_being_sent)) {
+    if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
         return;
     }
+
+    Tsize = strlen(text);
 
     if (!file_is_being_sent) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
     }
     else {
+        // TODO: open_file(Fname);
+        /* DEBUG */
+        Fsize = 123;
+        strcpy(data, "test_data");
+
         sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
     }
 
     // communication with server
-    send_and_receive_TCP(message, reply);
+    /* send_and_receive_TCP(message, reply);
     terminate_string_after_n_tokens(reply, 2);
 
     sscanf(reply, "%s %s", aux, status);
 
-    validate_post_reply(reply, aux, status);
+    validate_post_reply(reply, aux, status); */
+
+    /* DEBUG */
+    /* printf(">> %sT\n", message); */
 }
 
 void retrieve_command(char* command) {
@@ -687,9 +706,22 @@ int validate_select_command(char* command, char* GID) {
 }
 
 
-int validate_post_command(char* command, int file_is_being_sent) {
+int validate_post_command(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent) {
     // TODO
-    return 0;
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command == 2) {
+        *file_is_being_sent = 0;
+        sscanf(command, "%s %s", aux, text);
+    }
+    else if (number_of_tokens_command == 3) {
+        *file_is_being_sent = 1;
+        sscanf(command, "%s %s %s", aux, text, file_name);
+    }
+    else {
+        fprintf(stderr, "> validate_post_command: Invalid input.\n");
+        return 0;
+    }
+    return 1;
 }
 
 
