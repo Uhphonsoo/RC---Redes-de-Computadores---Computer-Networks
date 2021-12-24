@@ -59,12 +59,14 @@ int  validate_logout_command(char*);
 int  validate_exit_command(char*);
 int  validate_groups_command(char*);
 int  validate_subscribe_command(char*, char*, char*);
+int  validate_unsubscribe_command(char*, char*);
 void validate_register_reply(char*, char*, char*);
 void validate_unregister_reply(char*,char*, char*);
 void validate_login_reply(char*, char*, char*);
 void validate_logout_reply(char*, char*, char*);
 void validate_groups_reply(char*, char*, char*);
 void validate_subscribe_reply(char*, char*, char*);
+void validate_usubscribe_reply(char*, char*, char*);
 void validate_sendto(int);
 void validate_recvfrom(int);
 int  validate_UID(char*);
@@ -158,7 +160,7 @@ int main(int argc, char *argv[]) {
         else if (strcmp(keyword, "subscribe") == 0 || strcmp(keyword, "s") == 0) {
             subscribe_command(command);
         }
-        else if (strcmp(keyword, "unsubscribe") == 0) {
+        else if (strcmp(keyword, "unsubscribe") == 0 || strcmp(keyword, "u") == 0) {
             unsubscribe_command(command);
         }
         else if (strcmp(keyword, "my_groups") == 0) {
@@ -243,7 +245,7 @@ void login_command(char* command) {
     char status[MAX_SIZE];
 
     if (logged_in) {
-        printf("> A user is already logged in.\n");
+        printf("> Failed to login. A user is already logged in.\n");
         return;
     }
 
@@ -377,7 +379,33 @@ void subscribe_command(char* command) {
 }
 
 void unsubscribe_command(char* command) {
-    // TODO
+
+    char aux[MAX_SIZE];
+    char GID[MAX_SIZE];
+    // char GName[MAX_SIZE];
+    char message[MAX_SIZE] = "";
+    char reply[MAX_SIZE_REPLY];
+    char status[MAX_SIZE];
+
+    if (!logged_in) {
+        printf("> No user is currently logged in.\n");
+        return;
+    }
+
+    sscanf(command, "%s %s", aux, GID);
+    if(!validate_unsubscribe_command(command, GID)) {
+        return;
+    }
+
+    sprintf(message, "GUR %s %s\n", logged_in_UID, GID);
+
+    // communication with server
+    send_and_receive(message, reply);
+    terminate_string_after_n_tokens(reply, 2);
+
+    sscanf(reply, "%s %s", aux, status);
+
+    validate_usubscribe_reply(reply, aux, status);
     return;
 }
 
@@ -486,6 +514,21 @@ int validate_subscribe_command(char* command, char* GID, char* GName) {
     }
     if (!validate_GName(GName)) {
         fprintf(stderr, "validate_subscribe_command: Invalid group name.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
+int  validate_unsubscribe_command(char* command, char* GID) {
+
+    int number_of_tokens_command = get_number_of_tokens(command);
+    if (number_of_tokens_command != 2) {
+        fprintf(stderr, "> validate_unsubscribe_command: Invalid input.\n");
+        return 0;
+    }
+    if (!validate_GID(GID)) {
+        fprintf(stderr, "validate_unsubscribe_command: Invalid group ID.\n");
         return 0;
     }
     return 1;
@@ -625,19 +668,46 @@ void validate_subscribe_reply(char* reply, char* aux, char* status) {
         printf("> Successfully created new group and subscribed to it.\n");
     }
     else if (strcmp(status, "E_USR") == 0 && number_of_tokens_reply == 2) {
-        printf("> Invalid user ID.\n");
+        printf("> Failed to subscribe to group. Invalid user ID.\n");
     }
     else if (strcmp(status, "E_GRP") == 0 && number_of_tokens_reply == 2) {
-        printf("> Invalid group ID.\n");
+        printf("> Failed to subscribe to group. Invalid group ID.\n");
     }
     else if (strcmp(status, "E_GNAME") == 0 && number_of_tokens_reply == 2) {
-        printf("> Invalid group name.\n");
+        printf("> Failed to subscribe to group. Invalid group name.\n");
     }
     else if (strcmp(status, "E_FULL") == 0  && number_of_tokens_reply == 2) {
         printf("> Could not create group. Group limit reached.\n");
     }
     else if (strcmp(status, "NOK") == 0 && number_of_tokens_reply == 2) {
         printf("> Failed to subscribe to group.\n");
+    }
+    else {
+        fprintf(stderr, "> ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void validate_usubscribe_reply(char* reply, char* aux, char* status) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (number_of_tokens_reply != 2 || strcmp(aux, "RGU")) {
+        fprintf(stderr, "> validate_unsubscribe_reply: ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "OK") == 0 && number_of_tokens_reply == 2) {
+        printf("> Successfully unsubscribed from group.\n");
+    }
+    else if (strcmp(status, "E_USR") == 0) {
+        printf("> Failed to unsubscribe from group. Invalid user ID.\n");
+    }
+    else if (strcmp(status, "E_GRP") == 0) {
+        printf("> Failed to unsubscribe from group. Invalid group ID.\n");
+    }
+    else if (strcmp(status, "NOK") == 0) {
+        printf("> Failed to unsubscribe from group.\n");
     }
     else {
         fprintf(stderr, "> ERROR: Invalid reply from server.\n");
