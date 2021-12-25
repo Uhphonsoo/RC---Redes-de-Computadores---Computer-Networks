@@ -566,10 +566,22 @@ void post_command(char* command) {
         /* data = get_file_data(fp, data); */
 
         data = (char*)malloc(Fsize);
-        if (fread(data, 1, Fsize, fp) == 0) {
+        /* if (fread(data, 1, Fsize, fp) == 0) {
             perror("ERROR: fread\n");
             exit(EXIT_FAILURE);
-        }
+        } */
+
+        // !!! esta a dar problemas quando ha login e selected group
+        fgets(data, Fsize, fp);
+
+        /* DEBUG */
+        printf("+ logged_in_UID = %s\n", logged_in_UID);
+        printf("+ active_GID = %s\n", active_GID);
+        printf("+ Tsize = %d\n", Tsize);
+        printf("+ text = %s\n", text);
+        printf("+ Fname = %s\n", Fname);
+        printf("+ Fsize = %d\n", Fsize);
+        printf("+ data = %s\n", data);
 
         sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
         fclose(fp);
