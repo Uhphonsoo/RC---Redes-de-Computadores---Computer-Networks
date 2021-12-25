@@ -89,8 +89,8 @@ void get_address_info_TCP();
 void get_first_token(char*, char*);
 void get_nth_token(char*, int, char*);
 int  get_number_of_tokens(char*);
-int  get_file_size(FILE*);
-void get_file_data(FILE*, char*);
+int  get_file_size(FILE*); 
+char* get_file_data(FILE*, long, char*);
 int get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent);
 void send_and_receive_UDP(char*, char*);
 void send_and_receive_TCP(char*, char*);
@@ -521,22 +521,20 @@ void select_command(char* command) {
 }
 
 void post_command(char* command) {
-    // TODO
+    // TODO: Nao esta a funcionar com (por exemplo) imagens
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
     char aux[MAX_SIZE];
     char text[MAX_SIZE];
     char Fname[MAX_SIZE];
-    char *data = 0;
-    // char GID[MAX_SIZE];
-    // char GName[MAX_SIZE];
+    char *data;
     char message[MAX_SIZE] = "";
     char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
     FILE *fp;
 
-    // comentei oara ser mais facil testar. voltar a descomentar!
+    // !!! voltar a descomentar!
     /* if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
@@ -551,9 +549,7 @@ void post_command(char* command) {
         return;
     }
 
-    /* DEBUG */
-    /* printf(">> file is being sent: %d\n", file_is_being_sent); */
-
+    // -2 is to account for the quotes
     Tsize = strlen(text) - 2;
 
     if (!file_is_being_sent) {
@@ -561,11 +557,21 @@ void post_command(char* command) {
     }
     else {
         fp = fopen(Fname, "rb");
-        get_file_data(fp, data);
-        Fsize = sizeof(data);
+        Fsize = get_file_size(fp);
+
+        /* DEBUG */
+        printf(">> file name = %s|\n", Fname);
+        printf(">> file size = %d\n", Fsize);
+
+        /* data = get_file_data(fp, data); */
+
+        data = (char*)malloc(Fsize);
+        if (fread(data, 1, Fsize, fp) == 0) {
+            perror("ERROR: fread\n");
+            exit(EXIT_FAILURE);
+        }
 
         sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
-
         fclose(fp);
     }
 
@@ -725,17 +731,9 @@ int validate_post_command(char* command, char* aux, char* text, char* file_name,
     int length = strlen(command) - 1;
 
     if (command[i++] != '"') {
-        /* DEBUG */
-        /* printf("+ %s\n", aux);
-        printf("+ i = %d\n", i);
-        printf("+ command[i] = %c\n", command[i]); */
-
         fprintf(stderr, "> validate_post_command: Invalid input 1.\n");
         return 0;
     }
-    /* DEBUG */
-    printf("+ ECHO\n");
-    printf("+ command[%d] = %c\n", i, command[i]);
 
     text[j++] = '"';
     while (command[i] != '"') {
@@ -743,57 +741,27 @@ int validate_post_command(char* command, char* aux, char* text, char* file_name,
             fprintf(stderr, "> validate_post_command: Invalid input 2.\n");
             return 0;
         }
-        /* DEBUG */
-        printf("+ command[%d] = %c\n", i, command[i]);
-
         text[j++] = command[i++];
     }
     text[j] = '"';
     text[j+1] = '\0';
 
-    /* DEBUG */
-    printf(">> j = %d\n", j);
-    printf(">> length = %d\n", length);
-
     // 5 to account for the length of "post " + 1 to account for indexing
     if (length > j + 6) {
-        /* DEBUG */
-        printf("TTTT\n");
-        printf(">> j = %d\n", j);
-        printf(">> length = %d\n", length);
-
         *file_is_being_sent = 1;
 
         i += 2;
         j += 2;
+
         while (i < length) {
             file_name[k++] = command[i++];
         }
-        return 1;
     }
     else {
-        /* DEBUG */
-        printf("NNNN\n");
-
         *file_is_being_sent = 0;
         text[++j] = '\0';
-        return 1;
     }
-
-    /* int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command == 2) {
-        *file_is_being_sent = 0;
-        sscanf(command, "%s %s", aux, text);
-    }
-    else if (number_of_tokens_command == 3) {
-        *file_is_being_sent = 1;
-        sscanf(command, "%s %s %s", aux, text, file_name);
-    }
-    else {
-        fprintf(stderr, "> validate_post_command: Invalid input.\n");
-        return 0;
-    }
-    return 1; */
+    return 1;
 }
 
 
@@ -1263,25 +1231,18 @@ int get_number_of_tokens(char* string) {
 }
 
 
-/* int get_file_size(FILE* fp) {
+int  get_file_size(FILE *fp) {
 
-
-} */
-
-
-void get_file_data(FILE* fp, char* data) {
-
-    long length;
+    long Fsize;
 
     if (fp) {
-
         if (fseek(fp, 0, SEEK_END)) {
             perror("ERROR: fseek\n");
             exit(EXIT_FAILURE);
         }
 
-        length = ftell(fp);
-        if (length == -1) {
+        Fsize = ftell(fp);
+        if (Fsize == -1) {
             perror("ERROR: ftell\n");
             exit(EXIT_FAILURE);
         }
@@ -1290,36 +1251,58 @@ void get_file_data(FILE* fp, char* data) {
             perror("ERROR: fseek\n");
             exit(EXIT_FAILURE);
         }
-
-        data = malloc(length);
-        if (data) {
-            if (fread(data, 1, length, fp) == 0) {
-                perror("ERROR: fread\n");
-                exit(EXIT_FAILURE);
-            }
-        }
     }
+    return Fsize;
 }
 
 
-int get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent) {
+/* int get_file_size(FILE* fp) {
+
+
+} */
+
+
+char* get_file_data(FILE *fp, long Fsize, char *data) {
+
+    char *buffer;
+
+    if (fp) {
+
+        /* DEBUG */
+        printf("ECHO8\n");
+
+        buffer = malloc(Fsize);
+        if (buffer) {
+            /* DEBUG */
+            printf("ECHO4\n");
+            printf("buffer = %s\n", buffer);
+
+            if (fread(buffer, 1, Fsize, fp) == 0) {
+                perror("ERROR: fread\n");
+                exit(EXIT_FAILURE);
+            }
+
+            /* DEBUG */
+            printf("ECHO5\n");
+            printf("buffer = %s\n", buffer);
+        }
+    }
+
+    return buffer;
+}
+
+
+/* int get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent) {
 
     int i = strlen(aux) + 1;
     int j = 0;
     int length = strlen(command);
 
     if (command[i++] != '"') {
-        /* DEBUG */
-        /* printf("+ %s\n", aux);
-        printf("+ i = %d\n", i);
-        printf("+ command[i] = %c\n", command[i]); */
 
         fprintf(stderr, "> validate_post_command: Invalid input 1.\n");
         return 0;
     }
-    /* DEBUG */
-    printf("+ ECHO\n");
-    printf("+ command[%d] = %c\n", i, command[i]);
 
     text[j++] = '"';
     while (command[i] != '"') {
@@ -1327,8 +1310,6 @@ int get_string_in_quotes(char* command, char* aux, char* text, char* file_name, 
             fprintf(stderr, "> validate_post_command: Invalid input 2.\n");
             return 0;
         }
-        /* DEBUG */
-        printf("+ command[%d] = %c\n", i, command[i]);
 
         text[j++] = command[i++];
     }
@@ -1348,7 +1329,7 @@ int get_string_in_quotes(char* command, char* aux, char* text, char* file_name, 
         *file_is_being_sent = 0;
         return 1;
     }
-}
+} */
 
 
 void send_and_receive_UDP(char* message, char* reply){
