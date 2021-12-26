@@ -78,10 +78,14 @@ void validate_post_reply(char*, char*, char*);
 void validate_program_input(int, char**);
 void validate_sendto(int);
 void validate_recvfrom(int);
+void validate_connect(int);
+void validate_write(int);
+void validate_read(int);
 int  validate_UID(char*);
 int  validate_pass(char*);
 int  validate_GID(char*);
 int  validate_GName(char*);
+int  validate_MID(char*);
 void create_UDP_socket();
 void get_address_info_UDP();
 void create_TCP_socket();
@@ -521,7 +525,7 @@ void select_command(char* command) {
 }
 
 void post_command(char* command) {
-    // TODO: Nao esta a funcionar com (por exemplo) imagens
+    // TODO: tem de funcionar para imagens???
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
@@ -534,15 +538,14 @@ void post_command(char* command) {
     char status[MAX_SIZE];
     FILE *fp;
 
-    // !!! voltar a descomentar!
-    /* if (!logged_in) {
+    if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
     if (!has_active_group) {
         printf("> There is no active group.\n");
         return;
-    } */
+    }
 
     sscanf(command, "%s", aux);
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
@@ -587,6 +590,9 @@ void post_command(char* command) {
         fclose(fp);
     }
 
+    /* DEBUG */
+    printf(">> %sT\n", message);
+
     // communication with server
     /* send_and_receive_TCP(message, reply);
     terminate_string_after_n_tokens(reply, 2);
@@ -594,10 +600,8 @@ void post_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
 
     validate_post_reply(reply, aux, status); */
-
-    /* DEBUG */
-    printf(">> %sT\n", message);
 }
+
 
 void retrieve_command(char* command) {
     // TODO
@@ -609,15 +613,15 @@ int validate_registration_command(char* command, char* UID, char* pass) {
 
     int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 3) {
-        fprintf(stderr, "> (unr)registration: Wrong number of arguments in input.\n");
+        fprintf(stderr, "> Wrong number of arguments in input.\n");
         return 0;
     }
     if (!validate_UID(UID)) {
-        fprintf(stderr, "> (unr)registration: Invalid user ID.\n");
+        fprintf(stderr, "> Invalid user ID.\n");
         return 0;
     }
     if (!validate_pass(pass)) {
-        fprintf(stderr, "> (unr)registration: Invalid user password.\n");
+        fprintf(stderr, "> Invalid user password.\n");
         return 0;
     }
     return 1;
@@ -988,8 +992,25 @@ void validate_my_groups_reply(char* reply, char* aux, char* N) {
 }
 
 
+// !!! untested
 void validate_post_reply(char* reply, char* aux, char* status) {
     // TODO
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (number_of_tokens_reply != 2 || strcmp(aux, "RPT")) {
+        fprintf(stderr, "> validate_post_reply: ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (strcmp(status, "NOK") == 0) {
+        printf("> Failed to post message to group.\n");
+    }
+    else if (validate_MID(status)) {
+        printf("> Successfully posted message.\n");
+    }
+    else {
+        fprintf(stderr, "> ERROR: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
 }
 
 
@@ -1021,7 +1042,7 @@ void validate_program_input(int argc, char** argv) {
 void validate_sendto(int n) {
 
     if(n == -1) {
-        perror("ERROR: sendto(): Unable to send message.\n");
+        perror("ERROR: sendto: Unable to send message.\n");
         exit(EXIT_FAILURE);
     }
     return;
@@ -1031,11 +1052,42 @@ void validate_sendto(int n) {
 void validate_recvfrom(int n) {
 
     if(n == -1) {
-        perror("ERROR: recvfrom(): Unable to receive message.\n");
+        perror("ERROR: recvfrom: Unable to receive message from server.\n");
         exit(EXIT_FAILURE);
     }
     return;
 }
+
+void validate_connect(int n) {
+
+    if(n == -1) {
+        perror("ERROR: connect: Unable to connect to server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
+
+void validate_write(int n) {
+
+    if(n == -1) {
+        perror("ERROR: write: Unable to write message to server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
+
+void validate_read(int n) {
+
+    if(n == -1) {
+        perror("ERROR: read: Unable to read message from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    return;
+}
+
+
 
 int validate_UID(char* UID) {
 
@@ -1101,6 +1153,24 @@ int validate_GName(char* GName) {
         if (!(isalpha(GName[i]) || isdigit(GName[i]) || GName[i] != '-' || GName[i] != '_')) {
             return 0;
         }
+    }
+    return 1;
+}
+
+
+// !!! untested
+int  validate_MID(char* MID) {
+
+    int length = strlen(MID);
+
+    if (length != 2) {
+        fprintf(stderr, "> Invalid message ID.\n");
+        return 0;
+    }
+
+    if (!(isdigit(MID[0]) && isdigit(MID[1]))) {
+        fprintf(stderr, "> Invalid message ID.\n");
+        return 0;
     }
     return 1;
 }
@@ -1357,8 +1427,17 @@ void send_and_receive_UDP(char* message, char* reply){
 }
 
 
+// !!! untested
 void send_and_receive_TCP(char* message, char* reply) {
-    // TODO
+
+    int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_connect(n);
+
+    n = write(fd_TCP, message, strlen(message));
+    validate_write(n);
+
+    n = read(fd_TCP, reply, MAX_SIZE_REPLY);
+    validate_read(n);
 }
 
 
