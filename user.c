@@ -24,6 +24,8 @@ int  fd_UDP, fd_TCP;
 int  errcode;
 int  logged_in;
 int  has_active_group;
+char message[MAX_SIZE] = "";
+char reply[MAX_SIZE_REPLY];
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
@@ -217,8 +219,8 @@ void register_command(char* command) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
     sscanf(command, "%s %s %s", aux, UID, pass);
@@ -243,8 +245,8 @@ void unregister_command(char* command) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
     sscanf(command, "%s %s %s", aux, UID, pass);
@@ -269,8 +271,8 @@ void login_command(char* command) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
     if (logged_in) {
@@ -301,8 +303,8 @@ void login_command(char* command) {
 void logout_command(char* command) {
 
     char aux[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
@@ -354,8 +356,8 @@ void groups_command(char* command) {
     char N[MAX_SIZE];
     //char UID[MAX_SIZE];
     //char pass[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     //char status[MAX_SIZE];
 
     sscanf(command, "%s", aux);
@@ -387,8 +389,8 @@ void subscribe_command(char* command) {
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -424,8 +426,8 @@ void unsubscribe_command(char* command) {
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     // char GName[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -456,8 +458,8 @@ void my_groups_command(char* command) {
     char N[MAX_SIZE];
     // char GID[MAX_SIZE];
     // char GName[MAX_SIZE];
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     // char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -496,7 +498,7 @@ void select_command(char* command) {
     // char N[MAX_SIZE];
     char GID[MAX_SIZE];
     // char GName[MAX_SIZE];
-    char message[MAX_SIZE] = "";
+    // char message[MAX_SIZE] = "";
     // char reply[MAX_SIZE_REPLY];
     // char status[MAX_SIZE];
 
@@ -525,7 +527,7 @@ void select_command(char* command) {
 }
 
 void post_command(char* command) {
-    // TODO: tem de funcionar para imagens???
+    // TODO: tem de funcionar para (por exemplo) imagens???
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
@@ -533,8 +535,8 @@ void post_command(char* command) {
     char text[MAX_SIZE];
     char Fname[MAX_SIZE];
     char *data;
-    char message[MAX_SIZE] = "";
-    char reply[MAX_SIZE_REPLY];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
     FILE *fp;
 
@@ -560,46 +562,41 @@ void post_command(char* command) {
     }
     else {
         fp = fopen(Fname, "rb");
-        Fsize = get_file_size(fp);
+        Fsize = get_file_size(fp) + 1;
 
         /* DEBUG */
-        printf(">> file name = %s|\n", Fname);
-        printf(">> file size = %d\n", Fsize);
-
-        /* data = get_file_data(fp, data); */
+        /* printf(">> file name = %s|\n", Fname);
+        printf(">> file size = %d\n", Fsize); */
 
         data = (char*)malloc(Fsize);
-        /* if (fread(data, 1, Fsize, fp) == 0) {
-            perror("ERROR: fread\n");
-            exit(EXIT_FAILURE);
-        } */
-
-        // !!! esta a dar problemas quando ha login e selected group
         fgets(data, Fsize, fp);
 
         /* DEBUG */
-        printf("+ logged_in_UID = %s\n", logged_in_UID);
+        /* printf("+ logged_in_UID = %s\n", logged_in_UID);
         printf("+ active_GID = %s\n", active_GID);
         printf("+ Tsize = %d\n", Tsize);
         printf("+ text = %s\n", text);
         printf("+ Fname = %s\n", Fname);
         printf("+ Fsize = %d\n", Fsize);
-        printf("+ data = %s\n", data);
+        printf("+ data = %s\n", data); */
 
         sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
         fclose(fp);
     }
 
     /* DEBUG */
-    printf(">> %sT\n", message);
+    printf(">>> %s\n", message);
 
     // communication with server
-    /* send_and_receive_TCP(message, reply);
+    send_and_receive_TCP(message, reply);
     terminate_string_after_n_tokens(reply, 2);
+
+    /* DEBUG */
+    printf(">>> reply = %s|\n", reply);
 
     sscanf(reply, "%s %s", aux, status);
 
-    validate_post_reply(reply, aux, status); */
+    validate_post_reply(reply, aux, status);
 }
 
 
@@ -740,16 +737,17 @@ int validate_select_command(char* command, char* GID) {
 }
 
 
-int validate_post_command(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent) {
+int validate_post_command(char* command, char* aux, char* text, char* Fname, int* file_is_being_sent) {
 
     int i = strlen(aux) + 1;
     int j = 0, k = 0;
     int length = strlen(command) - 1;
 
-    if (command[i++] != '"') {
+    if (command[i] != '"') {
         fprintf(stderr, "> validate_post_command: Invalid input 1.\n");
         return 0;
     }
+    i++;
 
     text[j++] = '"';
     while (command[i] != '"') {
@@ -770,7 +768,7 @@ int validate_post_command(char* command, char* aux, char* text, char* file_name,
         j += 2;
 
         while (i < length) {
-            file_name[k++] = command[i++];
+            Fname[k++] = command[i++];
         }
     }
     else {
@@ -992,9 +990,8 @@ void validate_my_groups_reply(char* reply, char* aux, char* N) {
 }
 
 
-// !!! untested
 void validate_post_reply(char* reply, char* aux, char* status) {
-    // TODO
+
     int number_of_tokens_reply = get_number_of_tokens(reply);
     if (number_of_tokens_reply != 2 || strcmp(aux, "RPT")) {
         fprintf(stderr, "> validate_post_reply: ERROR: Invalid reply from server.\n");
@@ -1427,7 +1424,6 @@ void send_and_receive_UDP(char* message, char* reply){
 }
 
 
-// !!! untested
 void send_and_receive_TCP(char* message, char* reply) {
 
     int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
