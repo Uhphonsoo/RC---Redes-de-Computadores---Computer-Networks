@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+./user -n tejo.tecnico.ulisboa.pt -p 58011
