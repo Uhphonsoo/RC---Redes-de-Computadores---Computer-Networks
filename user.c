@@ -23,7 +23,7 @@
 
 // ISSUES
 /**
- * receiving wrong reply in retrieve and ulist 
+ * 
 **/
 
 // Global variables
