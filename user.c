@@ -530,7 +530,8 @@ void post_command(char* command) {
     char aux[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
-    char *data;
+    char* data;
+    char* message_post;
     // char message[MAX_SIZE] = "";
     // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
@@ -550,7 +551,7 @@ void post_command(char* command) {
     }
 
     /* DEBUG */
-    printf(">>> command = %s|\n", command);
+    /* printf(">>> command = %s|\n", command); */
 
     sscanf(command, "%s", aux);
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
@@ -558,7 +559,7 @@ void post_command(char* command) {
     }
 
     /* DEBUG */
-    printf(">>> Fname = %s|\n", Fname);
+    /* printf(">>> Fname = %s|\n", Fname); */
 
     // -2 is to account for the quotes
     Tsize = strlen(text);
@@ -568,7 +569,7 @@ void post_command(char* command) {
     }
     else {
         /* DEBUG */
-        printf(">>> Fname = %s|\n", Fname);
+        /* printf(">>> Fname = %s|\n", Fname); */
 
         fp = fopen(Fname, "r");
         if (fp == NULL) {
@@ -587,9 +588,6 @@ void post_command(char* command) {
             exit(EXIT_FAILURE);
         } */
         while(!feof(fp)) {
-            /* DEBUG */
-            printf(">>> ECHO\n");
-
             fread(buffer_aux, 1, sizeof(buffer_aux), fp);
             strcat(data, buffer_aux);
             /* write(sock, send_buffer, sizeof(send_buffer)); */
@@ -601,19 +599,21 @@ void post_command(char* command) {
         // printf("+ active_GID = %s\n", active_GID);
         // printf("+ Tsize = %d\n", Tsize);
         // printf("+ text = %s\n", text);
-        printf(">>> Fname = %s\n", Fname);
+        // printf(">>> Fname = %s\n", Fname);
         // printf("+ Fsize = %d\n", Fsize);
-        printf(">>> data = %s\n", data);
+        /* printf(">>> data = %s\n", data); */
 
-        /* sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data); */
+        message_post = (char*)malloc(Fsize + 3*MAX_SIZE + MAX_TEXT_SIZE + 32);
+
+        sprintf(message_post, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
         fclose(fp);
     }
 
     /* DEBUG */
-    printf(">>> %s\n", message);
+    /* printf(">>> %s\n", message_post); */
 
     // communication with server
-    send_and_receive_TCP(message, reply);
+    send_and_receive_TCP(message_post, reply);
     terminate_string_after_n_tokens(reply, 2);
 
     /* DEBUG */
@@ -624,6 +624,7 @@ void post_command(char* command) {
     validate_post_reply(reply, aux, status);
 
     free(data);
+    free(message_post);
     clear_string(message);
     clear_string(reply);
 }
