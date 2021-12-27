@@ -92,7 +92,7 @@ void  validate_usubscribe_reply(char*, char*, char*);
 void  validate_my_groups_reply(char*, char*, char*);
 int   validate_ulist_reply(char*, char*, char*);
 void  validate_post_reply(char*, char*, char*);
-void  validate_retrieve_reply(char*, char*, char*, char*);
+int  validate_retrieve_reply(char*, char*, char*, char*);
 void  validate_program_input(int, char**);
 void  validate_sendto(int);
 void  validate_recvfrom(int);
@@ -590,7 +590,7 @@ void ulist_command() {
     }
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
+    /* printf(">>> reply = %s|\n", reply); */
 
     show_users(reply);
 
@@ -687,7 +687,7 @@ void post_command(char* command) {
     }
 
     /* DEBUG */
-    printf(">>> %s\n", message_post);
+    /* printf(">>> %s\n", message_post); */
 
     // communication with server
     send_and_receive_TCP(message_post, reply, strlen(message_post));
@@ -753,9 +753,9 @@ void retrieve_command(char* command) {
     printf(">>> reply = %s|\n", reply);
 
     sscanf(reply, "%s %s, %s", aux, status, N);
-    validate_retrieve_reply(reply, aux, status, N);
-
-    /* show_messages(reply, N); */
+    if (validate_retrieve_reply(reply, aux, status, N)) {
+        show_messages(reply, N);
+    }
 
     clear_string(message);
     clear_string(reply);
@@ -1016,7 +1016,7 @@ void validate_login_reply(char* reply, char* aux, char* status) {
     if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
 
         /* DEBUG */
-        printf("reply:%sT\n", reply);
+        /* printf("reply:%sT\n", reply); */
 
         fprintf(stderr, "login_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1210,7 +1210,7 @@ void validate_post_reply(char* reply, char* aux, char* status) {
 }
 
 
-void validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
+int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
     if (strcmp(aux, "RRT")) {
@@ -1219,7 +1219,7 @@ void validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
     }
     if (strcmp(status, "NOK") == 0) {
         printf("> Failed to retrieve messages.\n");
-        return;
+        return 0;
     }
     if (number_of_tokens_reply < 3) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
@@ -1233,10 +1233,11 @@ void validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-
     if (strcmp(status, "EOF") == 0 && strcmp(N, "0") == 0) {
         printf("> No new messages are available.\n");
+        return 0;
     }
+    return 1;
 }
 
 
@@ -1647,23 +1648,22 @@ char* get_file_data(FILE *fp, long Fsize, char *data) {
 } */
 
 
-void send_and_receive_UDP(char* message, char* reply){
+void send_and_receive_UDP(char* _message, char* _reply){
 
     create_UDP_socket();
     get_address_info_UDP();
 
-    int n = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    int n = sendto(fd_UDP, _message, strlen(_message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
     validate_sendto(n);
 
     addrlen_UDP = sizeof(addr_UDP);
-    n = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+    n = recvfrom(fd_UDP, _reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
     validate_recvfrom(n);
 
     close(fd_UDP);
 }
 
 
-// como sei quantos bytes quero receber???
 void send_and_receive_TCP(char* _message, char* _reply, int write_n) {
 
     int write_bytes_left = write_n;
@@ -1691,7 +1691,7 @@ void send_and_receive_TCP(char* _message, char* _reply, int write_n) {
     }
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
+    /* printf(">>> reply = %s|\n", reply); */
 
     close(fd_TCP);
 }
@@ -1749,27 +1749,37 @@ void show_users(char* reply) {
 void  show_messages(char* reply, char* N_string) {
 
     int N = atoi(N_string);
-    int i = 0;
+    int i = 4;
+    int j = 0;
     int number_of_tokens_text = 0;
+    char MID[MAX_SIZE];
     char UID[MAX_SIZE];
     char Tsize[MAX_SIZE];
     char text[MAX_SIZE];
     char Fname[MAX_SIZE];
     char Fsize[MAX_SIZE];
 
-    for (i = 3; i < 3*N + 1; i++) {
+    if (N == 0) {
+        return;
+    }
+
+    /* get_nth_token(reply, ) */
+
+    for (j = 0; j < N; j++) {
+        get_nth_token(reply, i++, MID);
         get_nth_token(reply, i++, UID);
         get_nth_token(reply, i++, Tsize);
-        /* get_text_in_quotes(text, i++); */
+    }
+
+    /* for (i = 3; i < 3*N + 1; i++) {
+        get_nth_token(reply, i++, UID);
+        get_nth_token(reply, i++, Tsize);
         number_of_tokens_text = get_number_of_tokens(text);
         i += number_of_tokens_text;
         get_nth_token(reply, i++, Fname);
         get_nth_token(reply, i++, Fsize);
-
-
-
         printf("> Group ID: %s | Group Name: %s\n", UID, Fname);
-    }
+    } */
 }
 
 
