@@ -7,9 +7,10 @@
 #include <sys/socket.h>
 #include <netdb.h> 
 #include <ctype.h>
-#define MAX_SIZE 240
+#define MAX_SIZE 128
 #define MAX_SIZE_REPLY 5000 /* 7+99*(3+24+6)*sizeof(char) */
 #define MAX_FILE_SIZE 1024
+#define MAX_TEXT_SIZE 240
 #define PORT_CONST 58000
 #define FENIX_GROUP_NUMBER 20
 /* #define MAX_PASS_SIZE 8 */
@@ -35,7 +36,8 @@ char active_GID[MAX_SIZE];
 socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
-/* char buffer[128]; */
+
+char buffer_aux[1024];
 
 // registration commands
 void register_command(char*);
@@ -95,7 +97,7 @@ void  get_address_info_UDP();
 void  create_TCP_socket();
 void  get_address_info_TCP();
 void  get_first_token(char*, char*);
-void  get_nth_token(char*, int, char*);
+int   get_nth_token(char*, int, char*);
 int   get_number_of_tokens(char*);
 int   get_file_size(FILE*); 
 char* get_file_data(FILE*, long, char*);
@@ -526,13 +528,17 @@ void post_command(char* command) {
     int Tsize = 0;
     int Fsize = 0;
     char aux[MAX_SIZE];
-    char text[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
     char *data;
     // char message[MAX_SIZE] = "";
     // char reply[MAX_SIZE_REPLY];
     char status[MAX_SIZE];
     FILE *fp;
+
+    /* DEBUG */
+    login_command("login 77777 hhhhhhhh\n");
+    select_command("s 20\n");
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -543,10 +549,16 @@ void post_command(char* command) {
         return;
     }
 
+    /* DEBUG */
+    printf(">>> command = %s|\n", command);
+
     sscanf(command, "%s", aux);
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
         return;
     }
+
+    /* DEBUG */
+    printf(">>> Fname = %s|\n", Fname);
 
     // -2 is to account for the quotes
     Tsize = strlen(text);
@@ -555,30 +567,45 @@ void post_command(char* command) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
     }
     else {
-        fp = fopen(Fname, "rb");
-        Fsize = get_file_size(fp) + 1;
+        /* DEBUG */
+        printf(">>> Fname = %s|\n", Fname);
+
+        fp = fopen(Fname, "r");
+        if (fp == NULL) {
+            perror("ERROR: fopen\n");
+            exit(EXIT_FAILURE);
+        }
+        Fsize = get_file_size(fp);
 
         /* DEBUG */
         /* printf(">> file name = %s|\n", Fname);
         printf(">> file size = %d\n", Fsize); */
 
         data = (char*)malloc(Fsize);
-        if (fread(data, 1, Fsize, fp) == 0) {
+        /* if (fread(data, 1, Fsize, fp) == 0) {
             perror("ERROR: fread\n");
             exit(EXIT_FAILURE);
+        } */
+        while(!feof(fp)) {
+            /* DEBUG */
+            printf(">>> ECHO\n");
+
+            fread(buffer_aux, 1, sizeof(buffer_aux), fp);
+            strcat(data, buffer_aux);
+            /* write(sock, send_buffer, sizeof(send_buffer)); */
+            bzero(buffer_aux, sizeof(buffer_aux));
         }
-        /* fgets(data, Fsize, fp); */
 
         /* DEBUG */
-        /* printf("+ logged_in_UID = %s\n", logged_in_UID);
-        printf("+ active_GID = %s\n", active_GID);
-        printf("+ Tsize = %d\n", Tsize);
-        printf("+ text = %s\n", text);
-        printf("+ Fname = %s\n", Fname);
-        printf("+ Fsize = %d\n", Fsize);
-        printf("+ data = %s\n", data); */
+        // printf("+ logged_in_UID = %s\n", logged_in_UID);
+        // printf("+ active_GID = %s\n", active_GID);
+        // printf("+ Tsize = %d\n", Tsize);
+        // printf("+ text = %s\n", text);
+        printf(">>> Fname = %s\n", Fname);
+        // printf("+ Fsize = %d\n", Fsize);
+        printf(">>> data = %s\n", data);
 
-        sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
+        /* sprintf(message, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data); */
         fclose(fp);
     }
 
@@ -610,7 +637,7 @@ void retrieve_command(char* command) {
     int Fsize = 0;
     char aux[MAX_SIZE];
     char MID[MAX_SIZE];
-    char text[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
     char *data;
     char status[MAX_SIZE];
@@ -619,7 +646,7 @@ void retrieve_command(char* command) {
 
     /* DEBUG */
     login_command("login 77777 hhhhhhhh\n");
-    select_command("s 01\n");
+    select_command("s 20\n");
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -810,7 +837,11 @@ int validate_post_command(char* command, char* aux, char* text, char* Fname, int
     text[j] = '"';
     text[j+1] = '\0';
 
+    /* DEBUG */
+    /* printf(">>> validate_post_command: command = %s|\n", command); */
+
     // 5 to account for the length of "post " + 1 to account for indexing
+    // j is the length of text
     if (length > j + 6) {
         *file_is_being_sent = 1;
 
@@ -819,7 +850,11 @@ int validate_post_command(char* command, char* aux, char* text, char* Fname, int
 
         while (i < length) {
             Fname[k++] = command[i++];
+
+            /* DEBUG */
+            /* printf("Fname[%d] = %c\n", k-1, command[i-1]);  */
         }
+        Fname[k] = '\0';
     }
     else {
         *file_is_being_sent = 0;
@@ -1326,13 +1361,14 @@ void get_first_token(char* string, char* ret) {
     return;
 }
 
-void get_nth_token(char* string, int n, char* ret) {
+int get_nth_token(char* string, int n, char* ret) {
 
     int i = 0;
     int j = 1;
 
     if (n == 0) {
         fprintf(stderr, "ERROR: get_nth_token(): invalid input.\n");
+        return -1;
     }
 
     while(j != n) {
@@ -1352,7 +1388,7 @@ void get_nth_token(char* string, int n, char* ret) {
         fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many tokens.\n");
         exit(EXIT_FAILURE);
     }
-    return;
+    return i - 1;
 }
 
 int get_number_of_tokens(char* string) {
