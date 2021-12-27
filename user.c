@@ -8,7 +8,7 @@
 #include <netdb.h> 
 #include <ctype.h>
 #define MAX_SIZE 128
-#define MAX_SIZE_REPLY 5000 /* 7+99*(3+24+6)*sizeof(char) */
+#define MAX_REPLY_SIZE 5000 /* 7+99*(3+24+6)*sizeof(char) */
 #define MAX_FILE_SIZE 1024
 #define MAX_TEXT_SIZE 240
 #define PORT_CONST 58000
@@ -16,9 +16,15 @@
 /* #define MAX_PASS_SIZE 8 */
 
 // TODO
-/* 
- * improve invalid input messages
- */
+/**
+ * show_messages() in retrieve_command()
+ * improve invalid input error messages with input format
+**/
+
+// ISSUES
+/**
+ * receiving wrong reply in retrieve and ulist 
+**/
 
 // Global variables
 int  fd_UDP, fd_TCP;
@@ -26,7 +32,7 @@ int  errcode;
 int  logged_in;
 int  has_active_group;
 char message[MAX_SIZE] = "";
-char reply[MAX_SIZE_REPLY];
+char reply[MAX_REPLY_SIZE];
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
@@ -46,6 +52,7 @@ void unregister_command(char*);
 // user identification and session termination commands
 void login_command(char*);
 void logout_command(char*);
+void showuid_command(char*);
 void exit_command(char*);
 
 // group management commads
@@ -54,6 +61,8 @@ void subscribe_command(char*);
 void unsubscribe_command(char*);
 void my_groups_command(char*);
 void select_command(char*);
+void showgid_command();
+void ulist_command();
 
 // messaging commands
 void post_command(char*);
@@ -79,6 +88,7 @@ void  validate_groups_reply(char*, char*, char*);
 void  validate_subscribe_reply(char*, char*, char*);
 void  validate_usubscribe_reply(char*, char*, char*);
 void  validate_my_groups_reply(char*, char*, char*);
+int   validate_ulist_reply(char*, char*, char*);
 void  validate_post_reply(char*, char*, char*);
 void  validate_retrieve_reply(char*, char*, char*, char*);
 void  validate_program_input(int, char**);
@@ -105,6 +115,7 @@ int   get_string_in_quotes(char* command, char* aux, char* text, char* file_name
 void  send_and_receive_UDP(char*, char*);
 void  send_and_receive_TCP(char*, char*);
 void  show_groups(char*, char*);
+void  show_users(char*);
 void  show_messages(char*, char*);
 int   is_empty_string(char*);
 void  clear_string(char*);
@@ -160,11 +171,11 @@ int main(int argc, char *argv[]) {
         else if (strcmp(keyword, "logout") == 0) {
             logout_command(command);
         }
+        else if (strcmp(keyword, "showuid") == 0 || strcmp(keyword, "su") == 0) {
+            showuid_command(command);
+        }
         else if (strcmp(keyword, "exit") == 0) {
             exit_command(command);
-        }
-        else if (strcmp(keyword, "login") == 0) {
-            login_command(command);
         }
         else if (strcmp(keyword, "groups") == 0 || strcmp(keyword, "gl") == 0) {
             groups_command(command);
@@ -180,6 +191,12 @@ int main(int argc, char *argv[]) {
         }
         else if (strcmp(keyword, "select") == 0 || strcmp(keyword, "sag") == 0) {
             select_command(command);
+        }
+        else if (strcmp(keyword, "showgid") == 0 || strcmp(keyword, "sg") == 0) {
+            showgid_command();
+        }
+        else if (strcmp(keyword, "ulist") == 0 || strcmp(keyword, "ul") == 0) {
+            ulist_command();
         }
         else if (strcmp(keyword, "post") == 0) {
             post_command(command);
@@ -201,7 +218,7 @@ void register_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     sscanf(command, "%s %s %s", aux, UID, pass);
@@ -229,7 +246,7 @@ void unregister_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     sscanf(command, "%s %s %s", aux, UID, pass);
@@ -257,7 +274,7 @@ void login_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (logged_in) {
@@ -291,7 +308,7 @@ void logout_command(char* command) {
 
     char aux[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
@@ -316,6 +333,16 @@ void logout_command(char* command) {
 
     clear_string(message);
     clear_string(reply);
+}
+
+void showuid_command() {
+
+    if (logged_in) {
+        printf("> User %s is logged in.\n", logged_in_UID);
+    }
+    else {
+        printf("> No user is logged in.\n");
+    }
 }
 
 void exit_command(char* command) {
@@ -346,7 +373,7 @@ void groups_command(char* command) {
     //char UID[MAX_SIZE];
     //char pass[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     //char status[MAX_SIZE];
 
     sscanf(command, "%s", aux);
@@ -380,7 +407,7 @@ void subscribe_command(char* command) {
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -419,7 +446,7 @@ void unsubscribe_command(char* command) {
     char GID[MAX_SIZE];
     // char GName[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -453,7 +480,7 @@ void my_groups_command(char* command) {
     // char GID[MAX_SIZE];
     // char GName[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     // char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -495,7 +522,7 @@ void select_command(char* command) {
     char GID[MAX_SIZE];
     // char GName[MAX_SIZE];
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     // char status[MAX_SIZE];
 
     sscanf(command, "%s %s", aux, GID);
@@ -522,6 +549,54 @@ void select_command(char* command) {
     printf("> Group %s selected.\n", active_GID);
 }
 
+
+void showgid_command() {
+
+    if (has_active_group) {
+        printf("> Group %s is selected.\n", active_GID);
+    }
+    else {
+        printf("> No group is selected.\n");
+    }
+}
+
+
+void ulist_command() {
+
+    char aux[MAX_SIZE];
+    char N[MAX_SIZE];
+    // char reply_test[MAX_REPLY_SIZE];
+    // char GID[MAX_SIZE];
+    // char GName[MAX_SIZE];
+    // char message[MAX_SIZE] = "";
+    // char reply[MAX_REPLY_SIZE];
+    char status[MAX_SIZE];
+
+    if (!has_active_group) {
+        printf("> There is no active group.\n");
+        return;
+    }
+
+    sprintf(message, "ULS %s\n", active_GID);
+
+    // communication with server
+    send_and_receive_TCP(message, reply);
+
+    sscanf(reply, "%s %s", aux, status);
+    if (!validate_ulist_reply(reply, aux, status)) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> reply = %s|\n", reply);
+
+    show_users(reply);
+
+    clear_string(message);
+    clear_string(reply);
+}
+
+
 void post_command(char* command) {
     // TODO: tem de funcionar para (por exemplo) imagens???
     int file_is_being_sent = 0;
@@ -533,7 +608,7 @@ void post_command(char* command) {
     char* data;
     char* message_post;
     // char message[MAX_SIZE] = "";
-    // char reply[MAX_SIZE_REPLY];
+    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
     FILE *fp;
 
@@ -707,15 +782,15 @@ int validate_login_command(char* command, char* UID, char* pass) {
 
     int number_of_tokens_command = get_number_of_tokens(command);
     if (number_of_tokens_command != 3) {
-        fprintf(stderr, "login_command: Wrong number of arguments in input.\n");
+        fprintf(stderr, "> Ivalid input.\n");
         return 0;
     }
     if (!validate_UID(UID)) {
-        fprintf(stderr, "login_command: Invalid user ID.\n");
+        fprintf(stderr, "> Invalid user ID.\n");
         return 0;
     }
     if (!validate_pass(pass)) {
-        fprintf(stderr, "login_command: Invalid user password.\n");
+        fprintf(stderr, "> Invalid user password.\n");
         return 0;
     }
     return 1;
@@ -1088,6 +1163,29 @@ void validate_my_groups_reply(char* reply, char* aux, char* N) {
 }
 
 
+int validate_ulist_reply(char* reply, char* aux, char* status) {
+
+    int number_of_tokens_reply = get_number_of_tokens(reply);
+    if (strcmp(aux, "RUL")) {
+        fprintf(stderr, "> validate_ulist_reply: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (number_of_tokens_reply < 2) {
+        fprintf(stderr, "> validate_ulist_reply: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (number_of_tokens_reply == 2 && strcmp(status, "NOK")) {
+        fprintf(stderr, "> validate_ulist_reply: Invalid reply from server.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (strcmp(aux, "NOK") == 0) {
+        fprintf(stderr, "> validate_ulist_reply: The group does not exist.\n");
+        return 0;
+    }
+    return 1;
+}
+
+
 void validate_post_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
@@ -1366,6 +1464,12 @@ int get_nth_token(char* string, int n, char* ret) {
 
     int i = 0;
     int j = 1;
+    int number_of_tokens = get_number_of_tokens(string);
+
+    if (n > number_of_tokens) {
+        fprintf(stderr, "get_nth_token: string doesn't have that many tokens\n");
+        return - 1;
+    }
 
     if (n == 0) {
         fprintf(stderr, "ERROR: get_nth_token(): invalid input.\n");
@@ -1549,7 +1653,7 @@ void send_and_receive_UDP(char* message, char* reply){
     validate_sendto(n);
 
     addrlen_UDP = sizeof(addr_UDP);
-    n = recvfrom(fd_UDP, reply, MAX_SIZE_REPLY, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+    n = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
     validate_recvfrom(n);
 
     close(fd_UDP);
@@ -1567,7 +1671,7 @@ void send_and_receive_TCP(char* message, char* reply) {
     n = write(fd_TCP, message, strlen(message));
     validate_write(n);
 
-    n = read(fd_TCP, reply, MAX_SIZE_REPLY);
+    n = read(fd_TCP, reply, MAX_REPLY_SIZE);
     validate_read(n);
 
     close(fd_TCP);
@@ -1591,6 +1695,33 @@ void show_groups(char* reply, char* N_string) {
     }
     return;
 }
+
+
+void show_users(char* reply) {
+
+    int i = 3;
+    int number_of_tokens = get_number_of_tokens(reply);
+    char GName[MAX_SIZE];
+    char UID[MAX_SIZE];
+
+    if (number_of_tokens < 3) {
+        fprintf(stderr, "ERROR: show_users: invalid input\n");
+        return;
+    }
+
+    /* get_nth_token(reply, i++, GName); */
+    printf("Group name: %s\n", GName);
+    printf("Subscribed users:\n");
+
+    /* DEBUG */
+    printf(">>> number_of_tokens = %d\n", number_of_tokens);
+
+    while (i < number_of_tokens) {
+        get_nth_token(reply, i++, UID);
+        printf("> User ID: %s\n", UID);
+    }
+}
+
 
 void  show_messages(char* reply, char* N_string) {
 
