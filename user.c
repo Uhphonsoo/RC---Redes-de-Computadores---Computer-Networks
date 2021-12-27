@@ -33,6 +33,8 @@ int  logged_in;
 int  has_active_group;
 char message[MAX_SIZE] = "";
 char reply[MAX_REPLY_SIZE];
+char message_buffer[MAX_SIZE];
+char reply_buffer[MAX_REPLY_SIZE];
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
@@ -113,7 +115,7 @@ int   get_file_size(FILE*);
 char* get_file_data(FILE*, long, char*);
 int   get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent);
 void  send_and_receive_UDP(char*, char*);
-void  send_and_receive_TCP(char*, char*);
+void  send_and_receive_TCP(char*, char*, int);
 void  show_groups(char*, char*);
 void  show_users(char*);
 void  show_messages(char*, char*);
@@ -137,18 +139,18 @@ int main(int argc, char *argv[]) {
     }
     else if (argc == 5) {
         if (strcmp(argv[1], "-n")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
             exit(EXIT_FAILURE);
         }
         if (strcmp(argv[3], "-p")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
             exit(EXIT_FAILURE);
         }
         strcpy(DSIP, argv[2]);
         strcpy(DSport, argv[4]);
     }
     else {
-        fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
+        fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
         exit(EXIT_FAILURE);
     } */
 
@@ -580,7 +582,7 @@ void ulist_command() {
     sprintf(message, "ULS %s\n", active_GID);
 
     // communication with server
-    send_and_receive_TCP(message, reply);
+    send_and_receive_TCP(message, reply, strlen(message));
 
     sscanf(reply, "%s %s", aux, status);
     if (!validate_ulist_reply(reply, aux, status)) {
@@ -685,10 +687,10 @@ void post_command(char* command) {
     }
 
     /* DEBUG */
-    /* printf(">>> %s\n", message_post); */
+    printf(">>> %s\n", message_post);
 
     // communication with server
-    send_and_receive_TCP(message_post, reply);
+    send_and_receive_TCP(message_post, reply, strlen(message_post));
     terminate_string_after_n_tokens(reply, 2);
 
     /* DEBUG */
@@ -700,6 +702,7 @@ void post_command(char* command) {
 
     free(data);
     free(message_post);
+
     clear_string(message);
     clear_string(reply);
 }
@@ -744,7 +747,7 @@ void retrieve_command(char* command) {
     printf(">>> message = %s|\n", message);
 
     // communication with server
-    send_and_receive_TCP(message, reply);
+    send_and_receive_TCP(message, reply, strlen(message));
 
     /* DEBUG */
     printf(">>> reply = %s|\n", reply);
@@ -1245,18 +1248,18 @@ void validate_program_input(int argc, char** argv) {
     }
     else if (argc == 5) {
         if (strcmp(argv[1], "-n")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
             exit(EXIT_FAILURE);
         }
         if (strcmp(argv[3], "-p")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
             exit(EXIT_FAILURE);
         }
         strcpy(DSIP, argv[2]);
         strcpy(DSport, argv[4]);
     }
     else {
-        fprintf(stderr, "ERROR: Invalid input. Input has the form ./user -n [DSIP] -p [DSport].\n");
+        fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -1660,7 +1663,12 @@ void send_and_receive_UDP(char* message, char* reply){
 }
 
 
-void send_and_receive_TCP(char* message, char* reply) {
+// como sei quantos bytes quero receber???
+void send_and_receive_TCP(char* _message, char* _reply, int write_n) {
+
+    int write_bytes_left = write_n;
+    /* int read_bytes_left = read_n; */ /* strlen("RUL OK h 12345 77776 54545 10015 77777 66666"); */
+    int read_bytes = 0;
 
     create_TCP_socket();
     get_address_info_TCP();
@@ -1668,11 +1676,22 @@ void send_and_receive_TCP(char* message, char* reply) {
     int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_connect(n);
 
-    n = write(fd_TCP, message, strlen(message));
-    validate_write(n);
+    while (write_bytes_left > 0) {
+        n = write(fd_TCP, _message, strlen(_message));
+        validate_write(n);
+        write_bytes_left -= n;
+        _message += n;
+    }
 
-    n = read(fd_TCP, reply, MAX_REPLY_SIZE);
-    validate_read(n);
+    while (_reply[read_bytes] != '\n') {
+        n = read(fd_TCP, _reply, 1);
+        validate_read(n);
+        _reply++;
+        read_bytes++;
+    }
+
+    /* DEBUG */
+    printf(">>> reply = %s|\n", reply);
 
     close(fd_TCP);
 }
@@ -1709,20 +1728,24 @@ void show_users(char* reply) {
         return;
     }
 
-    /* get_nth_token(reply, i++, GName); */
-    printf("Group name: %s\n", GName);
-    printf("Subscribed users:\n");
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    get_nth_token(reply, i++, GName);
+    printf("> Group name: %s\n", GName);
+    printf(">> Subscribed users:\n");
 
     /* DEBUG */
-    printf(">>> number_of_tokens = %d\n", number_of_tokens);
+    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
 
-    while (i < number_of_tokens) {
+    while (i <= number_of_tokens) {
         get_nth_token(reply, i++, UID);
-        printf("> User ID: %s\n", UID);
+        printf(">> User ID: %s\n", UID);
     }
 }
 
 
+// TODO
 void  show_messages(char* reply, char* N_string) {
 
     int N = atoi(N_string);
