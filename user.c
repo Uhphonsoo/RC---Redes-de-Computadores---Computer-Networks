@@ -115,7 +115,7 @@ void  send_and_receive_UDP(char*, char*);
 void  send_and_receive_TCP(char*, char*, int);
 void  show_groups(char*, char*);
 void  show_users(char*);
-void  show_messages(char*, char*);
+void  show_messages(char*);
 int   is_empty_string(char*);
 void  clear_string(char*);
 void  terminate_string_after_n_tokens(char*, int);
@@ -562,7 +562,7 @@ void post_command(char* command) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
         /* DEBUG */
-        printf(">>> %s\n", message);
+        printf(">>> message = %s\n", message);
 
         // communication with server
         send_and_receive_TCP(message, reply, strlen(message));
@@ -617,8 +617,10 @@ void post_command(char* command) {
 
     validate_post_reply(reply, aux, status);
 
-    free(data);
-    free(message_post);
+    if (file_is_being_sent) {
+        free(data);
+        free(message_post);
+    }
 
     clear_string(message);
     clear_string(reply);
@@ -641,8 +643,8 @@ void retrieve_command(char* command) {
     FILE *fp;
 
     /* DEBUG */
-    login_command("login 77777 hhhhhhhh\n");
-    select_command("s 20\n");
+    /* login_command("login 77777 hhhhhhhh\n");
+    select_command("s 43\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -661,17 +663,17 @@ void retrieve_command(char* command) {
     sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
     /* DEBUG */
-    printf(">>> message = %s|\n", message);
+    /* printf(">>> message = %s|\n", message); */
 
     // communication with server
     send_and_receive_TCP(message, reply, strlen(message));
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
+    /* printf(">>> reply = %s|\n", reply); */
 
     sscanf(reply, "%s %s, %s", aux, status, N);
     if (validate_retrieve_reply(reply, aux, status, N)) {
-        show_messages(reply, N);
+        show_messages(reply);
     }
 
     clear_string(message);
@@ -1122,19 +1124,19 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
         printf("> Failed to retrieve messages.\n");
         return 0;
     }
-    if (number_of_tokens_reply < 3) {
+    if (number_of_tokens_reply < 2) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-    if (number_of_tokens_reply == 3 && strcmp(N, "0")) {
+    /* if (number_of_tokens_reply == 3 && strcmp(N, "0")) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
-    }
+    } */
     if (number_of_tokens_reply > 3 && strcmp(N, "0") == 0) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-    if (strcmp(status, "EOF") == 0 && strcmp(N, "0") == 0) {
+    if (strcmp(status, "EOF") == 0) {
         printf("> No new messages are available.\n");
         return 0;
     }
@@ -1397,6 +1399,7 @@ int get_nth_token(char* string, int n, char* ret) {
         fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many tokens.\n");
         exit(EXIT_FAILURE);
     }
+    // return the position of the last element of the nth token
     return i - 1;
 }
 
@@ -1563,54 +1566,79 @@ void show_users(char* reply) {
 }
 
 
-// TODO
-void  show_messages(char* reply, char* N_string) {
+// !!! "data" isn't being used
+void  show_messages(char* reply) {
 
-    int N = atoi(N_string);
+    int N = 0;
     int i = 4, j = 0, k = 0;
-    int number_of_tokens_text = 0;
+    int length = strlen(reply);
+    int Tsize = 0;
     int Fsize = 0;
+    char N_string[MAX_SIZE];
     char MID[MAX_SIZE];
     char UID[MAX_SIZE];
-    char Tsize[MAX_SIZE];
-    char text[MAX_SIZE];
+    char Tsize_string[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
     char Fsize_string[MAX_SIZE];
     char *data;
+
+    i = get_nth_token(reply, 3, N_string);
+    N = atoi(N_string);
 
     if (N == 0) {
         return;
     }
 
-    while (reply[i] != '/') {
-        i++;
-    }
-
     i++;
-    for (j = 0; j < N; j++) {
-        i = get_next_token(reply, i, Fname);
-        i = get_next_token(reply, i, Fsize_string);
-        Fsize = atoi(Fsize_string);
+    for (k = 0; k < N; k++) {
+        i = get_next_token(reply, i, MID); /* get_nth_token(reply, i++, MID); */
+        i = get_next_token(reply, i, UID); /* get_nth_token(reply, i++, UID); */
+        i = get_next_token(reply, i, Tsize_string); /* get_nth_token(reply, i, Tsize_string); */
+        Tsize = atoi(Tsize_string);
+
+        // position i on top of text
         i++;
-
-        data = (char*)malloc(Fsize);
-
-        for (k = 0; k < Fsize; k++) {
-            data[k] = reply[i++];
+        // get text
+        for (j = 0; j < Tsize; j++) {
+            text[j] = reply[i++];
         }
 
-        // TODO
-    }
+        // if message has file
+        i++;
+        if (reply[i] == '/' && i < length - 1) {
 
-    /* for (i = 3; i < 3*N + 1; i++) {
-        get_nth_token(reply, i++, UID);
-        get_nth_token(reply, i++, Tsize);
-        number_of_tokens_text = get_number_of_tokens(text);
-        i += number_of_tokens_text;
-        get_nth_token(reply, i++, Fname);
-        get_nth_token(reply, i++, Fsize);
-        printf("> Group ID: %s | Group Name: %s\n", UID, Fname);
-    } */
+            i += 2;
+            i = get_next_token(reply, i, Fname);
+            i = get_next_token(reply, i, Fsize_string);
+            Fsize = atoi(Fsize_string);
+
+            i++;
+            data = (char*)malloc(Fsize);
+            for (j = 0; j < Fsize; j++) {
+                data[j] = reply[i++];
+            }
+
+            // strip \n from ending of text
+            if (text[Tsize-1] == '\n') {
+                text[Tsize-1] = '\0';
+            }
+
+            printf("> Message ID: %s | From user: %s | Message: %s\n", MID, UID, text);
+            printf(">> Associated file: %s | File size: %s\n", Fname, Fsize_string);
+
+            // !!! "data isn't being used"
+            free(data);
+        }
+        else {
+
+            // strip \n from ending of text
+            if (text[Tsize-1] == '\n') {
+                text[Tsize-1] = '\0';
+            }
+            printf("> Message ID: %s | From user: %s | Message: %s\n", MID, UID, text);
+        }
+    }
 }
 
 
