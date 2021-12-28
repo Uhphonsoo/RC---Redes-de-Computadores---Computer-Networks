@@ -13,7 +13,6 @@
 #define MAX_TEXT_SIZE 240
 #define PORT_CONST 58000
 #define FENIX_GROUP_NUMBER 20
-/* #define MAX_PASS_SIZE 8 */
 
 // TODO
 /**
@@ -40,7 +39,6 @@ char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
 char logged_in_pass[MAX_SIZE];
 char active_GID[MAX_SIZE];
-/* ssize_t n; */
 socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
@@ -92,7 +90,7 @@ void  validate_usubscribe_reply(char*, char*, char*);
 void  validate_my_groups_reply(char*, char*, char*);
 int   validate_ulist_reply(char*, char*, char*);
 void  validate_post_reply(char*, char*, char*);
-int  validate_retrieve_reply(char*, char*, char*, char*);
+int   validate_retrieve_reply(char*, char*, char*, char*);
 void  validate_program_input(int, char**);
 void  validate_sendto(int);
 void  validate_recvfrom(int);
@@ -111,17 +109,15 @@ void  get_address_info_TCP();
 void  get_first_token(char*, char*);
 int   get_nth_token(char*, int, char*);
 int   get_number_of_tokens(char*);
+int   get_next_token(char*, int, char*);
 int   get_file_size(FILE*); 
-char* get_file_data(FILE*, long, char*);
-int   get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent);
 void  send_and_receive_UDP(char*, char*);
 void  send_and_receive_TCP(char*, char*, int);
 void  show_groups(char*, char*);
 void  show_users(char*);
-void  show_messages(char*, char*);
+void  show_messages(char*);
 int   is_empty_string(char*);
 void  clear_string(char*);
-// void terminate_string(char*);
 void  terminate_string_after_n_tokens(char*, int);
 void  close_TCP_connections();
 
@@ -133,33 +129,9 @@ int main(int argc, char *argv[]) {
 
     validate_program_input(argc, argv);
 
-    /* if (argc == 1) {
-        gethostname(DSIP, MAX_SIZE);
-        sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
-    }
-    else if (argc == 5) {
-        if (strcmp(argv[1], "-n")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
-            exit(EXIT_FAILURE);
-        }
-        if (strcmp(argv[3], "-p")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
-            exit(EXIT_FAILURE);
-        }
-        strcpy(DSIP, argv[2]);
-        strcpy(DSport, argv[4]);
-    }
-    else {
-        fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
-        exit(EXIT_FAILURE);
-    } */
-
     while(1) {
         fgets(command, MAX_SIZE, stdin);
         get_first_token(command, keyword);
-
-        /* DEBUG */
-        /* printf("command: %s\n", command); */
         
         if (strcmp(keyword, "reg") == 0) {
             register_command(command);
@@ -219,8 +191,6 @@ void register_command(char* command) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     sscanf(command, "%s %s %s", aux, UID, pass);
@@ -247,8 +217,6 @@ void unregister_command(char* command) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     sscanf(command, "%s %s %s", aux, UID, pass);
@@ -275,8 +243,6 @@ void login_command(char* command) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (logged_in) {
@@ -309,8 +275,6 @@ void login_command(char* command) {
 void logout_command(char* command) {
 
     char aux[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
@@ -372,11 +336,6 @@ void groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
-    //char UID[MAX_SIZE];
-    //char pass[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
-    //char status[MAX_SIZE];
 
     sscanf(command, "%s", aux);
     if(!validate_groups_command(command)) {
@@ -403,13 +362,12 @@ void groups_command(char* command) {
     clear_string(reply);
 }
 
+
 void subscribe_command(char* command) {
 
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -424,17 +382,11 @@ void subscribe_command(char* command) {
 
     sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
 
-    /* DEBUG */
-    /* printf("Subscribe: Message:%sT\n", message); */
-
     // communication with server
     send_and_receive_UDP(message, reply);
     /* terminate_string_after_n_tokens(reply, 3); */
 
     sscanf(reply, "%s %s", aux, status);
-
-    /* DEBUG */
-    /* printf("Subscribe: Reply:%sT\n", reply); */
 
     validate_subscribe_reply(reply, aux, status);
 
@@ -442,13 +394,11 @@ void subscribe_command(char* command) {
     clear_string(reply);
 }
 
+
 void unsubscribe_command(char* command) {
 
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
-    // char GName[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (!logged_in) {
@@ -475,15 +425,11 @@ void unsubscribe_command(char* command) {
     clear_string(reply);
 }
 
+
 void my_groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
-    // char GID[MAX_SIZE];
-    // char GName[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
-    // char status[MAX_SIZE];
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -518,29 +464,14 @@ void my_groups_command(char* command) {
 
 
 void select_command(char* command) {
-    // TODO
+
     char aux[MAX_SIZE];
-    // char N[MAX_SIZE];
     char GID[MAX_SIZE];
-    // char GName[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
-    // char status[MAX_SIZE];
 
     sscanf(command, "%s %s", aux, GID);
     if(!validate_select_command(command, GID)) {
         return;
     }
-
-    /* sprintf(message, "GLM %s\n", logged_in_UID); */
-
-    // communication with server
-    /* send_and_receive_UDP(message, reply); */
-    /* terminate_string_after_n_tokens(reply, 2); */
-
-    /* sscanf(reply, "%s %s", aux, N);
-
-    validate_my_groups_reply(reply, aux, N); */
 
     // TODO: Testar se GID existe???
 
@@ -567,11 +498,6 @@ void ulist_command() {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
-    // char reply_test[MAX_REPLY_SIZE];
-    // char GID[MAX_SIZE];
-    // char GName[MAX_SIZE];
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
 
     if (!has_active_group) {
@@ -589,9 +515,6 @@ void ulist_command() {
         return;
     }
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     show_users(reply);
 
     clear_string(message);
@@ -600,7 +523,7 @@ void ulist_command() {
 
 
 void post_command(char* command) {
-    // TODO: tem de funcionar para (por exemplo) imagens???
+
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
@@ -609,14 +532,12 @@ void post_command(char* command) {
     char Fname[MAX_SIZE];
     char* data;
     char* message_post;
-    // char message[MAX_SIZE] = "";
-    // char reply[MAX_REPLY_SIZE];
     char status[MAX_SIZE];
     FILE *fp;
 
     /* DEBUG */
-    login_command("login 77777 hhhhhhhh\n");
-    select_command("s 20\n");
+    /* login_command("login 77777 hhhhhhhh\n");
+    select_command("s 43\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -628,36 +549,31 @@ void post_command(char* command) {
     }
 
     /* DEBUG */
-    /* printf(">>> command = %s|\n", command); */
+    printf(">>> command = %s|\n", command);
 
     sscanf(command, "%s", aux);
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
         return;
     }
 
-    /* DEBUG */
-    /* printf(">>> Fname = %s|\n", Fname); */
-
-    // -2 is to account for the quotes
     Tsize = strlen(text);
 
     if (!file_is_being_sent) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
+
+        /* DEBUG */
+        printf(">>> message = %s\n", message);
+
+        // communication with server
+        send_and_receive_TCP(message, reply, strlen(message));
     }
     else {
-        /* DEBUG */
-        /* printf(">>> Fname = %s|\n", Fname); */
-
         fp = fopen(Fname, "r");
         if (fp == NULL) {
             perror("ERROR: fopen\n");
             exit(EXIT_FAILURE);
         }
         Fsize = get_file_size(fp);
-
-        /* DEBUG */
-        /* printf(">> file name = %s|\n", Fname);
-        printf(">> file size = %d\n", Fsize); */
 
         data = (char*)malloc(Fsize);
         /* if (fread(data, 1, Fsize, fp) == 0) {
@@ -684,13 +600,14 @@ void post_command(char* command) {
 
         sprintf(message_post, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
         fclose(fp);
+
+        /* DEBUG */
+        printf(">>> %s\n", message_post);
+
+        // communication with server
+        send_and_receive_TCP(message_post, reply, strlen(message_post));
     }
 
-    /* DEBUG */
-    /* printf(">>> %s\n", message_post); */
-
-    // communication with server
-    send_and_receive_TCP(message_post, reply, strlen(message_post));
     terminate_string_after_n_tokens(reply, 2);
 
     /* DEBUG */
@@ -700,8 +617,10 @@ void post_command(char* command) {
 
     validate_post_reply(reply, aux, status);
 
-    free(data);
-    free(message_post);
+    if (file_is_being_sent) {
+        free(data);
+        free(message_post);
+    }
 
     clear_string(message);
     clear_string(reply);
@@ -724,8 +643,8 @@ void retrieve_command(char* command) {
     FILE *fp;
 
     /* DEBUG */
-    login_command("login 77777 hhhhhhhh\n");
-    select_command("s 20\n");
+    /* login_command("login 77777 hhhhhhhh\n");
+    select_command("s 43\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -744,17 +663,17 @@ void retrieve_command(char* command) {
     sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
     /* DEBUG */
-    printf(">>> message = %s|\n", message);
+    /* printf(">>> message = %s|\n", message); */
 
     // communication with server
     send_and_receive_TCP(message, reply, strlen(message));
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
+    /* printf(">>> reply = %s|\n", reply); */
 
     sscanf(reply, "%s %s, %s", aux, status, N);
     if (validate_retrieve_reply(reply, aux, status, N)) {
-        show_messages(reply, N);
+        show_messages(reply);
     }
 
     clear_string(message);
@@ -916,9 +835,6 @@ int validate_post_command(char* command, char* aux, char* text, char* Fname, int
     text[j] = '"';
     text[j+1] = '\0';
 
-    /* DEBUG */
-    /* printf(">>> validate_post_command: command = %s|\n", command); */
-
     // 5 to account for the length of "post " + 1 to account for indexing
     // j is the length of text
     if (length > j + 6) {
@@ -929,9 +845,6 @@ int validate_post_command(char* command, char* aux, char* text, char* Fname, int
 
         while (i < length) {
             Fname[k++] = command[i++];
-
-            /* DEBUG */
-            /* printf("Fname[%d] = %c\n", k-1, command[i-1]);  */
         }
         Fname[k] = '\0';
     }
@@ -961,12 +874,6 @@ int validate_retrieve_command(char *command, char *MID) {
 void validate_register_reply(char *reply, char *aux, char *status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
-
-    /* DEBUG */
-    // printf("validate_register_reply: reply:%sT\n", reply);
-    // printf("number_of_tokens=%d\n", number_of_tokens_reply);
-    // printf("length=%lu\n", strlen(reply));
-
     if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
         fprintf(stderr, "> register_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1014,10 +921,6 @@ void validate_login_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
     if ((number_of_tokens_reply != 2) || strcmp("RLO", aux)) {
-
-        /* DEBUG */
-        /* printf("reply:%sT\n", reply); */
-
         fprintf(stderr, "login_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
@@ -1221,19 +1124,19 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
         printf("> Failed to retrieve messages.\n");
         return 0;
     }
-    if (number_of_tokens_reply < 3) {
+    if (number_of_tokens_reply < 2) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-    if (number_of_tokens_reply == 3 && strcmp(N, "0")) {
+    /* if (number_of_tokens_reply == 3 && strcmp(N, "0")) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
-    }
+    } */
     if (number_of_tokens_reply > 3 && strcmp(N, "0") == 0) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-    if (strcmp(status, "EOF") == 0 && strcmp(N, "0") == 0) {
+    if (strcmp(status, "EOF") == 0) {
         printf("> No new messages are available.\n");
         return 0;
     }
@@ -1385,7 +1288,6 @@ int validate_GName(char* GName) {
 }
 
 
-// !!! untested
 int  validate_MID(char* MID) {
 
     int length = strlen(MID);
@@ -1497,6 +1399,7 @@ int get_nth_token(char* string, int n, char* ret) {
         fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many tokens.\n");
         exit(EXIT_FAILURE);
     }
+    // return the position of the last element of the nth token
     return i - 1;
 }
 
@@ -1507,33 +1410,16 @@ int get_number_of_tokens(char* string) {
     int i = 0;
     int last_read_character_was_space = 0;
 
-    /* DEBUG */
-    // printf(": string:%sT\n", string);
-    // printf(": length:%d\n", length);
-
     for (i = 0; i < length; i++) {
-
-        /* DEBUG */
-        // printf(": string[%d]:%c\n", i, string[i]);
-
         if (i != 0 && !isspace(string[i]) && last_read_character_was_space) {
-            /* DEBUG */
-            //printf("--> number_of_tokens incremented! CASE 1\n");
-
             if (isalpha(string[i]) || isdigit(string[i])) {
                 ret++;
             }
-
-            /* ret++; */
         }
-        if (i == 0 && !isspace(string[i]) /* && (isalpha(string[i] || isdigit(string[i]))) */) {
-            /* DEBUG */
-            //printf("--> number_of_tokens incremented! CASE 2\n");
-
+        if (i == 0 && !isspace(string[i])) {
             if (isalpha(string[i]) || isdigit(string[i])) {
                 ret++;
             }
-            /* ret++; */
         }
 
         if (isspace(string[i])) {
@@ -1544,6 +1430,27 @@ int get_number_of_tokens(char* string) {
         }
     }
     return ret;
+}
+
+
+int get_next_token(char* string, int i, char* ret) {
+
+    int j = 0;
+
+    if (i > strlen(string) - 1 || i < 0 || string == NULL) {
+        fprintf(stderr, "ERROR: get_next_token: invalid input.\n");
+        return -1;
+    }
+
+    while(isspace(string[i])) {
+        i++;
+    }
+
+    while(!isspace(string[i])) {
+        ret[j++] = string[i++];
+    }
+    ret[j] = '\0';
+    return i;
 }
 
 
@@ -1570,82 +1477,6 @@ int  get_file_size(FILE *fp) {
     }
     return Fsize;
 }
-
-
-/* int get_file_size(FILE* fp) {
-
-
-} */
-
-
-char* get_file_data(FILE *fp, long Fsize, char *data) {
-
-    char *buffer;
-
-    if (fp) {
-
-        /* DEBUG */
-        printf("ECHO8\n");
-
-        buffer = malloc(Fsize);
-        if (buffer) {
-            /* DEBUG */
-            printf("ECHO4\n");
-            printf("buffer = %s\n", buffer);
-
-            if (fread(buffer, 1, Fsize, fp) == 0) {
-                perror("ERROR: fread\n");
-                exit(EXIT_FAILURE);
-            }
-
-            /* DEBUG */
-            printf("ECHO5\n");
-            printf("buffer = %s\n", buffer);
-        }
-    }
-
-    return buffer;
-}
-
-
-/* int get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent) {
-
-    int i = strlen(aux) + 1;
-    int j = 0;
-    int length = strlen(command);
-
-    if (command[i++] != '"') {
-
-        fprintf(stderr, "> validate_post_command: Invalid input 1.\n");
-        return 0;
-    }
-
-    text[j++] = '"';
-    while (command[i] != '"') {
-        if (i == length - 1) {
-            fprintf(stderr, "> validate_post_command: Invalid input 2.\n");
-            return 0;
-        }
-
-        text[j++] = command[i++];
-    }
-    text[j++] = '"';
-    text[j] = '\0';
-
-    if (length > j + 1) {
-        *file_is_being_sent = 1;
-        i += 2;
-        j += 2;
-        while (j < length) {
-            file_name[j++] = command[i++];
-        }
-        return 1;
-    }
-    else {
-        *file_is_being_sent = 0;
-        return 1;
-    }
-} */
 
 
 void send_and_receive_UDP(char* _message, char* _reply){
@@ -1689,10 +1520,6 @@ void send_and_receive_TCP(char* _message, char* _reply, int write_n) {
         _reply++;
         read_bytes++;
     }
-
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     close(fd_TCP);
 }
 
@@ -1728,15 +1555,9 @@ void show_users(char* reply) {
         return;
     }
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     get_nth_token(reply, i++, GName);
     printf("> Group name: %s\n", GName);
     printf(">> Subscribed users:\n");
-
-    /* DEBUG */
-    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
 
     while (i <= number_of_tokens) {
         get_nth_token(reply, i++, UID);
@@ -1745,48 +1566,81 @@ void show_users(char* reply) {
 }
 
 
-// TODO
-void  show_messages(char* reply, char* N_string) {
+// !!! "data" isn't being used
+void  show_messages(char* reply) {
 
-    int N = atoi(N_string);
-    int i = 4;
-    int j = 0;
-    int number_of_tokens_text = 0;
+    int N = 0;
+    int i = 4, j = 0, k = 0;
+    int length = strlen(reply);
+    int Tsize = 0;
+    int Fsize = 0;
+    char N_string[MAX_SIZE];
     char MID[MAX_SIZE];
     char UID[MAX_SIZE];
-    char Tsize[MAX_SIZE];
-    char text[MAX_SIZE];
+    char Tsize_string[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
-    char Fsize[MAX_SIZE];
+    char Fsize_string[MAX_SIZE];
+    char *data;
+
+    i = get_nth_token(reply, 3, N_string);
+    N = atoi(N_string);
 
     if (N == 0) {
         return;
     }
 
-    /* get_nth_token(reply, ) */
+    i++;
+    for (k = 0; k < N; k++) {
+        i = get_next_token(reply, i, MID); /* get_nth_token(reply, i++, MID); */
+        i = get_next_token(reply, i, UID); /* get_nth_token(reply, i++, UID); */
+        i = get_next_token(reply, i, Tsize_string); /* get_nth_token(reply, i, Tsize_string); */
+        Tsize = atoi(Tsize_string);
 
-    for (j = 0; j < N; j++) {
-        get_nth_token(reply, i++, MID);
-        get_nth_token(reply, i++, UID);
-        get_nth_token(reply, i++, Tsize);
+        // position i on top of text
+        i++;
+        // get text
+        for (j = 0; j < Tsize; j++) {
+            text[j] = reply[i++];
+        }
+
+        // if message has file
+        i++;
+        if (reply[i] == '/' && i < length - 1) {
+
+            i += 2;
+            i = get_next_token(reply, i, Fname);
+            i = get_next_token(reply, i, Fsize_string);
+            Fsize = atoi(Fsize_string);
+
+            i++;
+            data = (char*)malloc(Fsize);
+            for (j = 0; j < Fsize; j++) {
+                data[j] = reply[i++];
+            }
+
+            // strip \n from ending of text
+            if (text[Tsize-1] == '\n') {
+                text[Tsize-1] = '\0';
+            }
+
+            printf("> Message ID: %s | From user: %s | Message: %s\n", MID, UID, text);
+            printf(">> Associated file: %s | File size: %s\n", Fname, Fsize_string);
+
+            // !!! "data isn't being used"
+            free(data);
+        }
+        else {
+
+            // strip \n from ending of text
+            if (text[Tsize-1] == '\n') {
+                text[Tsize-1] = '\0';
+            }
+            printf("> Message ID: %s | From user: %s | Message: %s\n", MID, UID, text);
+        }
     }
-
-    /* for (i = 3; i < 3*N + 1; i++) {
-        get_nth_token(reply, i++, UID);
-        get_nth_token(reply, i++, Tsize);
-        number_of_tokens_text = get_number_of_tokens(text);
-        i += number_of_tokens_text;
-        get_nth_token(reply, i++, Fname);
-        get_nth_token(reply, i++, Fsize);
-        printf("> Group ID: %s | Group Name: %s\n", UID, Fname);
-    } */
 }
 
-
-/* void show_my_groups(char* reply, char* N_string) {
-    // TODO
-
-} */
 
 void clear_string(char* string) {
 
@@ -1795,14 +1649,6 @@ void clear_string(char* string) {
     }
 }
 
-/* void terminate_string(char* string) {
-    int length = strlen(string);
-
-    if (isspace(string[length-1])) {
-        string[length-1] = '\0';
-    }
-    return;
-}  */
 
 void terminate_string_after_n_tokens(char* string, int n) {
 
