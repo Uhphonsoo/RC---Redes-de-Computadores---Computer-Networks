@@ -13,7 +13,6 @@
 #define MAX_TEXT_SIZE 240
 #define PORT_CONST 58000
 #define FENIX_GROUP_NUMBER 20
-/* #define MAX_PASS_SIZE 8 */
 
 // TODO
 /**
@@ -40,7 +39,6 @@ char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
 char logged_in_pass[MAX_SIZE];
 char active_GID[MAX_SIZE];
-/* ssize_t n; */
 socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
@@ -92,7 +90,7 @@ void  validate_usubscribe_reply(char*, char*, char*);
 void  validate_my_groups_reply(char*, char*, char*);
 int   validate_ulist_reply(char*, char*, char*);
 void  validate_post_reply(char*, char*, char*);
-int  validate_retrieve_reply(char*, char*, char*, char*);
+int   validate_retrieve_reply(char*, char*, char*, char*);
 void  validate_program_input(int, char**);
 void  validate_sendto(int);
 void  validate_recvfrom(int);
@@ -111,6 +109,7 @@ void  get_address_info_TCP();
 void  get_first_token(char*, char*);
 int   get_nth_token(char*, int, char*);
 int   get_number_of_tokens(char*);
+int   get_next_token(char*, int, char*);
 int   get_file_size(FILE*); 
 char* get_file_data(FILE*, long, char*);
 int   get_string_in_quotes(char* command, char* aux, char* text, char* file_name, int* file_is_being_sent);
@@ -403,6 +402,7 @@ void groups_command(char* command) {
     clear_string(reply);
 }
 
+
 void subscribe_command(char* command) {
 
     char aux[MAX_SIZE];
@@ -442,6 +442,7 @@ void subscribe_command(char* command) {
     clear_string(reply);
 }
 
+
 void unsubscribe_command(char* command) {
 
     char aux[MAX_SIZE];
@@ -474,6 +475,7 @@ void unsubscribe_command(char* command) {
     clear_string(message);
     clear_string(reply);
 }
+
 
 void my_groups_command(char* command) {
 
@@ -1547,6 +1549,27 @@ int get_number_of_tokens(char* string) {
 }
 
 
+int get_next_token(char* string, int i, char* ret) {
+
+    int j = 0;
+
+    if (i > strlen(string) - 1 || i < 0 || string == NULL) {
+        fprintf(stderr, "ERROR: get_next_token: invalid input.\n");
+        return -1;
+    }
+
+    while(isspace(string[i])) {
+        i++;
+    }
+
+    while(!isspace(string[i])) {
+        ret[j++] = string[i++];
+    }
+    ret[j] = '\0';
+    return i;
+}
+
+
 int  get_file_size(FILE *fp) {
 
     long Fsize;
@@ -1749,26 +1772,39 @@ void show_users(char* reply) {
 void  show_messages(char* reply, char* N_string) {
 
     int N = atoi(N_string);
-    int i = 4;
-    int j = 0;
+    int i = 4, j = 0, k = 0;
     int number_of_tokens_text = 0;
+    int Fsize = 0;
     char MID[MAX_SIZE];
     char UID[MAX_SIZE];
     char Tsize[MAX_SIZE];
     char text[MAX_SIZE];
     char Fname[MAX_SIZE];
-    char Fsize[MAX_SIZE];
+    char Fsize_string[MAX_SIZE];
+    char *data;
 
     if (N == 0) {
         return;
     }
 
-    /* get_nth_token(reply, ) */
+    while (reply[i] != '/') {
+        i++;
+    }
 
+    i++;
     for (j = 0; j < N; j++) {
-        get_nth_token(reply, i++, MID);
-        get_nth_token(reply, i++, UID);
-        get_nth_token(reply, i++, Tsize);
+        i = get_next_token(reply, i, Fname);
+        i = get_next_token(reply, i, Fsize_string);
+        Fsize = atoi(Fsize_string);
+        i++;
+
+        data = (char*)malloc(Fsize);
+
+        for (k = 0; k < Fsize; k++) {
+            data[k] = reply[i++];
+        }
+
+        // TODO
     }
 
     /* for (i = 3; i < 3*N + 1; i++) {
