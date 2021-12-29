@@ -1,5 +1,7 @@
-#ifndef _CONSTANTS_
-#define _CONSTANTS_
+#ifndef _CONSTS_VARS_
+#define _CONSTS_VARS_
+
+#include <sys/socket.h>
 
 #define MAX_SIZE 128
 #define MAX_REPLY_SIZE 5000 /* 7+99*(3+24+6)*sizeof(char) */
