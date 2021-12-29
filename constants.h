@@ -1,5 +1,5 @@
-#ifndef _CONSTS_VARS_
-#define _CONSTS_VARS_
+#ifndef _CONSTANTS_
+#define _CONSTANTS_
 
 #include <sys/socket.h>
 

@@ -1,7 +1,9 @@
-output_client: user.o functions.o user_functions.o
+all: client server
+
+client: user.o functions.o user_functions.o
 	gcc user.o functions.o user_functions.o -o user 
 
-output_server: server.o functions.o server_functions.o
+server: server.o functions.o server_functions.o
 	gcc server.o functions.o server_functions.o -o server
 
 user.o: user.c

@@ -7,7 +7,7 @@
 #include <ctype.h>
 #include "functions.h"
 #include "user_functions.h"
-#include "consts_vars.h"
+#include "constants.h"
 
 extern int  fd_UDP, fd_TCP;
 extern int  errcode;

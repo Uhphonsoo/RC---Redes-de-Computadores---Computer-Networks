@@ -7,7 +7,7 @@
 #include <ctype.h>
 #include "functions.h"
 #include "server_functions.h"
-#include "consts_vars.h"
+#include "constants.h"
 
 // Global variables
 /* int  fd_UDP, fd_TCP;
