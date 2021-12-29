@@ -17,8 +17,7 @@
 #include <ctype.h>
 #include "functions.h"
 #include "user_functions.h"
-#include "consts_vars.h"
-
+#include "constants.h"
 
 int  fd_UDP, fd_TCP;
 int  errcode;
@@ -37,7 +36,6 @@ char buffer_aux[1024];
 socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
-
 
 int main(int argc, char *argv[]) {
 

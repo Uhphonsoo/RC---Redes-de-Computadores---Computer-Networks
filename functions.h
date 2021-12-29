@@ -1,6 +1,8 @@
 #ifndef _FUNCTIONS_
 #define _FUNCTIONS_
 
+#define max(A,B) ((A)>=(B)?(A):(B))
+
 // misc
 void  validate_sendto(int);
 void  validate_recvfrom(int);
@@ -29,7 +31,7 @@ void  show_messages(char*);
 int   is_empty_string(char*);
 void  clear_string(char*);
 void  terminate_string_after_n_tokens(char*, int);
-void clear_message_and_reply();
+void  clear_message_and_reply();
 void  close_TCP_connections();
 
 #endif
