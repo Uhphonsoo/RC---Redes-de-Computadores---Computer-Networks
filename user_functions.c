@@ -54,6 +54,9 @@ void validate_program_input(int argc, char** argv) {
 
 void register_command(char* command) {
 
+    /* DEBUG */
+    printf(">>> reg reply = %s\n", reply);
+
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
@@ -188,7 +191,7 @@ void exit_command(char* command) {
         return;
     }
 
-    close_TCP_connections();
+    /* close_TCP_connections(); */
 
     freeaddrinfo(res_UDP);
     close(fd_UDP);
@@ -405,17 +408,17 @@ void post_command(char* command) {
     FILE *fp;
 
     /* DEBUG */
-    login_command("login 77777 hhhhhhhh\n");
-    select_command("s 43\n");
+    /* login_command("login 77777 hhhhhhhh\n");
+    select_command("s 43\n"); */
 
-    if (!logged_in) {
+    /* if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
     if (!has_active_group) {
         printf("> There is no active group.\n");
         return;
-    }
+    } */
 
     /* DEBUG */
     printf(">>> command = %s|\n", command);

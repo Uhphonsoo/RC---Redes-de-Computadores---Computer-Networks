@@ -1,7 +1,8 @@
 // TODO
 /**
  * time out in select
- * validate_program_input
+ * validate_program_input()
+ * process_input()
 **/
 
 // ISSUES
@@ -20,8 +21,6 @@
 #include "server_functions.h"
 #include "constants.h"
 
-int  fd_UDP, fd_TCP;
-int  errcode;
 int  logged_in;
 int  has_active_group;
 char message[MAX_SIZE];
@@ -34,178 +33,121 @@ char logged_in_UID[MAX_SIZE];
 char logged_in_pass[MAX_SIZE];
 char active_GID[MAX_SIZE];
 char buffer_aux[1024];
-socklen_t addrlen_UDP, addrlen_TCP;
-struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
-struct sockaddr_in addr_UDP, addr_TCP;
 
-int fd, newfd, afd;
-socklen_t addrlen;
-struct addrinfo hints, *res;
-struct sockaddr_in addr;
 
 int main(int argc, char *argv[]) {
 
-    // TODO
-    // validate_program_input(argc, argv);
-
     int n;
-    fd_set rfds;
-    enum {idle, busy} state;
-    int maxfd, counter;
-    socklen_t addrlen;
-    struct sockaddr_in addr;
-    char buffer[128];
+    int errcode;
+    int fd_TCP = 0, fd_UDP = 0, client_fd;
+    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP;
+    struct sockaddr_in servstrmaddr, servdgrmaddr, clientaddr;
+    int len;
+    socklen_t clientlen;
+    fd_set current_sockets_strm, ready_sockets_strm;
+    // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
+    // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
-    create_socket();
-    get_address_info();
 
-    /* DEBUG */
-    printf(">>> server: ECHO1\n");
+    fd_TCP = create_socket_stream();
 
-    state = idle;
-    while (1) {
-        /* DEBUG */
-        printf(">>> server: ECHO2\n");
-
-        FD_ZERO(&rfds);
-        FD_SET(fd, &rfds);
-        maxfd = fd;
-
-        if (state == busy) {
-            /* DEBUG */
-            printf(">>> server: BUSY\n");
-
-            FD_SET(afd, &rfds);
-            maxfd = max(maxfd, afd);
-        }
-
-        /* DEBUG */
-        printf(">>> server: ECHO3\n");
-
-        /* !!! time out is done here */
-        if ((counter = select(maxfd + 1, &rfds, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *) NULL)) < 0) {
-            perror("ERROR: select\n");
-            exit(EXIT_FAILURE); 
-        }
-
-        /* DEBUG */
-        printf(">>> FD_ISSET = %d\n", FD_ISSET(fd, &rfds));
-
-        if (FD_ISSET(fd, &rfds)) {
-            /* DEBUG */
-            printf(">>> server: ECHO4\n");
-
-            addrlen = sizeof(addr);
-            if ((newfd = accept(fd, (struct sockaddr*)&addr, &addrlen)) == -1) {
-                perror("ERROR: accept\n");
-                exit(EXIT_FAILURE);
-            }
-
-            switch(state) {
-                case idle: 
-                    /* DEBUG */
-                    printf(">>> server: ECHO5\n");
-
-                    afd = newfd; 
-                    state = busy; 
-                    break;
-                case busy: /*  */ /* write "busy\n" in newfd */ 
-                    /* DEBUG */
-                    printf(">>> server: ECHO6\n");
-
-                    close(newfd); 
-                    break; // ???
-            }
-        }
-
-        /* DEBUG */
-        printf(">>> server: ECHO7\n");
-
-        if (FD_ISSET(afd, &rfds)) {
-            if ((n == read(afd, buffer, 128)) != 0) {
-                /* DEBUG */
-                printf(">>> server: ECHO8\n");
-
-                if (n == -1) {
-                    perror("ERROR: read\n");
-                    exit(EXIT_FAILURE);
-                }
-                /*  */ // write buffer in afd
-                /* DEBUG */
-                printf(">>> server: ECHOOo\n");
-            }
-            else {
-                /* DEBUG */
-                printf(">>> server: ECHO9\n");
-
-                close(afd);
-                state = idle;
-            }
-        } // while (1)
-        /* close(fd); exit(0); */
+    int enable = 1;
+    if (setsockopt(fd_TCP, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        perror("setsockopt\n");
+        exit(EXIT_FAILURE);
     }
 
-    /* char command[MAX_SIZE];
-    char keyword[MAX_SIZE];
-    strcpy(message, "");
+    memset(&hints_TCP, 0, sizeof(hints_TCP)); 
+    hints_TCP.ai_family = AF_INET; 
+    hints_TCP.ai_socktype = SOCK_STREAM; 
+    hints_TCP.ai_flags = AI_PASSIVE;
 
-    validate_program_input(argc, argv);
+    errcode = getaddrinfo(NULL, PORT, &hints_TCP, &res_TCP);
+    validate_getaddrinfo(errcode);
+    /* get_address_info_stream(&hints_TCP, &res_TCP, PORT); */
 
-    while(1) {
-        fgets(command, MAX_SIZE, stdin);
-        get_first_token(command, keyword);
-        
-        if (strcmp(keyword, "reg") == 0) {
-            register_command(command);
+    n = bind(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_bind(n);
+
+    if (listen(fd_TCP, 5) == -1) {
+        perror("ERROR: listen\n");
+        exit(EXIT_FAILURE);
+    }
+
+    fd_UDP = create_socket_datagram();
+
+    memset(&hints_UDP, 0, sizeof(hints_UDP));
+    hints_UDP.ai_family = AF_INET; 
+    hints_UDP.ai_socktype = SOCK_DGRAM; 
+    hints_UDP.ai_flags = AI_PASSIVE;
+
+    errcode = getaddrinfo(NULL, PORT, &hints_UDP, &res_UDP);
+    validate_getaddrinfo(errcode);
+    /* get_address_info_datagram(&hints_UDP, &res_UDP, PORT_CHILD); */
+
+    n = bind(fd_UDP, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    validate_bind(n);
+
+    /* initialize current sets of file descriptors */
+    FD_ZERO(&current_sockets_strm);
+    FD_SET(fd_TCP, &current_sockets_strm);
+    FD_SET(fd_UDP, &current_sockets_strm);
+
+    while (1) {
+
+        // make a copy of the file descriptor set
+        ready_sockets_strm = current_sockets_strm;
+
+        /* Block server until timeout */
+        select(FD_SETSIZE, &ready_sockets_strm, NULL, NULL, NULL);
+        // TODO: validate_select
+
+        /* Check for requests */
+        for (int i = 0; i < FD_SETSIZE; i++) {
+
+            if (FD_ISSET(i, &ready_sockets_strm)) {
+                if (i == fd_TCP) {
+
+                    /* Accept client and associate it with client_fd */
+                    clientlen = sizeof(clientaddr);
+                    client_fd = accept(fd_TCP, (struct sockaddr *) &clientaddr, &clientlen);
+                    FD_SET(client_fd, &current_sockets_strm);
+                }
+                else if (i == fd_UDP) {
+
+                    receive_message_UDP(fd_UDP);
+
+                    /* DEBUG */
+                    /* printf(">>> UDP: message = %s|\n", message); */
+
+                    process_message();
+
+                    FD_CLR(i, &current_sockets_strm);
+                    clear_string(message);
+                }
+                // if i == clientfd
+                else {
+
+                    receive_message_TCP(i);
+
+                    /* DEBUG */
+                    printf(">>> TCP: message = %s|\n", message);
+                    
+                    process_message();
+                    
+                    FD_CLR(i, &current_sockets_strm);
+                    clear_string(message);
+                }
+            }
         }
-        else if (strcmp(keyword, "unregister") == 0 || strcmp(keyword, "unr") == 0) {
-            unregister_command(command);
-        }
-        else if (strcmp(keyword, "login") == 0) {
-            login_command(command);
-        }
-        else if (strcmp(keyword, "logout") == 0) {
-            logout_command(command);
-        }
-        else if (strcmp(keyword, "showuid") == 0 || strcmp(keyword, "su") == 0) {
-            showuid_command();
-        }
-        else if (strcmp(keyword, "exit") == 0) {
-            exit_command(command);
-        }
-        else if (strcmp(keyword, "groups") == 0 || strcmp(keyword, "gl") == 0) {
-            groups_command(command);
-        }
-        else if (strcmp(keyword, "subscribe") == 0 || strcmp(keyword, "s") == 0) {
-            subscribe_command(command);
-        }
-        else if (strcmp(keyword, "unsubscribe") == 0 || strcmp(keyword, "u") == 0) {
-            unsubscribe_command(command);
-        }
-        else if (strcmp(keyword, "my_groups") == 0 || strcmp(keyword, "mgl") == 0) {
-            my_groups_command(command);
-        }
-        else if (strcmp(keyword, "select") == 0 || strcmp(keyword, "sag") == 0) {
-            select_command(command);
-        }
-        else if (strcmp(keyword, "showgid") == 0 || strcmp(keyword, "sg") == 0) {
-            showgid_command();
-        }
-        else if (strcmp(keyword, "ulist") == 0 || strcmp(keyword, "ul") == 0) {
-            ulist_command();
-        }
-        else if (strcmp(keyword, "post") == 0) {
-            post_command(command);
-        }
-        else if (strcmp(keyword, "retrieve") == 0 || strcmp(keyword, "r") == 0) {
-            retrieve_command(command);
-        }
-        else {
-            fprintf(stderr, "> Invalid command.\n");
-            continue;
-        }
-    } */
-    return 0;
+    }
+
+    freeaddrinfo(res_UDP);
+    close(fd_UDP);
+    freeaddrinfo(res_TCP);
+    close(fd_TCP);
+
+    return EXIT_SUCCESS;
 }
 
 

@@ -68,12 +68,37 @@ void validate_write(int n) {
 void validate_read(int n) {
 
     if(n == -1) {
-        perror("ERROR: read: Unable to read message from server.\n");
+        perror("ERROR: read\n");
         exit(EXIT_FAILURE);
     }
     return;
 }
 
+
+void  validate_accept(int fd) {
+
+    if (fd == -1) {
+        perror("ERROR: accept\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void  validate_bind(int n) {
+
+    if (n == -1) {
+        perror("ERROR: bind\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void validate_getaddrinfo(int errcode) {
+
+    if (errcode != 0) {
+        perror("ERROR: getaddrinfo\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 
 int validate_UID(char* UID) {
