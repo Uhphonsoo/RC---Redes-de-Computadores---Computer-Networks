@@ -48,5 +48,11 @@ void  validate_my_groups_reply(char*, char*, char*);
 int   validate_ulist_reply(char*, char*, char*);
 void  validate_post_reply(char*, char*, char*);
 int   validate_retrieve_reply(char*, char*, char*, char*);
+void  create_UDP_socket();
+void  get_address_info_UDP();
+void  create_TCP_socket();
+void  get_address_info_TCP();
+void  send_and_receive_UDP(char*, char*);
+void  send_and_receive_TCP(char*, char*, int);
 
 #endif

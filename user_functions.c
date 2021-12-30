@@ -1011,3 +1011,94 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
     }
     return 1;
 }
+
+
+void create_UDP_socket() {
+
+    fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
+    if(fd_UDP == -1) {
+        perror("ERROR: create_UDP_socket: can't open socket.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void get_address_info_UDP() {
+
+    memset(&hints_UDP, 0, sizeof(hints_UDP)); 
+    hints_UDP.ai_family = AF_INET;        // IPv4
+    hints_UDP.ai_socktype = SOCK_DGRAM;   // UDP socket
+
+    errcode = getaddrinfo(DSIP, DSport, &hints_UDP, &res_UDP);
+    if(errcode != 0) {
+        perror("ERROR: get_address_info_UDP\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void create_TCP_socket() {
+
+    fd_TCP = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
+    if(fd_TCP == -1) {
+        perror("ERROR: create_TCP_socket: can't open socket.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void get_address_info_TCP() {
+
+    memset(&hints_TCP, 0, sizeof(hints_TCP)); 
+    hints_TCP.ai_family = AF_INET;        // IPv4
+    hints_TCP.ai_socktype = SOCK_STREAM;  // TCP socket
+
+    errcode = getaddrinfo(DSIP, DSport, &hints_TCP, &res_TCP);
+    if(errcode != 0) {
+        perror("ERROR: get_address_info_TCP\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void send_and_receive_UDP(char* message_, char* _reply){
+
+    create_UDP_socket();
+    get_address_info_UDP();
+
+    int n = sendto(fd_UDP, message_, strlen(message_), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    validate_sendto(n);
+
+    addrlen_UDP = sizeof(addr_UDP);
+    n = recvfrom(fd_UDP, _reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+    validate_recvfrom(n);
+
+    close(fd_UDP);
+}
+
+
+void send_and_receive_TCP(char* message_, char* _reply, int write_n) {
+
+    int write_bytes_left = write_n;
+    int read_bytes = 0;
+
+    create_TCP_socket();
+    get_address_info_TCP();
+
+    int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_connect(n);
+
+    while (write_bytes_left > 0) {
+        n = write(fd_TCP, message_, strlen(message_));
+        validate_write(n);
+        write_bytes_left -= n;
+        message_ += n;
+    }
+
+    while (_reply[read_bytes] != '\n') {
+        n = read(fd_TCP, _reply, 1);
+        validate_read(n);
+        _reply++;
+        read_bytes++;
+    }
+    close(fd_TCP);
+}
