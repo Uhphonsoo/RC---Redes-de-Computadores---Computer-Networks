@@ -1,6 +1,7 @@
 // TODO
 /**
- * 
+ * time out in select
+ * validate_program_input
 **/
 
 // ISSUES
@@ -37,16 +38,26 @@ socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
 
+int fd, newfd, afd;
+socklen_t addrlen;
+struct addrinfo hints, *res;
+struct sockaddr_in addr;
+
 int main(int argc, char *argv[]) {
 
+    // TODO
+    // validate_program_input(argc, argv);
+
     int n;
-    int fd, newfd, afd;
     fd_set rfds;
     enum {idle, busy} state;
     int maxfd, counter;
     socklen_t addrlen;
     struct sockaddr_in addr;
     char buffer[128];
+
+    create_socket();
+    get_address_info();
 
     /* DEBUG */
     printf(">>> server: ECHO1\n");
@@ -61,35 +72,72 @@ int main(int argc, char *argv[]) {
         maxfd = fd;
 
         if (state == busy) {
+            /* DEBUG */
+            printf(">>> server: BUSY\n");
+
             FD_SET(afd, &rfds);
             maxfd = max(maxfd, afd);
         }
 
-        counter = select(maxfd + 1, &rfds, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *) NULL);
+        /* DEBUG */
+        printf(">>> server: ECHO3\n");
+
+        /* !!! time out is done here */
+        if ((counter = select(maxfd + 1, &rfds, (fd_set*)NULL, (fd_set*)NULL, (struct timeval *) NULL)) < 0) {
+            perror("ERROR: select\n");
+            exit(EXIT_FAILURE); 
+        }
+
+        /* DEBUG */
+        printf(">>> FD_ISSET = %d\n", FD_ISSET(fd, &rfds));
 
         if (FD_ISSET(fd, &rfds)) {
+            /* DEBUG */
+            printf(">>> server: ECHO4\n");
+
             addrlen = sizeof(addr);
             if ((newfd = accept(fd, (struct sockaddr*)&addr, &addrlen)) == -1) {
-                // ERROR
+                perror("ERROR: accept\n");
                 exit(EXIT_FAILURE);
             }
+
             switch(state) {
-                case idle: afd = newfd; state = busy; break;
-                case busy: /*  */ /* write "busy\n" in newfd */ close(newfd); break; // ???
+                case idle: 
+                    /* DEBUG */
+                    printf(">>> server: ECHO5\n");
+
+                    afd = newfd; 
+                    state = busy; 
+                    break;
+                case busy: /*  */ /* write "busy\n" in newfd */ 
+                    /* DEBUG */
+                    printf(">>> server: ECHO6\n");
+
+                    close(newfd); 
+                    break; // ???
             }
         }
 
+        /* DEBUG */
+        printf(">>> server: ECHO7\n");
+
         if (FD_ISSET(afd, &rfds)) {
             if ((n == read(afd, buffer, 128)) != 0) {
+                /* DEBUG */
+                printf(">>> server: ECHO8\n");
+
                 if (n == -1) {
-                    // ERROR
+                    perror("ERROR: read\n");
                     exit(EXIT_FAILURE);
                 }
                 /*  */ // write buffer in afd
                 /* DEBUG */
-                printf(">>> server: ECHO\n");
+                printf(">>> server: ECHOOo\n");
             }
             else {
+                /* DEBUG */
+                printf(">>> server: ECHO9\n");
+
                 close(afd);
                 state = idle;
             }
