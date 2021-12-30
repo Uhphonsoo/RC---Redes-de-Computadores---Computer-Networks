@@ -411,14 +411,14 @@ void post_command(char* command) {
     /* login_command("login 77777 hhhhhhhh\n");
     select_command("s 43\n"); */
 
-    /* if (!logged_in) {
+    if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
     if (!has_active_group) {
         printf("> There is no active group.\n");
         return;
-    } */
+    }
 
     /* DEBUG */
     printf(">>> command = %s|\n", command);
@@ -452,6 +452,10 @@ void post_command(char* command) {
             perror("ERROR: fread\n");
             exit(EXIT_FAILURE);
         } */
+
+        fread(buffer_aux, 1, sizeof(buffer_aux), fp);
+        strcat(data, buffer_aux);
+        bzero(buffer_aux, sizeof(buffer_aux));
         while(!feof(fp)) {
             fread(buffer_aux, 1, sizeof(buffer_aux), fp);
             strcat(data, buffer_aux);
