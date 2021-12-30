@@ -38,21 +38,58 @@ socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
 
-int fd, newfd, afd;
-socklen_t addrlen;
-struct addrinfo hints, *res;
-struct sockaddr_in addr;
 
 int main(int argc, char *argv[]) {
 
-    
-
     /* char command[MAX_SIZE];
     char keyword[MAX_SIZE];
-    strcpy(message, "");
+    strcpy(message, ""); */
 
-    validate_program_input(argc, argv);
+    int n = 0;
+    socklen_t addrlen;
+    pid_t child_pid;
 
+    create_server_socket_TCP();
+    get_address_info_server_TCP();
+
+    n = bind(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    // TODO: validate_bind(n)
+    if(n == -1) {
+        perror("ERROR: bind\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(fd_TCP, 5) == -1) {
+        perro("ERROR: listen\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+        addrlen = sizeof(addr);
+
+        newfd = accept(fd, (struct sockaddr*)&addr, &addrlen);
+        validate_accept(newfd);
+
+        child_pid = fork();
+        if (child_pid == 0) { // child process
+            close(fd_TCP);
+
+            while(1) {
+                n = read(newfd, message, MAX_SIZE);
+                validate_read(n);
+
+                /* TODO: interpret message
+                         send reply */
+            }
+        }
+        close(newfd);
+    }
+
+
+
+
+
+    /*
     while(1) {
         fgets(command, MAX_SIZE, stdin);
         get_first_token(command, keyword);

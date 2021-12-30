@@ -9,6 +9,7 @@ void  validate_recvfrom(int);
 void  validate_connect(int);
 void  validate_write(int);
 void  validate_read(int);
+void  validate_accept(int fd);
 int   validate_UID(char*);
 int   validate_pass(char*);
 int   validate_GID(char*);
