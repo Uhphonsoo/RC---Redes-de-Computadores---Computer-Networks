@@ -9,13 +9,8 @@
 #include "server_functions.h"
 #include "constants.h"
 
-extern int  fd_UDP, fd_TCP;
-extern int  errcode;
-extern int /* fd, */ newfd, afd;
-extern socklen_t addrlen;
-extern struct addrinfo hints, *res;
-extern struct sockaddr_in addr;
-extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
+extern char message[MAX_SIZE];
+extern char reply[MAX_REPLY_SIZE];
 
 int create_socket_datagram(int fd) {
 
@@ -28,7 +23,7 @@ int create_socket_datagram(int fd) {
 }
 
 
-void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port) {
+/* void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port) {
 
     memset(&(*hints), 0, sizeof((*hints))); 
     (*hints).ai_family = AF_INET;        
@@ -39,7 +34,7 @@ void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, ch
         perror("ERROR: getaddrinfo: get_address_info_datagram\n");
         exit(EXIT_FAILURE);
     }
-}
+} */
 
 
 int create_socket_stream(int fd) {
@@ -53,7 +48,7 @@ int create_socket_stream(int fd) {
 }
 
 
-void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port) {
+/* void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port) {
 
     memset(&(*hints), 0, sizeof((*hints))); 
     (*hints).ai_family = AF_INET;        
@@ -64,20 +59,20 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
         perror("ERROR: getaddrinfo: get_address_info_stream\n");
         exit(EXIT_FAILURE);
     }
-}
+} */
 
 
-void create_UDP_server_socket() {
+/* void create_UDP_server_socket() {
 
     fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
     if(fd_UDP == -1) {
         perror("ERROR: socket: create_UDP_socket\n");
         exit(EXIT_FAILURE);
     }
-}
+} */
 
 
-void get_address_info_server_UDP() {
+/* void get_address_info_server_UDP() {
 
     memset(&hints_UDP, 0, sizeof(hints_UDP)); 
     hints_UDP.ai_family = AF_INET;        // IPv4
@@ -88,20 +83,20 @@ void get_address_info_server_UDP() {
         perror("ERROR: get_address_info_UDP\n");
         exit(EXIT_FAILURE);
     }
-}
+} */
 
 
-void create_TCP_server_socket() {
+/* void create_TCP_server_socket() {
 
     fd_TCP = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
     if(fd_TCP == -1) {
         perror("ERROR: create_TCP_socket: can't open socket.\n");
         exit(EXIT_FAILURE);
     }
-}
+} */
 
 
-void get_address_info_server_TCP() {
+/* void get_address_info_server_TCP() {
 
     memset(&hints_TCP, 0, sizeof(hints_TCP)); 
     hints_TCP.ai_family = AF_INET;        // IPv4
@@ -112,4 +107,35 @@ void get_address_info_server_TCP() {
         perror("ERROR: get_address_info_TCP\n");
         exit(EXIT_FAILURE);
     }
+} */
+
+
+void receive_message_UDP(int fd) {
+
+    int n;
+    struct sockaddr_in addr;
+    socklen_t addrlen ;
+    
+    addrlen = sizeof(addr);
+    n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    validate_recvfrom(n);
 }
+
+
+void receive_message_TCP(int fd) {
+
+    int n;
+    struct sockaddr_in addr;
+    socklen_t addrlen ;
+
+    addrlen = sizeof(addr);
+    n = read(fd, message, MAX_SIZE);
+    validate_read(n);
+}
+
+
+
+void process_message() {
+
+}
+
