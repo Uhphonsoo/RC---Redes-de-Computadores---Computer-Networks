@@ -10,14 +10,14 @@
 #include "constants.h"
 
 extern int  errcode;
-extern int fd, newfd, afd;
+extern int /* fd, */ newfd, afd;
 extern socklen_t addrlen;
 extern struct addrinfo hints, *res;
 extern struct sockaddr_in addr;
 
 int create_socket() {
 
-    fd = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
+    int fd = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
     if(fd == -1) {
         perror("ERROR: create_UDP_socket: can't open socket.\n");
         exit(EXIT_FAILURE);
