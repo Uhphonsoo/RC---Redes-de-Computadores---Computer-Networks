@@ -1,6 +1,7 @@
 // TODO
 /**
  * improve invalid input error messages with input format
+ * close_TCP_connections in exit_command
 **/
 
 // ISSUES

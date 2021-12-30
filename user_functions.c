@@ -188,7 +188,7 @@ void exit_command(char* command) {
         return;
     }
 
-    close_TCP_connections();
+    /* close_TCP_connections(); */
 
     freeaddrinfo(res_UDP);
     close(fd_UDP);
