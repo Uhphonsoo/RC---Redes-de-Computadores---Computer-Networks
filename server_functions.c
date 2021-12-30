@@ -17,35 +17,61 @@ extern struct addrinfo hints, *res;
 extern struct sockaddr_in addr;
 extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 
-int create_socket() {
+int create_socket_datagram(int fd) {
 
-    int fd = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
     if(fd == -1) {
-        perror("ERROR: create_UDP_socket: can't open socket.\n");
+        perror("ERROR: socket: create_socket_datagram\n");
         exit(EXIT_FAILURE);
     }
     return fd;
 }
 
 
-void  get_address_info(struct addrinfo *hints, struct addrinfo **res) {
+void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port) {
 
     memset(&(*hints), 0, sizeof((*hints))); 
-    (*hints).ai_family = AF_INET;        // IPv4
-    (*hints).ai_socktype = SOCK_DGRAM;   // UDP socket
+    (*hints).ai_family = AF_INET;        
+    (*hints).ai_socktype = SOCK_DGRAM;   
 
-    errcode = getaddrinfo(NULL, PORT, &(*hints), &(*res));
+    errcode = getaddrinfo(NULL, port, &(*hints), &(*res));
     if(errcode != 0) {
-        perror("ERROR: get_address_info_UDP\n");
+        perror("ERROR: getaddrinfo: get_address_info_datagram\n");
         exit(EXIT_FAILURE);
     }
 }
+
+
+int create_socket_stream(int fd) {
+
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(fd == -1) {
+        perror("ERROR: socket: create_socket_stream\n");
+        exit(EXIT_FAILURE);
+    }
+    return fd;
+}
+
+
+void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port) {
+
+    memset(&(*hints), 0, sizeof((*hints))); 
+    (*hints).ai_family = AF_INET;        
+    (*hints).ai_socktype = SOCK_STREAM;  
+
+    errcode = getaddrinfo(NULL, port, &(*hints), &(*res));
+    if(errcode != 0) {
+        perror("ERROR: getaddrinfo: get_address_info_stream\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 void create_UDP_server_socket() {
 
     fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
     if(fd_UDP == -1) {
-        perror("ERROR: create_UDP_socket: can't open socket.\n");
+        perror("ERROR: socket: create_UDP_socket\n");
         exit(EXIT_FAILURE);
     }
 }

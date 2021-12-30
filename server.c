@@ -42,7 +42,7 @@ struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 int main(int argc, char *argv[]) {
 
     int n;
-    int server_stream_fd, server_datagram_fd, client_fd;
+    int server_stream_fd = 0, server_datagram_fd = 0, client_fd;
     struct addrinfo hints_strm, *res_strm, hints_dgrm, *res_dgrm;
     struct sockaddr_in servstrmaddr, servdgrmaddr, clientaddr;
     int len;
@@ -57,45 +57,36 @@ int main(int argc, char *argv[]) {
     // child process is UDP application
     if (pid == 0) {
 
-        int PORT_CHILD_NUMBER = atoi(PORT) + 1;
-        char PORT_CHILD[MAX_SIZE];
-        sprintf(PORT_CHILD, "%d", PORT_CHILD_NUMBER);
+        /* DEBUG */
+        printf(">>> ECHO\n");
 
-        server_datagram_fd = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
-        if(server_datagram_fd == -1) {
-            perror("ERROR: socket\n");
-            exit(EXIT_FAILURE);
-        }
+        server_datagram_fd = create_socket_datagram();
 
         memset(&hints_dgrm, 0, sizeof(hints_dgrm));
         hints_dgrm.ai_family = AF_INET; // IPv4
         hints_dgrm.ai_socktype = SOCK_DGRAM; // UDP socket
         hints_dgrm.ai_flags = AI_PASSIVE;
 
-        errcode = getaddrinfo(NULL, PORT_CHILD, &hints_dgrm, &res_dgrm);
-        if (errcode != 0) {
-            perror("ERROR: getaddrinfo\n");
-            exit(EXIT_FAILURE);
-        }
+        errcode = getaddrinfo(NULL, PORT, &hints_dgrm, &res_dgrm);
+        validate_getaddrinfo(errcode);
+        /* get_address_info_datagram(&hints_dgrm, &res_dgrm, PORT_CHILD); */
 
         n = bind(server_datagram_fd, res_dgrm->ai_addr, res_dgrm->ai_addrlen);
-        if (n == -1) {
-            perror("ERROR: bind\n");
-            exit(EXIT_FAILURE);
-        }
+        validate_bind(n);
 
         while(1) {
             /* receive_message_UDP();
             process_message(); */
 
             /* DEBUG */
+            printf(">>> ECHO2\n");
             addrlen = sizeof(addr);
             n = recvfrom(server_datagram_fd, buffer_aux, 1024, 0, (struct sockaddr*)&addr, &addrlen);
-            if (n == -1)  exit(1);
+            validate_recvfrom(n);
             printf(">>> received %s\n", buffer_aux);
             n = sendto(server_datagram_fd, buffer_aux, n, 0, (struct sockaddr*)&addr, addrlen);
-            printf(">>> received %s\n", buffer_aux);
-            if (n == -1) exit(1);
+            validate_sendto(n);
+            printf(">>> ECHO3\n");
         }
 
         freeaddrinfo(res_dgrm);
@@ -105,31 +96,20 @@ int main(int argc, char *argv[]) {
     }
     // parent process is TCP appplication
     else if (pid > 0) {
-        server_stream_fd = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
-        if(server_stream_fd == -1) {
-            perror("ERROR: socket\n");
-            exit(EXIT_FAILURE);
-        }
+
+        server_stream_fd = create_socket_stream();
 
         memset(&hints_strm, 0, sizeof(hints_strm)); 
         hints_strm.ai_family = AF_INET; // IPv4
         hints_strm.ai_socktype = SOCK_STREAM; // TCP socket
         hints_strm.ai_flags = AI_PASSIVE;
 
-        /* DEBUG */
-        printf(">>> PORT = %s\n", PORT);
-
         errcode = getaddrinfo(NULL, PORT, &hints_strm, &res_strm);
-        if(errcode != 0) {
-            perror("ERROR: getaddrinfo\n");
-            exit(EXIT_FAILURE);
-        }
+        validate_getaddrinfo(errcode);
+        /* get_address_info_stream(&hints_strm, &res_strm, PORT); */
 
         n = bind(server_stream_fd, res_strm->ai_addr, res_strm->ai_addrlen);
-        if(n == -1) {
-            perror("ERROR: bind\n");
-            exit(EXIT_FAILURE);
-        }
+        validate_bind(n);
 
         if (listen(server_stream_fd, 5) == -1) {
             perror("ERROR: listen\n");
@@ -139,13 +119,13 @@ int main(int argc, char *argv[]) {
         /* initialize current sets of file descriptors */
         FD_ZERO(&current_sockets_strm);
         FD_SET(server_stream_fd, &current_sockets_strm);
-        /* FD_ZERO(&current_sockets_dgrm);
-        FD_SET(server_datagram_fd, &current_sockets_dgrm); */
 
         while (1) {
+            /* DEBUG */
+            printf(">>> entered\n");
+
             // make a copy of the set
             ready_sockets_strm = current_sockets_strm;
-            /* ready_sockets_dgrm = current_sockets_dgrm; */
 
             /* DEBUG */
             /* addrlen = sizeof(addr);
@@ -190,13 +170,12 @@ int main(int argc, char *argv[]) {
                         printf(">>> connection \n");
 
                         /* DEBUG */
-                        /* addrlen = sizeof(addr);
+                        addrlen = sizeof(addr);
                         n = read(i, buffer_aux, 1024);
-                        if (n == -1) exit(1);
-                        write(1, "received: ", 10);
-                        write(1, buffer_aux, n);
+                        validate_read(n);
+                        printf(">>> message = %s\n", buffer_aux);
                         n = write(i, buffer_aux, n);
-                        if (n == -1) exit(1); */
+                        validate_write(n);
 
                         /* receive_message_TCP();
                         process_message(); */

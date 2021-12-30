@@ -84,6 +84,22 @@ void  validate_accept(int fd) {
 }
 
 
+void  validate_bind(int n) {
+
+    if (n == -1) {
+        perror("ERROR: bind\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void validate_getaddrinfo(int errcode) {
+
+    if (errcode != 0) {
+        perror("ERROR: getaddrinfo\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 int validate_UID(char* UID) {
 

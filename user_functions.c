@@ -54,6 +54,9 @@ void validate_program_input(int argc, char** argv) {
 
 void register_command(char* command) {
 
+    /* DEBUG */
+    printf(">>> reg reply = %s\n", reply);
+
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
