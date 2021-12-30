@@ -11,7 +11,7 @@ void  validate_write(int);
 void  validate_read(int);
 void  validate_accept(int fd);
 void  validate_bind(int n);
-void validate_getaddrinfo(int errcode);
+void  validate_getaddrinfo(int errcode);
 int   validate_UID(char*);
 int   validate_pass(char*);
 int   validate_GID(char*);
