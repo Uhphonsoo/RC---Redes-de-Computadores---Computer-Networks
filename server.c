@@ -24,8 +24,8 @@
 int verbose_mode;
 // int  logged_in;
 // int  has_active_group;
-char message[MAX_SIZE];
-char reply[MAX_REPLY_SIZE];
+// char message[MAX_SIZE];
+// char Reply[MAX_REPLY_SIZE];
 char message_buffer[MAX_SIZE];
 // char reply_buffer[MAX_REPLY_SIZE];
 // char DSIP[MAX_SIZE];
@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
     char DSport[MAX_SIZE];
+    char message[MAX_SIZE];
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
@@ -93,12 +94,12 @@ int main(int argc, char *argv[]) {
                 }
                 else if (i == fd_UDP) {
 
-                    receive_message_UDP(fd_UDP);
+                    receive_message_UDP(fd_UDP, message);
 
                     /* DEBUG */
                     printf(">>> UDP: message = %s|\n", message);
 
-                    process_message();
+                    process_message(message, fd_UDP);
 
                     FD_CLR(i, &current_sockets);
                     clear_string(message);
@@ -106,12 +107,12 @@ int main(int argc, char *argv[]) {
                 // if i == client_fd
                 else {
 
-                    receive_message_TCP(i);
+                    receive_message_TCP(i, message);
 
                     /* DEBUG */
                     printf(">>> TCP: message = %s|\n", message);
                     
-                    process_message();
+                    process_message(message, i);
                     
                     FD_CLR(i, &current_sockets);
                     clear_string(message);

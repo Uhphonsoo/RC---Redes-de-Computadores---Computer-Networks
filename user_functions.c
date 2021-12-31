@@ -13,8 +13,8 @@ extern int  fd_UDP, fd_TCP;
 extern int  errcode;
 extern int  logged_in;
 extern int  has_active_group;
-extern char message[MAX_SIZE];
-extern char reply[MAX_REPLY_SIZE];
+extern char Message[MAX_SIZE];
+extern char Reply[MAX_REPLY_SIZE];
 extern char message_buffer[MAX_SIZE];
 extern char reply_buffer[MAX_REPLY_SIZE];
 extern char DSIP[MAX_SIZE];
@@ -55,7 +55,7 @@ void validate_program_input(int argc, char** argv) {
 void register_command(char* command) {
 
     /* DEBUG */
-    printf(">>> reg reply = %s\n", reply);
+    printf(">>> reg reply = %s\n", Reply);
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
@@ -67,18 +67,18 @@ void register_command(char* command) {
         return;
     }
 
-    sprintf(message, "REG %s %s\n", UID, pass);
+    sprintf(Message, "REG %s %s\n", UID, pass);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    send_and_receive_UDP(Message, Reply);
+    terminate_string_after_n_tokens(Reply, 2);
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_register_reply(reply, aux, status);
+    validate_register_reply(Reply, aux, status);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 void unregister_command(char* command) {
@@ -93,18 +93,18 @@ void unregister_command(char* command) {
         return;
     }
 
-    sprintf(message, "UNR %s %s\n", UID, pass);
+    sprintf(Message, "UNR %s %s\n", UID, pass);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    send_and_receive_UDP(Message, Reply);
+    terminate_string_after_n_tokens(Reply, 2);
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_unregister_reply(reply, aux, status);
+    validate_unregister_reply(Reply, aux, status);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 void login_command(char* command) {
@@ -127,18 +127,18 @@ void login_command(char* command) {
     strcpy(logged_in_UID, UID);
     strcpy(logged_in_pass, pass);
 
-    sprintf(message, "LOG %s %s\n", UID, pass);
+    sprintf(Message, "LOG %s %s\n", UID, pass);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    send_and_receive_UDP(Message, Reply);
+    terminate_string_after_n_tokens(Reply, 2);
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_login_reply(reply, aux, status);
+    validate_login_reply(Reply, aux, status);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 void logout_command(char* command) {
@@ -156,18 +156,18 @@ void logout_command(char* command) {
         return;
     }
 
-    sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
+    sprintf(Message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    send_and_receive_UDP(Message, Reply);
+    terminate_string_after_n_tokens(Reply, 2);
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_logout_reply(reply, aux, status);
+    validate_logout_reply(Reply, aux, status);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 void showuid_command() {
@@ -211,24 +211,24 @@ void groups_command(char* command) {
         return;
     }
 
-    sprintf(message, "GLS\n");
+    sprintf(Message, "GLS\n");
 
     // communication with server
-    send_and_receive_UDP(message, reply);
+    send_and_receive_UDP(Message, Reply);
 
-    sscanf(reply, "%s %s", aux, N);
+    sscanf(Reply, "%s %s", aux, N);
 
-    validate_groups_reply(reply, aux, N);
+    validate_groups_reply(Reply, aux, N);
 
     if (strcmp(N, "0") == 0) {
         printf("> There are no available groups.\n");
         return;
     }
 
-    show_groups(reply, N);
+    show_groups(Reply, N);
     
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 
@@ -249,18 +249,18 @@ void subscribe_command(char* command) {
         return;
     }
 
-    sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
+    sprintf(Message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
+    send_and_receive_UDP(Message, Reply);
     /* terminate_string_after_n_tokens(reply, 3); */
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_subscribe_reply(reply, aux, status);
+    validate_subscribe_reply(Reply, aux, status);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 
@@ -280,18 +280,18 @@ void unsubscribe_command(char* command) {
         return;
     }
 
-    sprintf(message, "GUR %s %s\n", logged_in_UID, GID);
+    sprintf(Message, "GUR %s %s\n", logged_in_UID, GID);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    send_and_receive_UDP(Message, Reply);
+    terminate_string_after_n_tokens(Reply, 2);
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_usubscribe_reply(reply, aux, status);
+    validate_usubscribe_reply(Reply, aux, status);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 
@@ -310,22 +310,22 @@ void my_groups_command(char* command) {
         return;
     }
 
-    sprintf(message, "GLM %s\n", logged_in_UID);
+    sprintf(Message, "GLM %s\n", logged_in_UID);
 
     // communication with server
-    send_and_receive_UDP(message, reply);
+    send_and_receive_UDP(Message, Reply);
     /* terminate_string_after_n_tokens(reply, 2); */
 
-    sscanf(reply, "%s %s", aux, N);
+    sscanf(Reply, "%s %s", aux, N);
 
-    validate_my_groups_reply(reply, aux, N);
+    validate_my_groups_reply(Reply, aux, N);
 
     if (strcmp(N, "0") == 0) {
         printf("> Currently not subscribed to any group.\n");
         return;
     }
 
-    show_groups(reply, N);
+    show_groups(Reply, N);
 }
 
 
@@ -371,26 +371,26 @@ void ulist_command() {
         return;
     }
 
-    sprintf(message, "ULS %s\n", active_GID);
+    sprintf(Message, "ULS %s\n", active_GID);
 
     /* DEBUG */
     /* printf("ulist: message = %s|\n", message); */
 
     // communication with server
-    send_and_receive_TCP(message, reply, strlen(message));
+    send_and_receive_TCP(Message, Reply, strlen(Message));
 
     /* DEBUG */
-    /* printf("ulist: reply = %s|\n", reply); */
+    /* printf("ulist: Reply = %s|\n", Reply); */
 
-    sscanf(reply, "%s %s", aux, status);
-    if (!validate_ulist_reply(reply, aux, status)) {
+    sscanf(Reply, "%s %s", aux, status);
+    if (!validate_ulist_reply(Reply, aux, status)) {
         return;
     }
 
-    show_users(reply);
+    show_users(Reply);
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 
@@ -411,14 +411,14 @@ void post_command(char* command) {
     /* login_command("login 77777 hhhhhhhh\n");
     select_command("s 43\n"); */
 
-    /* if (!logged_in) {
+    if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
     if (!has_active_group) {
         printf("> There is no active group.\n");
         return;
-    } */
+    }
 
     /* DEBUG */
     printf(">>> command = %s|\n", command);
@@ -431,13 +431,13 @@ void post_command(char* command) {
     Tsize = strlen(text);
 
     if (!file_is_being_sent) {
-        sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
+        sprintf(Message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
         /* DEBUG */
-        printf(">>> message = %s\n", message);
+        printf(">>> message = %s\n", Message);
 
         // communication with server
-        send_and_receive_TCP(message, reply, strlen(message));
+        send_and_receive_TCP(Message, Reply, strlen(Message));
     }
     else {
         fp = fopen(Fname, "r");
@@ -481,25 +481,25 @@ void post_command(char* command) {
         printf(">>> %s\n", message_post);
 
         // communication with server
-        send_and_receive_TCP(message_post, reply, strlen(message_post));
+        send_and_receive_TCP(message_post, Reply, strlen(message_post));
     }
 
-    terminate_string_after_n_tokens(reply, 2);
+    terminate_string_after_n_tokens(Reply, 2);
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
+    printf(">>> Reply = %s|\n", Reply);
 
-    sscanf(reply, "%s %s", aux, status);
+    sscanf(Reply, "%s %s", aux, status);
 
-    validate_post_reply(reply, aux, status);
+    validate_post_reply(Reply, aux, status);
 
     if (file_is_being_sent) {
         free(data);
         free(message_post);
     }
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 
@@ -536,24 +536,24 @@ void retrieve_command(char* command) {
         return;
     }
 
-    sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
+    sprintf(Message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
     /* DEBUG */
     /* printf(">>> message = %s|\n", message); */
 
     // communication with server
-    send_and_receive_TCP(message, reply, strlen(message));
+    send_and_receive_TCP(Message, Reply, strlen(Message));
 
     /* DEBUG */
     /* printf(">>> reply = %s|\n", reply); */
 
-    sscanf(reply, "%s %s, %s", aux, status, N);
-    if (validate_retrieve_reply(reply, aux, status, N)) {
-        show_messages(reply);
+    sscanf(Reply, "%s %s, %s", aux, status, N);
+    if (validate_retrieve_reply(Reply, aux, status, N)) {
+        show_messages(Reply);
     }
 
-    clear_string(message);
-    clear_string(reply);
+    clear_string(Message);
+    clear_string(Reply);
 }
 
 
