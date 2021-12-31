@@ -38,33 +38,16 @@ char buffer_aux[1024];
 int main(int argc, char *argv[]) {
 
     int n;
-    int errcode;
     int fd_TCP = 0, fd_UDP = 0, client_fd;
     struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP;
-    struct sockaddr_in servstrmaddr, servdgrmaddr, clientaddr;
-    int len;
+    struct sockaddr_in clientaddr;
     socklen_t clientlen;
-    fd_set current_sockets_strm, ready_sockets_strm;
+    fd_set current_sockets, ready_sockets;
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
-
     fd_TCP = create_socket_stream();
-
-    int enable = 1;
-    if (setsockopt(fd_TCP, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-        perror("setsockopt\n");
-        exit(EXIT_FAILURE);
-    }
-
-    memset(&hints_TCP, 0, sizeof(hints_TCP)); 
-    hints_TCP.ai_family = AF_INET; 
-    hints_TCP.ai_socktype = SOCK_STREAM; 
-    hints_TCP.ai_flags = AI_PASSIVE;
-
-    errcode = getaddrinfo(NULL, PORT, &hints_TCP, &res_TCP);
-    validate_getaddrinfo(errcode);
-    /* get_address_info_stream(&hints_TCP, &res_TCP, PORT); */
+    get_address_info_stream(&hints_TCP, &res_TCP, PORT);
 
     n = bind(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_bind(n);
@@ -75,57 +58,49 @@ int main(int argc, char *argv[]) {
     }
 
     fd_UDP = create_socket_datagram();
-
-    memset(&hints_UDP, 0, sizeof(hints_UDP));
-    hints_UDP.ai_family = AF_INET; 
-    hints_UDP.ai_socktype = SOCK_DGRAM; 
-    hints_UDP.ai_flags = AI_PASSIVE;
-
-    errcode = getaddrinfo(NULL, PORT, &hints_UDP, &res_UDP);
-    validate_getaddrinfo(errcode);
-    /* get_address_info_datagram(&hints_UDP, &res_UDP, PORT_CHILD); */
+    get_address_info_datagram(&hints_UDP, &res_UDP, PORT);
 
     n = bind(fd_UDP, res_UDP->ai_addr, res_UDP->ai_addrlen);
     validate_bind(n);
 
     /* initialize current sets of file descriptors */
-    FD_ZERO(&current_sockets_strm);
-    FD_SET(fd_TCP, &current_sockets_strm);
-    FD_SET(fd_UDP, &current_sockets_strm);
+    FD_ZERO(&current_sockets);
+    FD_SET(fd_TCP, &current_sockets);
+    FD_SET(fd_UDP, &current_sockets);
 
     while (1) {
 
         // make a copy of the file descriptor set
-        ready_sockets_strm = current_sockets_strm;
+        ready_sockets = current_sockets;
 
         /* Block server until timeout */
-        select(FD_SETSIZE, &ready_sockets_strm, NULL, NULL, NULL);
+        select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL);
         // TODO: validate_select
 
         /* Check for requests */
         for (int i = 0; i < FD_SETSIZE; i++) {
 
-            if (FD_ISSET(i, &ready_sockets_strm)) {
+            if (FD_ISSET(i, &ready_sockets)) {
                 if (i == fd_TCP) {
 
                     /* Accept client and associate it with client_fd */
                     clientlen = sizeof(clientaddr);
                     client_fd = accept(fd_TCP, (struct sockaddr *) &clientaddr, &clientlen);
-                    FD_SET(client_fd, &current_sockets_strm);
+                    FD_SET(client_fd, &current_sockets);
                 }
                 else if (i == fd_UDP) {
 
                     receive_message_UDP(fd_UDP);
 
                     /* DEBUG */
-                    /* printf(">>> UDP: message = %s|\n", message); */
+                    printf(">>> UDP: message = %s|\n", message);
 
                     process_message();
 
-                    FD_CLR(i, &current_sockets_strm);
+                    FD_CLR(i, &current_sockets);
                     clear_string(message);
                 }
-                // if i == clientfd
+                // if i == client_fd
                 else {
 
                     receive_message_TCP(i);
@@ -135,7 +110,7 @@ int main(int argc, char *argv[]) {
                     
                     process_message();
                     
-                    FD_CLR(i, &current_sockets_strm);
+                    FD_CLR(i, &current_sockets);
                     clear_string(message);
                 }
             }
