@@ -13,8 +13,8 @@ extern int  fd_UDP, fd_TCP;
 extern int  errcode;
 extern int  logged_in;
 extern int  has_active_group;
-extern char Message[MAX_SIZE];
-extern char Reply[MAX_REPLY_SIZE];
+// extern char Message[MAX_SIZE];
+// extern char Reply[MAX_REPLY_SIZE];
 extern char message_buffer[MAX_SIZE];
 extern char reply_buffer[MAX_REPLY_SIZE];
 extern char DSIP[MAX_SIZE];
@@ -55,30 +55,31 @@ void validate_program_input(int argc, char** argv) {
 void register_command(char* command) {
 
     /* DEBUG */
-    printf(">>> reg reply = %s\n", Reply);
+    /* printf(">>> reg reply = %s\n", reply); */
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sscanf(command, "%s %s %s", aux, UID, pass);
     if(!validate_registration_command(command, UID, pass)) {
         return;
     }
 
-    sprintf(Message, "REG %s %s\n", UID, pass);
+    sprintf(message, "REG %s %s\n", UID, pass);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
-    terminate_string_after_n_tokens(Reply, 2);
+    send_and_receive_UDP(message, reply);
+    terminate_string_after_n_tokens(reply, 2);
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_register_reply(Reply, aux, status);
+    validate_register_reply(reply, aux, status);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 void unregister_command(char* command) {
@@ -87,24 +88,25 @@ void unregister_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_registration_command(command, UID, pass)) {
         return;
     }
 
-    sprintf(Message, "UNR %s %s\n", UID, pass);
+    sprintf(message, "UNR %s %s\n", UID, pass);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
-    terminate_string_after_n_tokens(Reply, 2);
+    send_and_receive_UDP(message, reply);
+    terminate_string_after_n_tokens(reply, 2);
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_unregister_reply(Reply, aux, status);
+    validate_unregister_reply(reply, aux, status);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 void login_command(char* command) {
@@ -113,6 +115,8 @@ void login_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     if (logged_in) {
         printf("> Failed to login. A user is already logged in.\n");
@@ -127,24 +131,25 @@ void login_command(char* command) {
     strcpy(logged_in_UID, UID);
     strcpy(logged_in_pass, pass);
 
-    sprintf(Message, "LOG %s %s\n", UID, pass);
+    sprintf(message, "LOG %s %s\n", UID, pass);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
-    terminate_string_after_n_tokens(Reply, 2);
+    send_and_receive_UDP(message, reply);
+    terminate_string_after_n_tokens(reply, 2);
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_login_reply(Reply, aux, status);
+    validate_login_reply(reply, aux, status);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 void logout_command(char* command) {
 
     char aux[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
         printf("> No user is currently logged in.\n");
@@ -156,18 +161,17 @@ void logout_command(char* command) {
         return;
     }
 
-    sprintf(Message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
+    sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
-    terminate_string_after_n_tokens(Reply, 2);
+    send_and_receive_UDP(message, reply);
+    terminate_string_after_n_tokens(reply, 2);
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_logout_reply(Reply, aux, status);
+    validate_logout_reply(reply, aux, status);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 void showuid_command() {
@@ -191,8 +195,6 @@ void exit_command(char* command) {
         return;
     }
 
-    /* close_TCP_connections(); */
-
     freeaddrinfo(res_UDP);
     close(fd_UDP);
     freeaddrinfo(res_TCP);
@@ -205,30 +207,31 @@ void groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sscanf(command, "%s", aux);
     if(!validate_groups_command(command)) {
         return;
     }
 
-    sprintf(Message, "GLS\n");
+    sprintf(message, "GLS\n");
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
+    send_and_receive_UDP(message, reply);
 
-    sscanf(Reply, "%s %s", aux, N);
+    sscanf(reply, "%s %s", aux, N);
 
-    validate_groups_reply(Reply, aux, N);
+    validate_groups_reply(reply, aux, N);
 
     if (strcmp(N, "0") == 0) {
         printf("> There are no available groups.\n");
         return;
     }
 
-    show_groups(Reply, N);
+    show_groups(reply, N);
     
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 
@@ -238,6 +241,8 @@ void subscribe_command(char* command) {
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -249,18 +254,17 @@ void subscribe_command(char* command) {
         return;
     }
 
-    sprintf(Message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
+    sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
+    send_and_receive_UDP(message, reply);
     /* terminate_string_after_n_tokens(reply, 3); */
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_subscribe_reply(Reply, aux, status);
+    validate_subscribe_reply(reply, aux, status);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 
@@ -269,6 +273,8 @@ void unsubscribe_command(char* command) {
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -280,18 +286,17 @@ void unsubscribe_command(char* command) {
         return;
     }
 
-    sprintf(Message, "GUR %s %s\n", logged_in_UID, GID);
+    sprintf(message, "GUR %s %s\n", logged_in_UID, GID);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
-    terminate_string_after_n_tokens(Reply, 2);
+    send_and_receive_UDP(message, reply);
+    terminate_string_after_n_tokens(reply, 2);
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_usubscribe_reply(Reply, aux, status);
+    validate_usubscribe_reply(reply, aux, status);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 
@@ -299,6 +304,8 @@ void my_groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -310,22 +317,22 @@ void my_groups_command(char* command) {
         return;
     }
 
-    sprintf(Message, "GLM %s\n", logged_in_UID);
+    sprintf(message, "GLM %s\n", logged_in_UID);
 
     // communication with server
-    send_and_receive_UDP(Message, Reply);
+    send_and_receive_UDP(message, reply);
     /* terminate_string_after_n_tokens(reply, 2); */
 
-    sscanf(Reply, "%s %s", aux, N);
+    sscanf(reply, "%s %s", aux, N);
 
-    validate_my_groups_reply(Reply, aux, N);
+    validate_my_groups_reply(reply, aux, N);
 
     if (strcmp(N, "0") == 0) {
         printf("> Currently not subscribed to any group.\n");
         return;
     }
 
-    show_groups(Reply, N);
+    show_groups(reply, N);
 }
 
 
@@ -365,32 +372,33 @@ void ulist_command() {
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
     if (!has_active_group) {
         printf("> There is no active group.\n");
         return;
     }
 
-    sprintf(Message, "ULS %s\n", active_GID);
+    sprintf(message, "ULS %s\n", active_GID);
 
     /* DEBUG */
     /* printf("ulist: message = %s|\n", message); */
 
     // communication with server
-    send_and_receive_TCP(Message, Reply, strlen(Message));
+    send_and_receive_TCP(message, reply, strlen(message));
 
     /* DEBUG */
-    /* printf("ulist: Reply = %s|\n", Reply); */
+    /* printf("ulist: reply = %s|\n", reply); */
 
-    sscanf(Reply, "%s %s", aux, status);
-    if (!validate_ulist_reply(Reply, aux, status)) {
+    sscanf(reply, "%s %s", aux, status);
+    if (!validate_ulist_reply(reply, aux, status)) {
         return;
     }
 
-    show_users(Reply);
+    show_users(reply);
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 
@@ -402,9 +410,11 @@ void post_command(char* command) {
     char aux[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
-    char* data;
-    char* message_post;
+    char *data;
+    char *message_post;
     char status[MAX_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
     FILE *fp;
 
     /* DEBUG */
@@ -431,13 +441,13 @@ void post_command(char* command) {
     Tsize = strlen(text);
 
     if (!file_is_being_sent) {
-        sprintf(Message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
+        sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
         /* DEBUG */
-        printf(">>> message = %s\n", Message);
+        printf(">>> message = %s\n", message);
 
         // communication with server
-        send_and_receive_TCP(Message, Reply, strlen(Message));
+        send_and_receive_TCP(message, reply, strlen(message));
     }
     else {
         fp = fopen(Fname, "r");
@@ -481,25 +491,24 @@ void post_command(char* command) {
         printf(">>> %s\n", message_post);
 
         // communication with server
-        send_and_receive_TCP(message_post, Reply, strlen(message_post));
+        send_and_receive_TCP(message_post, reply, strlen(message_post));
     }
 
-    terminate_string_after_n_tokens(Reply, 2);
+    terminate_string_after_n_tokens(reply, 2);
 
     /* DEBUG */
-    printf(">>> Reply = %s|\n", Reply);
+    printf(">>> reply = %s|\n", reply);
 
-    sscanf(Reply, "%s %s", aux, status);
+    sscanf(reply, "%s %s", aux, status);
 
-    validate_post_reply(Reply, aux, status);
+    validate_post_reply(reply, aux, status);
 
     if (file_is_being_sent) {
         free(data);
         free(message_post);
     }
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 
@@ -516,6 +525,8 @@ void retrieve_command(char* command) {
     char *data;
     char status[MAX_SIZE];
     char N[MAX_FILE_SIZE];
+    char message[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
     FILE *fp; 
 
     /* DEBUG */
@@ -536,24 +547,23 @@ void retrieve_command(char* command) {
         return;
     }
 
-    sprintf(Message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
+    sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
     /* DEBUG */
     /* printf(">>> message = %s|\n", message); */
 
     // communication with server
-    send_and_receive_TCP(Message, Reply, strlen(Message));
+    send_and_receive_TCP(message, reply, strlen(message));
 
     /* DEBUG */
     /* printf(">>> reply = %s|\n", reply); */
 
-    sscanf(Reply, "%s %s, %s", aux, status, N);
-    if (validate_retrieve_reply(Reply, aux, status, N)) {
-        show_messages(Reply);
+    sscanf(reply, "%s %s, %s", aux, status, N);
+    if (validate_retrieve_reply(reply, aux, status, N)) {
+        show_messages(reply);
     }
 
-    clear_string(Message);
-    clear_string(Reply);
+    free(reply);
 }
 
 

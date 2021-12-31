@@ -184,20 +184,20 @@ int  validate_MID(char* MID) {
 }
 
 
-void get_first_token(char* string, char* ret) {
+void get_first_token(char* string, char* first_token) {
 
     int i = 0;
 
     while(!isspace(string[i])) {
-        ret[i] = string[i];
+        first_token[i] = string[i];
         i++;
     }
     
-    ret[i] = '\0';
+    first_token[i] = '\0';
     return;
 }
 
-int get_nth_token(char* string, int n, char* ret) {
+int get_nth_token(char* string, int n, char* token) {
 
     int i = 0;
     int j = 1;
@@ -222,11 +222,11 @@ int get_nth_token(char* string, int n, char* ret) {
 
     int k = 0;
     while(!isspace(string[i])) {
-        ret[k++] = string[i++];
+        token[k++] = string[i++];
     }
-    ret[k] = '\0';
+    token[k] = '\0';
 
-    if (strcmp(ret, "") == 0) {
+    if (strcmp(token, "") == 0) {
         fprintf(stderr, "ERROR: get_nth_token(): string doesn't have that many tokens.\n");
         exit(EXIT_FAILURE);
     }
@@ -489,9 +489,4 @@ int is_empty_string(char* string) {
     }
     
     return string[0] == '\0';
-}
-
-void close_TCP_connections() {
-    // TODO
-    return;
 }
