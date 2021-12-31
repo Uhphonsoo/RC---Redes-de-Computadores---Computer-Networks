@@ -25,7 +25,7 @@ void ulist_command();
 void post_command(char*);
 void retrieve_command(char*);
 
-void  validate_program_input(int, char**);
+void  validate_program_input(int argc, char **argv);
 int   validate_registration_command(char*, char*, char*);
 int   validate_login_command(char*, char*, char*);
 int   validate_logout_command(char*);

@@ -1,6 +1,7 @@
 #ifndef _SERVER_FUNCTIONS_
 #define _SERVER_FUNCTIONS_
 
+void validate_program_input(int argc, char **argv, char *DSport);
 int  create_socket_datagram();
 void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
 int  create_socket_stream();

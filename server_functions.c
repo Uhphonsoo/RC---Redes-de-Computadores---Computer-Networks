@@ -9,8 +9,45 @@
 #include "server_functions.h"
 #include "constants.h"
 
+extern int  verbose_mode;
+// extern char DSIP[MAX_SIZE];
+// extern char DSport[MAX_SIZE];
 extern char message[MAX_SIZE];
 extern char reply[MAX_REPLY_SIZE];
+
+void validate_program_input(int argc, char **argv, char *DSport) {
+
+    if (argc == 1) {
+        sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
+    }
+    else if (argc == 2) {
+        sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
+        verbose_mode = 1;
+    }
+    else if (argc == 3) {
+        if (strcmp(argv[1], "-p")) {
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(DSport, argv[2]);
+    }
+    else if (argc == 4) {
+        if (strcmp(argv[1], "-p")){
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+            exit(EXIT_FAILURE);
+        }
+        if (strcmp(argv[3], "-v")){
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(DSport, argv[2]);
+        verbose_mode = 1;
+    }
+    else {
+        fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 int create_socket_datagram() {
 

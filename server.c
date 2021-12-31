@@ -21,18 +21,18 @@
 #include "server_functions.h"
 #include "constants.h"
 
-int  logged_in;
-int  has_active_group;
+int verbose_mode;
+// int  logged_in;
+// int  has_active_group;
 char message[MAX_SIZE];
 char reply[MAX_REPLY_SIZE];
 char message_buffer[MAX_SIZE];
-char reply_buffer[MAX_REPLY_SIZE];
-char DSIP[MAX_SIZE];
-char DSport[MAX_SIZE];
-char logged_in_UID[MAX_SIZE];
-char logged_in_pass[MAX_SIZE];
-char active_GID[MAX_SIZE];
-char buffer_aux[1024];
+// char reply_buffer[MAX_REPLY_SIZE];
+// char DSIP[MAX_SIZE];
+// char logged_in_UID[MAX_SIZE];
+// char logged_in_pass[MAX_SIZE];
+// char active_GID[MAX_SIZE];
+// char buffer_aux[1024];
 
 
 int main(int argc, char *argv[]) {
@@ -43,11 +43,14 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in clientaddr;
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
+    char DSport[MAX_SIZE];
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
+    validate_program_input(argc, argv, DSport);
+
     fd_TCP = create_socket_stream();
-    get_address_info_stream(&hints_TCP, &res_TCP, PORT);
+    get_address_info_stream(&hints_TCP, &res_TCP, DSport);
 
     n = bind(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_bind(n);
@@ -58,7 +61,7 @@ int main(int argc, char *argv[]) {
     }
 
     fd_UDP = create_socket_datagram();
-    get_address_info_datagram(&hints_UDP, &res_UDP, PORT);
+    get_address_info_datagram(&hints_UDP, &res_UDP, DSport);
 
     n = bind(fd_UDP, res_UDP->ai_addr, res_UDP->ai_addrlen);
     validate_bind(n);
