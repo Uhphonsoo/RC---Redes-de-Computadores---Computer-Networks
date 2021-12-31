@@ -9,8 +9,45 @@
 #include "server_functions.h"
 #include "constants.h"
 
-extern char message[MAX_SIZE];
-extern char reply[MAX_REPLY_SIZE];
+extern int  verbose_mode;
+// extern char DSIP[MAX_SIZE];
+// extern char DSport[MAX_SIZE];
+// extern char Message[MAX_SIZE];
+// extern char reply[MAX_REPLY_SIZE];
+
+void validate_program_input(int argc, char **argv, char *DSport) {
+
+    if (argc == 1) {
+        sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
+    }
+    else if (argc == 2) {
+        sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
+        verbose_mode = 1;
+    }
+    else if (argc == 3) {
+        if (strcmp(argv[1], "-p")) {
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(DSport, argv[2]);
+    }
+    else if (argc == 4) {
+        if (strcmp(argv[1], "-p")){
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+            exit(EXIT_FAILURE);
+        }
+        if (strcmp(argv[3], "-v")){
+            fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+            exit(EXIT_FAILURE);
+        }
+        strcpy(DSport, argv[2]);
+        verbose_mode = 1;
+    }
+    else {
+        fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
+        exit(EXIT_FAILURE);
+    }
+}
 
 int create_socket_datagram() {
 
@@ -112,7 +149,7 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 } */
 
 
-void receive_message_UDP(int fd) {
+void receive_message_UDP(int fd, char *message) {
 
     int n;
     struct sockaddr_in addr;
@@ -124,7 +161,7 @@ void receive_message_UDP(int fd) {
 }
 
 
-void receive_message_TCP(int fd) {
+void receive_message_TCP(int fd, char *message) {
 
     int n;
     struct sockaddr_in addr;
@@ -137,7 +174,161 @@ void receive_message_TCP(int fd) {
 
 
 
-void process_message() {
+void process_message(char *message, int fd) {
 
+    char keyword[MAX_SIZE];
+
+    get_first_token(message, keyword);
+    if (strcmp(keyword, "REG") == 0) {
+
+        register_command(message, fd);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "UNR") == 0) {
+
+        unregister_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "LOG") == 0) {
+
+        login_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "OUT") == 0) {
+
+        logout_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "GLS") == 0) {
+
+        groups_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "GSR") == 0) {
+
+        subscribe_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "GUR") == 0) {
+
+        unsubscribe_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "GLM") == 0) {
+
+        my_groups_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "ULS") == 0) {
+
+        ulist_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "PST") == 0) {
+
+        post_command(message);
+        clear_string(message);
+    }
+    else if (strcmp(keyword, "RTV") == 0) {
+
+        retrieve_command(message);
+        clear_string(message);
+    }
+}
+
+void register_command(char *message, int fd) {
+
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char pass[MAX_SIZE];
+    char status[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char status[MAX_SIZE];
+    
+    // sscanf(message, "%s %s %s", aux, UID, pass);
+    validate_register_message(message, reply);
+
+    // sprintf(reply, "RRG %s %s\n", UID, pass);
+
+    // communication with server
+    
+    send_reply_UDP(reply, fd);
+    // terminate_string_after_n_tokens(reply, 2);
+
+    // sscanf(reply, "%s %s", aux, status);
+
+    // validate_unregister_reply(reply, aux, status);
+
+    clear_string(message);
+    free(reply);
+}
+
+void unregister_command(char *message) {
+
+    // TODO
+}
+
+
+void login_command(char *message) {
+
+    // TODO
+}
+
+
+void logout_command(char *message) {
+
+    // TODO
+}
+
+
+void groups_command(char *message) {
+
+    // TODO
+}
+
+
+void subscribe_command(char *message) {
+
+    // TODO
+}
+
+
+void unsubscribe_command(char *message) {
+
+    // TODO
+}
+
+
+void my_groups_command(char *message) {
+
+    // TODO
+}
+
+
+void ulist_command(char *message) {
+
+    // TODO
+}
+
+
+void post_command(char *message) {
+
+    // TODO
+}
+
+
+void retrieve_command(char *message) {
+
+    // TODO
+}
+
+
+void validate_register_message(char *message, char *status) {
+    // TODO
+}
+
+
+void send_reply_UDP(char *reply, int fd) {
+    // TODO
 }
 

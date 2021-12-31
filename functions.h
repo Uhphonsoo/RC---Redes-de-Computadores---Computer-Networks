@@ -28,7 +28,7 @@ void  show_messages(char*);
 int   is_empty_string(char*);
 void  clear_string(char*);
 void  terminate_string_after_n_tokens(char*, int);
-void  clear_message_and_reply();
+void  clear_message_and_reply(char *message_, char *reply_);
 void  close_TCP_connections();
 
 #endif

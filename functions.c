@@ -477,7 +477,7 @@ void terminate_string_after_n_tokens(char* string, int n) {
     string[i-1] = '\0';
 }
 
-void clear_message_and_reply() {
+void clear_message_and_reply(char *message, char *reply) {
     clear_string(message);
     clear_string(reply);
 }
