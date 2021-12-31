@@ -26,7 +26,10 @@ void ulist_command(char *message);
 void post_command(char *message);
 void retrieve_command(char *message);
 
-void validate_register_message(char *message, char *status);
+void process_register_message(char *message, char *reply);
+
+int user_is_registered(char *UID);
+int register_user(char *UID, char *pass);
 
 void send_reply_UDP(char *reply, int fd);
 

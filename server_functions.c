@@ -246,13 +246,16 @@ void register_command(char *message, int fd) {
     // char status[MAX_SIZE];
     
     // sscanf(message, "%s %s %s", aux, UID, pass);
-    validate_register_message(message, reply);
+    process_register_message(message, reply);
+
+    /* DEBUG */
+    printf(">>> reply = %s|\n", reply);
 
     // sprintf(reply, "RRG %s %s\n", UID, pass);
 
     // communication with server
     
-    send_reply_UDP(reply, fd);
+    /* send_reply_UDP(reply, fd); keep!!! */
     // terminate_string_after_n_tokens(reply, 2);
 
     // sscanf(reply, "%s %s", aux, status);
@@ -323,9 +326,79 @@ void retrieve_command(char *message) {
 }
 
 
-void validate_register_message(char *message, char *status) {
-    // TODO
+void process_register_message(char *message, char *reply) {
+
+    int n;
+    int number_of_tokens;
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char pass[MAX_SIZE];
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    /* DEBUG */
+    printf(">>> number_of_tokens = %d\n", number_of_tokens);
+
+    // terminate_string_after_n_tokens(message, 3);
+    if (number_of_tokens != 3) {
+        strcpy(reply, "ERR\n");
+    }
+
+    sscanf(message, "%s %s %s", aux, UID, pass);
+
+    if (validate_UID(UID) && validate_pass(pass) && !user_is_registered(UID)) {
+        /* DEBUG */
+        printf(">>> case 1");
+
+        if(register_user(UID, pass)) {
+            strcpy(reply, "RRG OK\n");
+        }
+        else {
+            strcpy(reply, "RRG NOK\n");
+        }
+    }
+    else if (validate_UID(UID) && validate_pass(pass) && user_is_registered(UID)) {
+        /* DEBUG */
+        printf(">>> case 2");
+
+        strcpy(reply, "RRG DUP\n");
+    }
+    else {
+        /* DEBUG */
+        printf(">>> case 3");
+
+        strcpy(reply, "RRG NOK\n");
+    }
 }
+
+
+int user_is_registered(char *UID) {
+
+    char file_path[MAX_SIZE];
+    FILE *fp;
+
+    sprintf(file_path, "USERS/%s", UID);
+    fp = fopen(file_path, "r");
+
+    /* DEBUG */
+    printf(">>> file_paht = %s|\n", file_path);
+
+    if (fp == NULL) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+
+
+int register_user(char *UID, char *pass) {
+
+    // TODO
+    return 0;
+}
+
+
 
 
 void send_reply_UDP(char *reply, int fd) {
