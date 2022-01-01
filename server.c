@@ -1,7 +1,6 @@
 // TODO
 /**
  * time out in select
- * validate_program_input()
  * process_input()
 **/
 
@@ -77,18 +76,32 @@ int main(int argc, char *argv[]) {
 
     while (1) {
 
+        /* FD_ZERO(&current_sockets); */
+        /* FD_SET(fd_TCP, &current_sockets); */
+        FD_SET(fd_UDP, &current_sockets);
+
+        /* DEBUG */
+        /* printf(">>> ECHO while\n"); */
+
         // make a copy of the file descriptor set
         ready_sockets = current_sockets;
 
         /* Block server until timeout */
-        select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL);
-        // TODO: validate_select
+        n = select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL);
+        validate_select(n);
 
         /* Check for requests */
         for (int i = 0; i < FD_SETSIZE; i++) {
 
             if (FD_ISSET(i, &ready_sockets)) {
+
+                /* DEBUG */
+                /* printf(">>> ECHO 1\n"); */
+
                 if (i == fd_TCP) {
+
+                    /* DEBUG */
+                    /* printf(">>> ECHO 2\n"); */
 
                     /* Accept client and associate it with client_fd */
                     clientlen = sizeof(clientaddr);
@@ -96,9 +109,9 @@ int main(int argc, char *argv[]) {
                     FD_SET(client_fd, &current_sockets);
                 }
                 else if (i == fd_UDP) {
-                    
-                    // struct sockaddr_in addr;
-                    /* socklen_t addrlen = sizeof(addr); */
+
+                    /* DEBUG */
+                    /* printf(">>> ECHO 3\n"); */
 
                     receive_message_UDP(fd_UDP, message, &addr);
 
@@ -113,7 +126,8 @@ int main(int argc, char *argv[]) {
                 // if i == client_fd
                 else {
 
-                    // struct sockaddr_in addr;
+                    /* DEBUG */
+                    /* printf(">>> ECHO 4\n"); */
                     
                     /* struct sockaddr_in addr; */
                     receive_message_TCP(i, message);

@@ -267,13 +267,13 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     process_register_message(message, reply);
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
+    /* printf(">>> reply = %s|\n", reply); */
 
     // communication with server
     send_reply_UDP(fd, reply, addr);
 
     /* DEBUG */
-    printf(">>> ECHO\n");
+    /* printf(">>> ECHO\n"); */
     printf(">>> reply = %s\n", reply);
 
     if (strcmp(reply, "ERR\n") == 0) {
@@ -428,16 +428,33 @@ int user_is_registered(char *UID) {
 
 int register_user(char *UID, char *pass) {
 
-    char user_dir_path[MAX_SIZE];
     int n;
+    char user_dir_path[MAX_SIZE];
+    char user_pass_path[MAX_SIZE];
+    FILE* fp;
 
     sprintf(user_dir_path, "USERS/%s", UID);
 
+    // create directory for user UID
     n = mkdir(user_dir_path, 0700);
-
     if(n == -1) {
         return 0;
     }
+
+    sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
+    fp = fopen(user_pass_path ,"a");
+    validate_fopen(fp);
+
+    /* DEBUG */
+    printf(">>> user_pass_path = %s|\n", user_pass_path);
+    printf(">>> pass = %s|\n", pass);
+
+    n = fprintf(fp, "%s", pass);
+    validate_fprintf(n);
+
+    n = fclose(fp);
+    validate_fclose(n);
+    
     return 1;
 }
 
