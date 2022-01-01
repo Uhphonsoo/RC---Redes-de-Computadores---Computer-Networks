@@ -73,7 +73,7 @@ void register_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    /* terminate_string_after_n_tokens(reply, 2); */
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -100,7 +100,7 @@ void unregister_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    /* terminate_string_after_n_tokens(reply, 2); */
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -135,7 +135,7 @@ void login_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    /* terminate_string_after_n_tokens(reply, 2); */
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -165,7 +165,7 @@ void logout_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    /* terminate_string_after_n_tokens(reply, 2); */
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -290,7 +290,7 @@ void unsubscribe_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
-    terminate_string_after_n_tokens(reply, 2);
+    /* terminate_string_after_n_tokens(reply, 2); */
 
     sscanf(reply, "%s %s", aux, status);
 
@@ -404,13 +404,15 @@ void ulist_command() {
 
 void post_command(char* command) {
 
+    int n, read_bytes = 0;
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
     char aux[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
-    char *data;
+    // char *data;
+    char *ptr;
     char *message_post;
     char status[MAX_SIZE];
     char message[MAX_SIZE];
@@ -418,8 +420,8 @@ void post_command(char* command) {
     FILE *fp;
 
     /* DEBUG */
-    login_command("login 77777 hhhhhhhh\n");
-    select_command("s 64\n");
+    /* login_command("login 77777 hhhhhhhh\n");
+    select_command("s 64\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -429,9 +431,6 @@ void post_command(char* command) {
         printf("> There is no active group.\n");
         return;
     }
-
-    /* DEBUG */
-    printf(">>> command = %s|\n", command);
 
     sscanf(command, "%s", aux);
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
@@ -443,62 +442,69 @@ void post_command(char* command) {
     if (!file_is_being_sent) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
-        /* DEBUG */
-        /* printf(">>> message = %s\n", message); */
-
         // communication with server
         send_and_receive_TCP(message, reply, strlen(message));
     }
     else {
+
+        create_TCP_socket();
+        get_address_info_TCP();
+
+        n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+        validate_connect(n);
+
         fp = fopen(Fname, "r");
         validate_fopen(fp);
 
         Fsize = get_file_size(fp);
 
-        data = (char*)malloc(Fsize + 1);
+        // data = (char*)malloc(Fsize + 1);
         /* if (fread(data, 1, Fsize, fp) == 0) {
             perror("ERROR: fread\n");
             exit(EXIT_FAILURE);
         } */
-        fread(data, Fsize, 1, fp);
+        /* fread(data, Fsize, 1, fp);
         fclose(fp);
 
-        data[Fsize] = '\0';
+        data[Fsize] = '\0'; */
+
+        sprintf(message, "PST %s %s %d %s %s %d ", logged_in_UID, active_GID, Tsize, text, Fname, Fsize);
+        n = write(fd_TCP, message, strlen(message));
+        validate_write(n);
 
         /* fread(buffer_aux, 1, sizeof(buffer_aux), fp);
-        strcat(data, buffer_aux);
-        bzero(buffer_aux, sizeof(buffer_aux));
+        n = write(fd_TCP, buffer_aux, strlen(buffer_aux));
+        validate_write(n);
+        bzero(buffer_aux, sizeof(buffer_aux)); */
+
         while(!feof(fp)) {
             fread(buffer_aux, 1, sizeof(buffer_aux), fp);
-            strcat(data, buffer_aux);
+            /* n = write(fd_TCP, buffer_aux, strlen(buffer_aux)); */
+            n = write(fd_TCP, buffer_aux, sizeof(buffer_aux));
+            validate_write(n);
             bzero(buffer_aux, sizeof(buffer_aux));
-        } */
-
-        message_post = (char*)malloc(Fsize + 3*MAX_SIZE + MAX_TEXT_SIZE + 32);
-
-        sprintf(message_post, "PST %s %s %d %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text, Fname, Fsize, data);
+        }
         fclose(fp);
 
-        /* DEBUG */
-        printf(">>> %s\n", message_post);
+        sprintf(message, "\n%c", '\0');
+        n = write(fd_TCP, message, strlen(message));
+        validate_write(n);
 
-        // communication with server
-        send_and_receive_TCP(message_post, reply, strlen(message_post));
+        ptr = reply;
+        while (reply[read_bytes] != '\n') {
+            n = read(fd_TCP, ptr, 1);
+            /* validate_read(n); */
+            ptr++;
+            read_bytes++;
+        }
+        close(fd_TCP);
     }
-
-    terminate_string_after_n_tokens(reply, 2);
 
     /* DEBUG */
     printf(">>> reply = %s|\n", reply);
 
     sscanf(reply, "%s %s", aux, status);
-
     validate_post_reply(reply, aux, status);
-
-    if (file_is_being_sent) {
-        free(data);
-        free(message_post);
-    }
 
     free(reply);
 }
@@ -1089,6 +1095,7 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
 
     int write_bytes_left = write_n;
     int read_bytes = 0;
+    char *ptr;
 
     create_TCP_socket();
     get_address_info_TCP();
@@ -1103,10 +1110,11 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
         message += n;
     }
 
+    ptr = reply;
     while (reply[read_bytes] != '\n') {
-        n = read(fd_TCP, reply, 1);
+        n = read(fd_TCP, ptr, 1);
         validate_read(n);
-        reply++;
+        ptr++;
         read_bytes++;
     }
     close(fd_TCP);
