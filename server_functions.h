@@ -13,10 +13,11 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_message_TCP(int fd, char *message);
 void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr);
+
 void process_message(char *message, int fd, struct sockaddr_in *addr);
 
 void register_command(char *message, int fd, struct sockaddr_in *addr);
-void unregister_command(char *message);
+void unregister_command(char *message, int fd, struct sockaddr_in *addr);
 void login_command(char *message);
 void logout_command(char *message);
 void groups_command(char *message);
@@ -28,9 +29,14 @@ void post_command(char *message);
 void retrieve_command(char *message);
 
 void process_register_message(char *message, char *reply);
+void process_unregister_message(char *message, char *reply);
 
 int user_is_registered(char *UID);
 int register_user(char *UID, char *pass);
+int unregister_user(char *UID, char *pass);
+
+int check_password(char *pass, char *user_pass_path);
+void delete_file(char *file_path);
 
 
 void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr);

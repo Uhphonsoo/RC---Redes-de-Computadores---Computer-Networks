@@ -21,11 +21,12 @@ int   validate_pass(char *pass);
 int   validate_GID(char *GID);
 int   validate_GName(char *GName);
 int   validate_MID(char *MID);
+
 void  get_first_token(char *string, char *first_token);
 int   get_nth_token(char *string, int n, char *token);
 int   get_number_of_tokens(char *string);
 int   get_next_token(char *string, int position, char *token);
-int   get_file_size(FILE*); 
+long   get_file_size(FILE *fp); 
 void  show_groups(char *reply, char *N);
 void  show_users(char *reply);
 void  show_messages(char *reply);
