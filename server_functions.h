@@ -7,7 +7,7 @@ void process_message(char *message, int fd, struct sockaddr_in *addr);
 
 void register_command(char *message, int fd, struct sockaddr_in *addr);
 void unregister_command(char *message, int fd, struct sockaddr_in *addr);
-void login_command(char *message);
+void login_command(char *message, int fd, struct sockaddr_in *addr);
 void logout_command(char *message);
 void groups_command(char *message);
 void subscribe_command(char *message);
@@ -19,10 +19,12 @@ void retrieve_command(char *message);
 
 void process_register_message(char *message, char *reply);
 void process_unregister_message(char *message, char *reply);
+void process_login_message(char *message, char *reply);
 
 int user_is_registered(char *UID);
 int register_user(char *UID, char *pass);
 int unregister_user(char *UID, char *pass);
+int login_user(char *UID, char *pass);
 
 int check_password(char *pass, char *user_pass_path);
 
@@ -36,8 +38,9 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 // void get_address_info_server_TCP();
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_message_TCP(int fd, char *message);
-void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr);
+void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 
+void make_file(char *file_path);
 void delete_file(char *file_path);
 
 
