@@ -1,6 +1,6 @@
 // TODO
 /**
- * validate file name
+ * validate file name FName
  * improve invalid input error messages with input format
  * handle ERR messages from server
 **/
@@ -8,6 +8,7 @@
 // ISSUES
 /**
  * login > select 43 > mgl > ulist: reply fica errada
+ * post not working with images
 **/
 
 #include <stdio.h>

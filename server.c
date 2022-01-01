@@ -1,7 +1,6 @@
 // TODO
 /**
  * time out in select
- * validate_program_input()
  * process_input()
 **/
 
@@ -22,11 +21,13 @@
 #include "constants.h"
 
 int verbose_mode;
+/* socklen_t addrlen_UDP;
+struct sockaddr_in addr_UDP; */
 // int  logged_in;
 // int  has_active_group;
 // char message[MAX_SIZE];
 // char Reply[MAX_REPLY_SIZE];
-char message_buffer[MAX_SIZE];
+// char message_buffer[MAX_SIZE];
 // char reply_buffer[MAX_REPLY_SIZE];
 // char DSIP[MAX_SIZE];
 // char logged_in_UID[MAX_SIZE];
@@ -45,6 +46,7 @@ int main(int argc, char *argv[]) {
     fd_set current_sockets, ready_sockets;
     char DSport[MAX_SIZE];
     char message[MAX_SIZE];
+    struct sockaddr_in addr;
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
@@ -74,18 +76,32 @@ int main(int argc, char *argv[]) {
 
     while (1) {
 
+        /* FD_ZERO(&current_sockets); */
+        /* FD_SET(fd_TCP, &current_sockets); */
+        FD_SET(fd_UDP, &current_sockets);
+
+        /* DEBUG */
+        /* printf(">>> ECHO while\n"); */
+
         // make a copy of the file descriptor set
         ready_sockets = current_sockets;
 
         /* Block server until timeout */
-        select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL);
-        // TODO: validate_select
+        n = select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL);
+        validate_select(n);
 
         /* Check for requests */
         for (int i = 0; i < FD_SETSIZE; i++) {
 
             if (FD_ISSET(i, &ready_sockets)) {
+
+                /* DEBUG */
+                /* printf(">>> ECHO 1\n"); */
+
                 if (i == fd_TCP) {
+
+                    /* DEBUG */
+                    /* printf(">>> ECHO 2\n"); */
 
                     /* Accept client and associate it with client_fd */
                     clientlen = sizeof(clientaddr);
@@ -94,12 +110,15 @@ int main(int argc, char *argv[]) {
                 }
                 else if (i == fd_UDP) {
 
-                    receive_message_UDP(fd_UDP, message);
+                    /* DEBUG */
+                    /* printf(">>> ECHO 3\n"); */
+
+                    receive_message_UDP(fd_UDP, message, &addr);
 
                     /* DEBUG */
                     printf(">>> UDP: message = %s|\n", message);
 
-                    process_message(message, fd_UDP);
+                    process_message(message, fd_UDP, &addr);
 
                     FD_CLR(i, &current_sockets);
                     clear_string(message);
@@ -107,12 +126,16 @@ int main(int argc, char *argv[]) {
                 // if i == client_fd
                 else {
 
+                    /* DEBUG */
+                    /* printf(">>> ECHO 4\n"); */
+                    
+                    /* struct sockaddr_in addr; */
                     receive_message_TCP(i, message);
 
                     /* DEBUG */
                     printf(">>> TCP: message = %s|\n", message);
                     
-                    process_message(message, i);
+                    process_message(message, i, &addr);
                     
                     FD_CLR(i, &current_sockets);
                     clear_string(message);

@@ -1,19 +1,24 @@
 #include <stdio.h>
+#include <netdb.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <ctype.h>
+#include "constants.h"
 #include "functions.h"
 #include "server_functions.h"
-#include "constants.h"
 
 extern int  verbose_mode;
+/* extern socklen_t addrlen_UDP;
+extern struct sockaddr_in addr_UDP; */
 // extern char DSIP[MAX_SIZE];
 // extern char DSport[MAX_SIZE];
 // extern char Message[MAX_SIZE];
 // extern char reply[MAX_REPLY_SIZE];
+
 
 void validate_program_input(int argc, char **argv, char *DSport) {
 
@@ -149,14 +154,14 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 } */
 
 
-void receive_message_UDP(int fd, char *message) {
+void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr) {
 
     int n;
-    struct sockaddr_in addr;
+    /* struct sockaddr_in addr; */
     socklen_t addrlen ;
     
-    addrlen = sizeof(addr);
-    n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&addr, &addrlen);
+    addrlen = sizeof((*addr));
+    n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
     validate_recvfrom(n);
 }
 
@@ -164,8 +169,8 @@ void receive_message_UDP(int fd, char *message) {
 void receive_message_TCP(int fd, char *message) {
 
     int n;
-    struct sockaddr_in addr;
     socklen_t addrlen ;
+    struct sockaddr_in addr;
 
     addrlen = sizeof(addr);
     n = read(fd, message, MAX_SIZE);
@@ -173,15 +178,25 @@ void receive_message_TCP(int fd, char *message) {
 }
 
 
+void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr) {
 
-void process_message(char *message, int fd) {
+    int n;
+    socklen_t addrlen;
+    
+    addrlen = sizeof((*addr));
+    n = sendto(fd, reply, strlen(reply), 0, (struct sockaddr*)&(*addr), addrlen);
+    validate_sendto(n);
+}
+
+
+void process_message(char *message, int fd, struct sockaddr_in *addr) {
 
     char keyword[MAX_SIZE];
 
     get_first_token(message, keyword);
     if (strcmp(keyword, "REG") == 0) {
 
-        register_command(message, fd);
+        register_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "UNR") == 0) {
@@ -234,9 +249,13 @@ void process_message(char *message, int fd) {
         retrieve_command(message);
         clear_string(message);
     }
+    else {
+
+        fprintf(stderr, "ERROR: process_message\n");
+    }
 }
 
-void register_command(char *message, int fd) {
+void register_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
@@ -245,18 +264,33 @@ void register_command(char *message, int fd) {
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     // char status[MAX_SIZE];
     
-    // sscanf(message, "%s %s %s", aux, UID, pass);
     process_register_message(message, reply);
 
     /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
-
-    // sprintf(reply, "RRG %s %s\n", UID, pass);
+    /* printf(">>> reply = %s|\n", reply); */
 
     // communication with server
-    
-    /* send_reply_UDP(reply, fd); keep!!! */
-    // terminate_string_after_n_tokens(reply, 2);
+    send_reply_UDP(fd, reply, addr);
+
+    /* DEBUG */
+    /* printf(">>> ECHO\n"); */
+    printf(">>> reply = %s\n", reply);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> verbose_mode = %d\n", verbose_mode);
+
+    if (verbose_mode) {
+        char client_ip[MAX_SIZE];
+        char client_port[MAX_SIZE];
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        sscanf(message, "%s %s %s", aux, UID, pass);
+        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+    }
 
     // sscanf(reply, "%s %s", aux, status);
 
@@ -348,7 +382,7 @@ void process_register_message(char *message, char *reply) {
 
     if (validate_UID(UID) && validate_pass(pass) && !user_is_registered(UID)) {
         /* DEBUG */
-        printf(">>> case 1");
+        /* printf(">>> case 1"); */
 
         if(register_user(UID, pass)) {
             strcpy(reply, "RRG OK\n");
@@ -359,13 +393,13 @@ void process_register_message(char *message, char *reply) {
     }
     else if (validate_UID(UID) && validate_pass(pass) && user_is_registered(UID)) {
         /* DEBUG */
-        printf(">>> case 2");
+        /* printf(">>> case 2"); */
 
         strcpy(reply, "RRG DUP\n");
     }
     else {
         /* DEBUG */
-        printf(">>> case 3");
+        /* printf(">>> case 3"); */
 
         strcpy(reply, "RRG NOK\n");
     }
@@ -394,14 +428,56 @@ int user_is_registered(char *UID) {
 
 int register_user(char *UID, char *pass) {
 
-    // TODO
-    return 0;
+    int n;
+    char user_dir_path[MAX_SIZE];
+    char user_pass_path[MAX_SIZE];
+    FILE* fp;
+
+    sprintf(user_dir_path, "USERS/%s", UID);
+
+    // create directory for user UID
+    n = mkdir(user_dir_path, 0700);
+    if(n == -1) {
+        return 0;
+    }
+
+    sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
+    fp = fopen(user_pass_path ,"a");
+    validate_fopen(fp);
+
+    /* DEBUG */
+    printf(">>> user_pass_path = %s|\n", user_pass_path);
+    printf(">>> pass = %s|\n", pass);
+
+    n = fprintf(fp, "%s", pass);
+    validate_fprintf(n);
+
+    n = fclose(fp);
+    validate_fclose(n);
+    
+    return 1;
 }
 
 
+void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr) {
 
+    int n;
+    // struct sockaddr_in addr;
+    socklen_t addrlen;
+    addrlen = sizeof((*addr));
 
-void send_reply_UDP(char *reply, int fd) {
-    // TODO
+    /* n = getpeername(fd, (struct sockaddr *)&addr_, &addr_size_);
+    if (n == -1) {
+        perror("ERROR: getpeername: get_client_ip\n");
+        exit(EXIT_FAILURE);
+    } */
+
+    getsockname(fd, (struct sockaddr *) &(*addr), &addrlen);
+    // TODO: validate_getsockname();
+
+    strcpy(client_ip, inet_ntoa((*addr).sin_addr));
+    sprintf(client_port, "%d", (*addr).sin_port);
+
+    /* strcpy(client_ip, inet_ntoa((*addr).sin_addr));
+    sprintf(client_port, "%d", (*addr).sin_port); */
 }
-

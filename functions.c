@@ -101,6 +101,42 @@ void validate_getaddrinfo(int errcode) {
 }
 
 
+void  validate_select(int n) {
+
+    if (n == -1) {
+        perror("ERROR: select\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void  validate_fopen(FILE *fp) {
+
+    if (fp == NULL) {
+        perror("ERROR: fopen\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void  validate_fclose(int n) {
+
+    if (n == EOF) {
+        perror("ERROR: fclose\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+void  validate_fprintf(int n) {
+
+    if (n < 0) {
+        perror("ERROR: fprintf\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 int validate_UID(char* UID) {
 
     int length = strlen(UID);
