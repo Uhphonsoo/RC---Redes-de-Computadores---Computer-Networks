@@ -22,11 +22,13 @@
 #include "constants.h"
 
 int verbose_mode;
+/* socklen_t addrlen_UDP;
+struct sockaddr_in addr_UDP; */
 // int  logged_in;
 // int  has_active_group;
 // char message[MAX_SIZE];
 // char Reply[MAX_REPLY_SIZE];
-char message_buffer[MAX_SIZE];
+// char message_buffer[MAX_SIZE];
 // char reply_buffer[MAX_REPLY_SIZE];
 // char DSIP[MAX_SIZE];
 // char logged_in_UID[MAX_SIZE];
@@ -45,6 +47,7 @@ int main(int argc, char *argv[]) {
     fd_set current_sockets, ready_sockets;
     char DSport[MAX_SIZE];
     char message[MAX_SIZE];
+    struct sockaddr_in addr;
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
@@ -93,13 +96,16 @@ int main(int argc, char *argv[]) {
                     FD_SET(client_fd, &current_sockets);
                 }
                 else if (i == fd_UDP) {
+                    
+                    // struct sockaddr_in addr;
+                    /* socklen_t addrlen = sizeof(addr); */
 
-                    receive_message_UDP(fd_UDP, message);
+                    receive_message_UDP(fd_UDP, message, &addr);
 
                     /* DEBUG */
                     printf(">>> UDP: message = %s|\n", message);
 
-                    process_message(message, fd_UDP);
+                    process_message(message, fd_UDP, &addr);
 
                     FD_CLR(i, &current_sockets);
                     clear_string(message);
@@ -107,12 +113,15 @@ int main(int argc, char *argv[]) {
                 // if i == client_fd
                 else {
 
+                    // struct sockaddr_in addr;
+                    
+                    /* struct sockaddr_in addr; */
                     receive_message_TCP(i, message);
 
                     /* DEBUG */
                     printf(">>> TCP: message = %s|\n", message);
                     
-                    process_message(message, i);
+                    process_message(message, i, &addr);
                     
                     FD_CLR(i, &current_sockets);
                     clear_string(message);
