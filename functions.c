@@ -321,7 +321,7 @@ int get_next_token(char* string, int i, char* ret) {
 }
 
 
-int  get_file_size(FILE *fp) {
+long get_file_size(FILE *fp) {
 
     long Fsize;
 

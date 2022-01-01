@@ -201,7 +201,7 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
     }
     else if (strcmp(keyword, "UNR") == 0) {
 
-        unregister_command(message);
+        unregister_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "LOG") == 0) {
@@ -250,19 +250,20 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
         clear_string(message);
     }
     else {
-
+        // ERR
         fprintf(stderr, "ERROR: process_message\n");
     }
 }
+
 
 void register_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    char pass[MAX_SIZE];
     char status[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
-    // char status[MAX_SIZE];
     
     process_register_message(message, reply);
 
@@ -273,7 +274,6 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(fd, reply, addr);
 
     /* DEBUG */
-    /* printf(">>> ECHO\n"); */
     printf(">>> reply = %s\n", reply);
 
     if (strcmp(reply, "ERR\n") == 0) {
@@ -284,25 +284,51 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     printf(">>> verbose_mode = %d\n", verbose_mode);
 
     if (verbose_mode) {
-        char client_ip[MAX_SIZE];
-        char client_port[MAX_SIZE];
         get_client_ip_and_port(fd, client_ip, client_port, addr);
         
-        sscanf(message, "%s %s %s", aux, UID, pass);
+        sscanf(message, "%s %s", aux, UID);
         printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
     }
-
-    // sscanf(reply, "%s %s", aux, status);
-
-    // validate_unregister_reply(reply, aux, status);
 
     clear_string(message);
     free(reply);
 }
 
-void unregister_command(char *message) {
+void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    
+    process_unregister_message(message, reply);
+
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    // communication with server
+    send_reply_UDP(fd, reply, addr);
+
+    /* DEBUG */
+    printf(">>> reply = %s\n", reply);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> verbose_mode = %d\n", verbose_mode);
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        sscanf(message, "%s %s", aux, UID);
+        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+    }
+
+    clear_string(message);
+    free(reply);
 }
 
 
@@ -371,7 +397,7 @@ void process_register_message(char *message, char *reply) {
     number_of_tokens = get_number_of_tokens(message);
 
     /* DEBUG */
-    printf(">>> number_of_tokens = %d\n", number_of_tokens);
+    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
 
     // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
@@ -402,6 +428,52 @@ void process_register_message(char *message, char *reply) {
         /* printf(">>> case 3"); */
 
         strcpy(reply, "RRG NOK\n");
+    }
+}
+
+
+void process_unregister_message(char *message, char *reply) {
+
+    // int n;
+    int number_of_tokens;
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char pass[MAX_SIZE];
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    /* DEBUG */
+    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
+
+    // terminate_string_after_n_tokens(message, 3);
+    if (number_of_tokens != 3) {
+        strcpy(reply, "ERR\n");
+    }
+
+    sscanf(message, "%s %s %s", aux, UID, pass);
+
+    if (validate_UID(UID) && validate_pass(pass)) {
+
+        if(unregister_user(UID, pass)) {
+            /* DEBUG */
+            printf(">>> case 1\n");
+
+            strcpy(reply, "RUN OK\n");
+        }
+        else {
+            /* DEBUG */
+            /* printf(">>> case 2\n");
+            printf(">>> UID = %s|\n", UID);
+            printf(">>> pass = %s|\n", pass); */
+
+            strcpy(reply, "RUN NOK\n");
+        }
+    }
+    else {
+        /* DEBUG */
+        printf(">>> case 3\n");
+
+        strcpy(reply, "RUN NOK\n");
     }
 }
 
@@ -459,6 +531,65 @@ int register_user(char *UID, char *pass) {
 }
 
 
+int unregister_user(char *UID, char *pass) {
+    
+    int n;
+    char user_dir_path[MAX_SIZE];
+    char user_pass_path[MAX_SIZE];
+    char user_login_path[MAX_SIZE];
+
+    sprintf(user_dir_path, "USERS/%s", UID);
+    sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
+    sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
+
+    if (!check_password(pass, user_pass_path)) {
+        return 0;
+    }
+
+    /* DEBUG */
+    /* printf(">>> unr: user_dir_path = %s|\n", user_dir_path); */
+
+    delete_file(user_pass_path);
+    delete_file(user_login_path);
+
+    n = rmdir(user_dir_path);
+    if(n == -1) {
+        return 0;
+    }
+    return 1;
+}
+
+
+int check_password(char *pass, char *user_pass_path) {
+
+    long Fsize;
+    FILE *fp;
+    char *read_pass;
+
+    fp = fopen(user_pass_path, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    Fsize = get_file_size(fp);
+
+    read_pass = (char*)malloc(Fsize + 1);
+    fread(read_pass, Fsize, 1, fp);
+    fclose(fp);
+
+    read_pass[Fsize] = '\0';
+
+    /* DEBUG */
+    printf(">>> read_pass = %s|\n", read_pass);
+
+    if (strcmp(pass, read_pass)) {
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+
 void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr) {
 
     int n;
@@ -480,4 +611,10 @@ void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct s
 
     /* strcpy(client_ip, inet_ntoa((*addr).sin_addr));
     sprintf(client_port, "%d", (*addr).sin_port); */
+}
+
+
+void delete_file(char *file_path) {
+
+    unlink(file_path);
 }
