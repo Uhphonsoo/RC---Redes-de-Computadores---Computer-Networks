@@ -2,17 +2,6 @@
 #define _SERVER_FUNCTIONS_
 
 void validate_program_input(int argc, char **argv, char *DSport);
-int  create_socket_datagram();
-void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
-int  create_socket_stream();
-void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port);
-// void create_server_socket_UDP();
-// void get_address_info_server_UDP();
-// void create_server_socket_TCP();
-// void get_address_info_server_TCP();
-void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
-void receive_message_TCP(int fd, char *message);
-void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr);
 
 void process_message(char *message, int fd, struct sockaddr_in *addr);
 
@@ -36,6 +25,19 @@ int register_user(char *UID, char *pass);
 int unregister_user(char *UID, char *pass);
 
 int check_password(char *pass, char *user_pass_path);
+
+int  create_socket_datagram();
+void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
+int  create_socket_stream();
+void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port);
+// void create_server_socket_UDP();
+// void get_address_info_server_UDP();
+// void create_server_socket_TCP();
+// void get_address_info_server_TCP();
+void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
+void receive_message_TCP(int fd, char *message);
+void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr);
+
 void delete_file(char *file_path);
 
 
