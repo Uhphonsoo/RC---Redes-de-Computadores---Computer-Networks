@@ -51,7 +51,6 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in addr;
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
-    /* GROUPLIST *list; */
 
     validate_program_input(argc, argv, DSport);
 

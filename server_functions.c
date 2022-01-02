@@ -728,7 +728,10 @@ int subscribe_user(char *UID, char *GID) {
     // int n;
     char group_user_path[MAX_SIZE];
 
-    sprintf(group_user_path, "GROUPS/%s/UID.txt", UID);
+    /* DEBUG */
+    printf(">>> subscribe_user: ECHO\n");
+
+    sprintf(group_user_path, "GROUPS/%s/%s.txt", GID, UID);
     make_file(group_user_path);
 
     return 1;
@@ -852,11 +855,13 @@ int get_groups(GROUPLIST *list) {
             if (strlen(dir->d_name)>2) {
                 continue;
             }
+
             strcpy(list->group_no[i], dir->d_name);
-            sprintf(GIDname,"GROUPS/%s/%s_name.txt",dir->d_name,dir->d_name);
-            fp=fopen(GIDname,"r");
+            sprintf(GIDname, "GROUPS/%s/%s_name.txt", dir->d_name, dir->d_name);
+            fp = fopen(GIDname, "r");
+
             if(fp) {
-                fscanf(fp,"%24s",list->group_name[i]);
+                fscanf(fp, "%24s", list->group_name[i]);
                 fclose(fp);
             }
             ++i;
@@ -864,7 +869,7 @@ int get_groups(GROUPLIST *list) {
                 break;
             }
         }
-        list->no_groups=i;
+        list->no_groups = i;
         closedir(d);
     }
     else {
