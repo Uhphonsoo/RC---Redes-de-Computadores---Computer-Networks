@@ -20,6 +20,8 @@
 #include "constants.h"
 
 int verbose_mode;
+int Number_of_groups;
+GROUPLIST *Group_list;
 /* socklen_t addrlen_UDP;
 struct sockaddr_in addr_UDP; */
 // int  logged_in;
@@ -51,6 +53,14 @@ int main(int argc, char *argv[]) {
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
     validate_program_input(argc, argv, DSport);
+
+    Group_list = malloc(sizeof(*Group_list));
+    Number_of_groups = get_groups(Group_list);
+
+    /* DEBUG */
+    /* strcpy(Group_list->group_name[0], "teste");
+    printf(">>> Group_list->group_name[0] = %s|\n", Group_list->group_name[0]);
+    printf(">>> Number_of_groups = %d\n", Number_of_groups); */
 
     fd_TCP = create_socket_stream();
     get_address_info_stream(&hints_TCP, &res_TCP, DSport);

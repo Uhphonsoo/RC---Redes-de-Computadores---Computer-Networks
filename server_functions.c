@@ -13,7 +13,8 @@
 #include "server_functions.h"
 
 extern int  verbose_mode;
-int Number_of_groups;
+extern int Number_of_groups;
+extern GROUPLIST *Group_list;
 /* extern socklen_t addrlen_UDP;
 extern struct sockaddr_in addr_UDP; */
 // extern char DSIP[MAX_SIZE];
@@ -140,15 +141,9 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s\n", reply);
-
     if (strcmp(reply, "ERR\n") == 0) {
         return;
     }
-
-    /* DEBUG */
-    printf(">>> verbose_mode = %d\n", verbose_mode);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -177,15 +172,9 @@ void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s\n", reply);
-
     if (strcmp(reply, "ERR\n") == 0) {
         return;
     }
-
-    /* DEBUG */
-    printf(">>> verbose_mode = %d\n", verbose_mode);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -216,15 +205,9 @@ void login_command(char *message, int fd, struct sockaddr_in *addr) {
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s\n", reply);
-
     if (strcmp(reply, "ERR\n") == 0) {
         return;
     }
-
-    /* DEBUG */
-    printf(">>> verbose_mode = %d\n", verbose_mode);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -255,15 +238,9 @@ void logout_command(char *message, int fd, struct sockaddr_in *addr) {
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s\n", reply);
-
     if (strcmp(reply, "ERR\n") == 0) {
         return;
     }
-
-    /* DEBUG */
-    printf(">>> verbose_mode = %d\n", verbose_mode);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -321,11 +298,8 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     char client_ip[MAX_SIZE];
     char client_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
-
-    /* DEBUG */
-    printf(">>> subs: message = %s|\n", message);
     
-    /* terminate_string_after_n_tokens(message, 4); */
+    terminate_string_after_n_tokens(message, 4);
     process_subscribe_message(message, reply);
 
     // communication with server
@@ -548,7 +522,7 @@ void process_groups_message(char *message, char *reply) {
     // char aux[MAX_SIZE];
     // char UID[MAX_SIZE];
     // char pass[MAX_SIZE];
-    GROUPLIST *list;
+    /* GROUPLIST *list; */
     int number_of_groups;
     
     number_of_tokens = get_number_of_tokens(message);
@@ -558,8 +532,8 @@ void process_groups_message(char *message, char *reply) {
         return;
     }
 
-    number_of_groups = get_groups(list);
-    GROUPLIST_to_string(list, reply);
+    number_of_groups = get_groups(Group_list);
+    GROUPLIST_to_string(Group_list, reply);
 }
 
 
@@ -573,20 +547,6 @@ void process_subscribe_message(char *message, char *reply) {
     char GName[MAX_SIZE];
     
     number_of_tokens = get_number_of_tokens(message);
-
-    /* DEBUG */
-    char token[MAX_SIZE]; 
-    int ij = get_nth_token(message, 4, token);
-    message[ij] = '\0';
-    printf(">>> process_subscribe_message: token = %s|\n", token);
-    printf(">>> number_of_tokens = %d\n", number_of_tokens);
-
-    terminate_string_after_n_tokens(message, 4);
-
-    /* DEBUG */
-    printf(">>> 2: process_subscribe_message: token = %s|\n", token);
-    printf(">>> number_of_tokens = %d\n", number_of_tokens);
-
     if (number_of_tokens != 4) {
         strcpy(reply, "ERR\n");
         return;
@@ -610,12 +570,14 @@ void process_subscribe_message(char *message, char *reply) {
         strcpy(reply, "RGS E_FULL\n");
         return;
     }
-    else {
-        strcpy(reply, "RGS NOK\n");
-        return;
-    }
 
-    if (strcmp(GID, "00")) {
+    /* DEBUG */
+    printf(">>> echo 1\n");
+
+    if (strcmp(GID, "00") == 0) {
+
+        /* DEBUG */
+        printf(">>> echo 2\n");
 
         create_new_group(GID, GName); // GID gets changed to ID of new group
         if (subscribe_user(UID, GID)) {
@@ -675,7 +637,7 @@ int register_user(char *UID, char *pass) {
     }
 
     sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
-    fp = fopen(user_pass_path ,"a");
+    fp = fopen(user_pass_path, "a");
     validate_fopen(fp);
 
     /* DEBUG */
@@ -766,7 +728,10 @@ int subscribe_user(char *UID, char *GID) {
     // int n;
     char group_user_path[MAX_SIZE];
 
-    sprintf(group_user_path, "GROUPS/%s/UID.txt", UID);
+    /* DEBUG */
+    printf(">>> subscribe_user: ECHO\n");
+
+    sprintf(group_user_path, "GROUPS/%s/%s.txt", GID, UID);
     make_file(group_user_path);
 
     return 1;
@@ -776,16 +741,41 @@ int subscribe_user(char *UID, char *GID) {
 int create_new_group(char *GID, char *GName) {
 
     int n;
+    int group_number;
     char group_dir_path[MAX_SIZE];
     char group_name_path[MAX_SIZE];
     char group_messages_path[MAX_SIZE];
     FILE* fp;
 
-    sprintf(group_dir_path, "GROUPS/%s", GID);
+    Number_of_groups = get_groups(Group_list);
+
+    if (Number_of_groups < 0) {
+        fprintf(stderr, "ERROR: create_new_group: Invalid number of groups in the system.\n");
+        return 0;
+    }
+    else if (Number_of_groups == 99) {
+        fprintf(stderr, "ERROR: create_new_group: Group number limit reached.\n");
+        return 0;
+    }
+
+    group_number = Number_of_groups + 1;
+    if (group_number < 10) {
+        sprintf(GID, "0%d", group_number);
+    }
+    else {
+        sprintf(GID, "%d", group_number);
+    }
+
+    /* DEBUG */
+    printf(">>> newGID = %s\n", GID);
 
     // create directory for user GID
+    sprintf(group_dir_path, "GROUPS/%s", GID);
     n = mkdir(group_dir_path, 0700);
     if(n == -1) {
+        /* DEBUG */
+        printf(">>> echoo 1\n");
+
         return 0;
     }
 
@@ -807,6 +797,9 @@ int create_new_group(char *GID, char *GName) {
     sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
     n = mkdir(group_messages_path, 0700);
     if(n == -1) {
+        /* DEBUG */
+        printf(">>> echoo 2\n");
+
         return 0;
     }
 
@@ -833,9 +826,6 @@ int check_password(char *pass, char *user_pass_path) {
     fclose(fp);
 
     read_pass[Fsize] = '\0';
-
-    /* DEBUG */
-    printf(">>> read_pass = %s|\n", read_pass);
 
     if (strcmp(pass, read_pass)) {
         return 0;
@@ -865,11 +855,13 @@ int get_groups(GROUPLIST *list) {
             if (strlen(dir->d_name)>2) {
                 continue;
             }
+
             strcpy(list->group_no[i], dir->d_name);
-            sprintf(GIDname,"GROUPS/%s/%s_name.txt",dir->d_name,dir->d_name);
-            fp=fopen(GIDname,"r");
+            sprintf(GIDname, "GROUPS/%s/%s_name.txt", dir->d_name, dir->d_name);
+            fp = fopen(GIDname, "r");
+
             if(fp) {
-                fscanf(fp,"%24s",list->group_name[i]);
+                fscanf(fp, "%24s", list->group_name[i]);
                 fclose(fp);
             }
             ++i;
@@ -877,7 +869,7 @@ int get_groups(GROUPLIST *list) {
                 break;
             }
         }
-        list->no_groups=i;
+        list->no_groups = i;
         closedir(d);
     }
     else {
@@ -1036,9 +1028,6 @@ void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr) {
     
     addrlen = sizeof((*addr));
     n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
-
-    /* DEBUG */
-    printf(">>> receive_message_UDP: message = %s|\n", message);
     
     validate_recvfrom(n);
 }
@@ -1072,7 +1061,7 @@ void make_file(char *file_path) {
     FILE *fp;
 
     fp = fopen(file_path ,"a");
-    validate_fopen(fp);
+    /* validate_fopen(fp); */
 }
 
 void delete_file(char *file_path) {
