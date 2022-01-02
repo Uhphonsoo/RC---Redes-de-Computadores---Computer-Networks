@@ -7,8 +7,7 @@
 
 // ISSUES
 /**
- * login > select 43 > mgl > ulist: reply fica errada
- * post not working with images
+ * 
 **/
 
 #include <stdio.h>
