@@ -72,7 +72,7 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
     }
     else if (strcmp(keyword, "LOG") == 0) {
 
-        login_command(message);
+        login_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "OUT") == 0) {
@@ -126,7 +126,7 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    char status[MAX_SIZE];
+    // char status[MAX_SIZE];
     char client_ip[MAX_SIZE];
     char client_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
@@ -137,7 +137,7 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     /* printf(">>> reply = %s|\n", reply); */
 
     // communication with server
-    send_reply_UDP(fd, reply, addr);
+    send_reply_UDP(reply, fd, addr);
 
     /* DEBUG */
     printf(">>> reply = %s\n", reply);
@@ -174,7 +174,7 @@ void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
     /* printf(">>> reply = %s|\n", reply); */
 
     // communication with server
-    send_reply_UDP(fd, reply, addr);
+    send_reply_UDP(reply, fd, addr);
 
     /* DEBUG */
     printf(">>> reply = %s\n", reply);
@@ -198,9 +198,42 @@ void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
 }
 
 
-void login_command(char *message) {
+void login_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    // char status[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    
+    process_login_message(message, reply);
+
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    // communication with server
+    send_reply_UDP(reply, fd, addr);
+
+    /* DEBUG */
+    printf(">>> reply = %s\n", reply);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> verbose_mode = %d\n", verbose_mode);
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        sscanf(message, "%s %s", aux, UID);
+        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+    }
+
+    clear_string(message);
+    free(reply);
 }
 
 
@@ -344,6 +377,40 @@ void process_unregister_message(char *message, char *reply) {
 }
 
 
+void process_login_message(char *message, char *reply) {
+
+    // int n;
+    int number_of_tokens;
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char pass[MAX_SIZE];
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    /* DEBUG */
+    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
+
+    if (number_of_tokens != 3) {
+        strcpy(reply, "ERR\n");
+    }
+
+    sscanf(message, "%s %s %s", aux, UID, pass);
+
+    if (validate_UID(UID) && validate_pass(pass)) {
+
+        if (login_user(UID, pass)) {
+            strcpy(reply, "RLO OK\n");
+        }
+        else {
+            strcpy(reply, "RLO NOK\n");
+        }
+    }
+    else {
+        strcpy(reply, "RLO NOK\n");
+    }
+}
+
+
 int user_is_registered(char *UID) {
 
     char file_path[MAX_SIZE];
@@ -419,6 +486,28 @@ int unregister_user(char *UID, char *pass) {
     if(n == -1) {
         return 0;
     }
+    return 1;
+}
+
+
+int login_user(char *UID, char *pass) {
+
+    int n;
+    char user_dir_path[MAX_SIZE];
+    char user_pass_path[MAX_SIZE];
+    char user_login_path[MAX_SIZE];
+
+    sprintf(user_dir_path, "USERS/%s", UID);
+    sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
+    sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
+
+    if (!check_password(pass, user_pass_path)) {
+        return 0;
+    }
+
+    mkdir(user_dir_path, 0700);
+    make_file(user_login_path);
+
     return 1;
 }
 
@@ -601,7 +690,7 @@ void receive_message_TCP(int fd, char *message) {
 }
 
 
-void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr) {
+void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr) {
 
     int n;
     socklen_t addrlen;
@@ -611,6 +700,14 @@ void send_reply_UDP(int fd, char *reply, struct sockaddr_in *addr) {
     validate_sendto(n);
 }
 
+
+void make_file(char *file_path) {
+
+    FILE *fp;
+
+    fp = fopen(file_path ,"a");
+    validate_fopen(fp);
+}
 
 void delete_file(char *file_path) {
 

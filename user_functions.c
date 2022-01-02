@@ -118,10 +118,10 @@ void login_command(char* command) {
     char message[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
 
-    if (logged_in) {
+    /* if (logged_in) {
         printf("> Failed to login. A user is already logged in.\n");
         return;
-    }
+    } */
 
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_login_command(command, UID, pass)) {
@@ -814,7 +814,7 @@ void validate_login_reply(char* reply, char* aux, char* status) {
         printf("> User successfully logged in.\n");
     }
     else if (strcmp(status, "NOK") == 0) {
-        printf("> Failed to login. User ID or password not valid.\n");
+        printf("> Failed to login.\n");
     }
     else {
         fprintf(stderr, "ERROR: login_command(): Invalid reply from server.\n");
