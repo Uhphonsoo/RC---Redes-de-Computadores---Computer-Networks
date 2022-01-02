@@ -1,12 +1,11 @@
 // TODO
 /**
  * time out in select
- * process_input()
 **/
 
 // ISSUES
 /**
- * nao sei se get_client_ip_and_port esta a funcionar corretamente
+ * not sure if get_client_ip_and_port is working as intended
 **/
 
 #include <stdio.h>
@@ -111,12 +110,13 @@ int main(int argc, char *argv[]) {
                 else if (i == fd_UDP) {
 
                     /* DEBUG */
-                    /* printf(">>> ECHO 3\n"); */
+                    printf(">>> ECHO 3\n");
 
                     receive_message_UDP(fd_UDP, message, &addr);
 
                     /* DEBUG */
                     printf(">>> UDP: message = %s|\n", message);
+                    printf(">>> number_of_tokens_message = %d\n", get_number_of_tokens(message));
 
                     process_message(message, fd_UDP, &addr);
 

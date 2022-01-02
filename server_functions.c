@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -12,13 +13,13 @@
 #include "server_functions.h"
 
 extern int  verbose_mode;
+int Number_of_groups;
 /* extern socklen_t addrlen_UDP;
 extern struct sockaddr_in addr_UDP; */
 // extern char DSIP[MAX_SIZE];
 // extern char DSport[MAX_SIZE];
 // extern char Message[MAX_SIZE];
 // extern char reply[MAX_REPLY_SIZE];
-
 
 void validate_program_input(int argc, char **argv, char *DSport) {
 
@@ -82,37 +83,37 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
     }
     else if (strcmp(keyword, "GLS") == 0) {
 
-        groups_command(message);
+        groups_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "GSR") == 0) {
 
-        subscribe_command(message);
+        subscribe_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "GUR") == 0) {
 
-        unsubscribe_command(message);
+        unsubscribe_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "GLM") == 0) {
 
-        my_groups_command(message);
+        my_groups_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "ULS") == 0) {
 
-        ulist_command(message);
+        ulist_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "PST") == 0) {
 
-        post_command(message);
+        post_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "RTV") == 0) {
 
-        retrieve_command(message);
+        retrieve_command(message, fd, addr);
         clear_string(message);
     }
     else {
@@ -276,43 +277,103 @@ void logout_command(char *message, int fd, struct sockaddr_in *addr) {
 }
 
 
-void groups_command(char *message) {
+void groups_command(char *message, int fd, struct sockaddr_in *addr) {
+
+    // char aux[MAX_SIZE];
+    // char UID[MAX_SIZE];
+    // char status[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    
+    process_groups_message(message, reply);
+
+    // communication with server
+    send_reply_UDP(reply, fd, addr);
+
+    /* DEBUG */
+    printf(">>> reply = %s\n", reply);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> verbose_mode = %d\n", verbose_mode);
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+    }
+
+    clear_string(message);
+    free(reply);
+}
+
+
+void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
+
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char GID[MAX_SIZE];
+    // char status[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    
+    process_subscribe_message(message, reply);
+
+    // communication with server
+    send_reply_UDP(reply, fd, addr);
+
+    /* DEBUG */
+    printf(">>> reply = %s\n", reply);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> verbose_mode = %d\n", verbose_mode);
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        sscanf(message, "%s %s %s", aux, UID, GID);
+        printf("Request by user %s for group %s with IP %s on port %s.\n", UID, GID, client_ip, client_port);
+    }
+
+    clear_string(message);
+    free(reply);
+}
+
+
+void unsubscribe_command(char *message, int fd, struct sockaddr_in *addr) {
 
     // TODO
 }
 
 
-void subscribe_command(char *message) {
+void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
 
     // TODO
 }
 
 
-void unsubscribe_command(char *message) {
+void ulist_command(char *message, int fd, struct sockaddr_in *addr) {
 
     // TODO
 }
 
 
-void my_groups_command(char *message) {
+void post_command(char *message, int fd, struct sockaddr_in *addr) {
 
     // TODO
 }
 
 
-void ulist_command(char *message) {
-
-    // TODO
-}
-
-
-void post_command(char *message) {
-
-    // TODO
-}
-
-
-void retrieve_command(char *message) {
+void retrieve_command(char *message, int fd, struct sockaddr_in *addr) {
 
     // TODO
 }
@@ -479,6 +540,91 @@ void process_logout_message(char *message, char *reply) {
 }
 
 
+void process_groups_message(char *message, char *reply) {
+
+    // int n;
+    int number_of_tokens;
+    // char aux[MAX_SIZE];
+    // char UID[MAX_SIZE];
+    // char pass[MAX_SIZE];
+    GROUPLIST *list;
+    int number_of_groups;
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    if (number_of_tokens != 1) {
+        strcpy(reply, "ERR\n");
+        return;
+    }
+
+    number_of_groups = get_groups(list);
+    GROUPLIST_to_string(list, reply);
+}
+
+
+void process_subscribe_message(char *message, char *reply) {
+
+    // int n;
+    int number_of_tokens;
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char GID[MAX_SIZE];
+    char GName[MAX_SIZE];
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    if (number_of_tokens != 4) {
+        strcpy(reply, "ERR\n");
+        return;
+    }
+
+    sscanf(message, "%s %s %s %s", aux, UID, GID, GName);
+
+    if (!validate_UID(UID)) {
+        strcpy(reply, "RGS E_USR\n");
+        return;
+    }
+    else if (!validate_GID(GID)) {
+        strcpy(reply, "RGS E_GRP\n");
+        return;
+    }
+    else if (!validate_GName(GName)) {
+        strcpy(reply, "RGS E_GNAME\n");
+        return;
+    }
+    else if (Number_of_groups == 99) {
+        strcpy(reply, "RGS E_FULL\n");
+        return;
+    }
+    else {
+        strcpy(reply, "RGS NOK\n");
+        return;
+    }
+
+    if (strcmp(GID, "00")) {
+
+        create_new_group(GID, GName); // GID gets changed to ID of new group
+        if (subscribe_user(UID, GID)) {
+            sprintf(reply, "RGS NEW %s", GID);
+            /* strcpy(reply, "RGS NEW %s\n", GID); */
+        }
+        else {
+            strcpy(reply, "RGS NOK\n");
+        }
+        return;
+    }
+    else {
+        if (subscribe_user(UID, GID)) {
+            strcpy(reply, "RGS OK\n");
+        }
+        else {
+            strcpy(reply, "RGS NOK\n");
+        }
+        return;
+    }
+}
+
+
 int user_is_registered(char *UID) {
 
     char file_path[MAX_SIZE];
@@ -601,6 +747,60 @@ int logout_user(char *UID, char *pass) {
 }
 
 
+int subscribe_user(char *UID, char *GID) {
+
+    // int n;
+    char group_user_path[MAX_SIZE];
+
+    sprintf(group_user_path, "GROUPS/%s/UID.txt", UID);
+    make_file(group_user_path);
+
+    return 1;
+}
+
+
+int create_new_group(char *GID, char *GName) {
+
+    int n;
+    char group_dir_path[MAX_SIZE];
+    char group_name_path[MAX_SIZE];
+    char group_messages_path[MAX_SIZE];
+    FILE* fp;
+
+    sprintf(group_dir_path, "GROUPS/%s", GID);
+
+    // create directory for user GID
+    n = mkdir(group_dir_path, 0700);
+    if(n == -1) {
+        return 0;
+    }
+
+    sprintf(group_name_path, "GROUPS/%s/%s_name.txt", GID, GID);
+    fp = fopen(group_name_path ,"a");
+    validate_fopen(fp);
+
+    /* DEBUG */
+    /* printf(">>> group_name_path = %s|\n", group_name_path);
+    printf(">>> GName = %s|\n", GName); */
+
+    n = fprintf(fp, "%s", GName);
+    validate_fprintf(n);
+
+    n = fclose(fp);
+    validate_fclose(n);
+
+    // create subdirectory for user messages
+    sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
+    n = mkdir(group_messages_path, 0700);
+    if(n == -1) {
+        return 0;
+    }
+
+    Number_of_groups++;
+    return 1;
+}
+
+
 int check_password(char *pass, char *user_pass_path) {
 
     long Fsize;
@@ -630,6 +830,65 @@ int check_password(char *pass, char *user_pass_path) {
         return 1;
     }
 }
+
+
+int get_groups(GROUPLIST *list) {
+
+    DIR *d;
+    struct dirent *dir;
+    int i=0;
+    FILE *fp;
+    char GIDname[30];
+    
+    list->no_groups=0;
+    d = opendir("GROUPS");
+
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (dir->d_name[0] == '.') {
+                continue;
+            }
+            if (strlen(dir->d_name)>2) {
+                continue;
+            }
+            strcpy(list->group_no[i], dir->d_name);
+            sprintf(GIDname,"GROUPS/%s/%s_name.txt",dir->d_name,dir->d_name);
+            fp=fopen(GIDname,"r");
+            if(fp) {
+                fscanf(fp,"%24s",list->group_name[i]);
+                fclose(fp);
+            }
+            ++i;
+            if(i==99) {
+                break;
+            }
+        }
+        list->no_groups=i;
+        closedir(d);
+    }
+    else {
+        return(-1);
+    }
+
+    if(list->no_groups>1) {
+        SortGList(list);
+    }
+
+    return(list->no_groups);
+}
+
+
+void SortGList(GROUPLIST *list) {
+
+    // TODO
+}
+
+
+void GROUPLIST_to_string(GROUPLIST *list, char *reply) {
+
+    // TODO
+}
+
 
 void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr) {
 
