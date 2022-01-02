@@ -256,24 +256,8 @@ void subscribe_command(char* command) {
 
     sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
 
-    /* ----- */
-
-    /* create_UDP_socket();
-    get_address_info_UDP();
-
-    int n = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
-    validate_sendto(n);
-
-    addrlen_UDP = sizeof(addr_UDP);
-    n = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
-    validate_recvfrom(n);
-
-    close(fd_UDP); */
-
-    /* ----- */
-
     // communication with server
-    /* send_and_receive_UDP(message, reply); */
+    send_and_receive_UDP(message, reply);
     /* terminate_string_after_n_tokens(reply, 3); */
 
     sscanf(reply, "%s %s", aux, status);
