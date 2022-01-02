@@ -6,7 +6,7 @@
 
 // ISSUES
 /**
- * 
+ * nao sei se get_client_ip_and_port esta a funcionar corretamente
 **/
 
 #include <stdio.h>

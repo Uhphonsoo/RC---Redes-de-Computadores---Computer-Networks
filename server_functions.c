@@ -77,7 +77,7 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
     }
     else if (strcmp(keyword, "OUT") == 0) {
 
-        logout_command(message);
+        logout_command(message, fd, addr);
         clear_string(message);
     }
     else if (strcmp(keyword, "GLS") == 0) {
@@ -237,9 +237,42 @@ void login_command(char *message, int fd, struct sockaddr_in *addr) {
 }
 
 
-void logout_command(char *message) {
+void logout_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    // char status[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    
+    process_logout_message(message, reply);
+
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    // communication with server
+    send_reply_UDP(reply, fd, addr);
+
+    /* DEBUG */
+    printf(">>> reply = %s\n", reply);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    /* DEBUG */
+    printf(">>> verbose_mode = %d\n", verbose_mode);
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        sscanf(message, "%s %s", aux, UID);
+        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+    }
+
+    clear_string(message);
+    free(reply);
 }
 
 
@@ -301,6 +334,7 @@ void process_register_message(char *message, char *reply) {
     // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
+        return;
     }
 
     sscanf(message, "%s %s %s", aux, UID, pass);
@@ -347,6 +381,7 @@ void process_unregister_message(char *message, char *reply) {
     // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
+        return;
     }
 
     sscanf(message, "%s %s %s", aux, UID, pass);
@@ -392,6 +427,7 @@ void process_login_message(char *message, char *reply) {
 
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
+        return;
     }
 
     sscanf(message, "%s %s %s", aux, UID, pass);
@@ -407,6 +443,38 @@ void process_login_message(char *message, char *reply) {
     }
     else {
         strcpy(reply, "RLO NOK\n");
+    }
+}
+
+
+void process_logout_message(char *message, char *reply) {
+
+    // int n;
+    int number_of_tokens;
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char pass[MAX_SIZE];
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    if (number_of_tokens != 3) {
+        strcpy(reply, "ERR\n");
+        return;
+    }
+
+    sscanf(message, "%s %s %s", aux, UID, pass);
+
+    if (validate_UID(UID) && validate_pass(pass)) {
+
+        if (logout_user(UID, pass)) {
+            strcpy(reply, "ROU OK\n");
+        }
+        else {
+            strcpy(reply, "ROU NOK\n");
+        }
+    }
+    else {
+        strcpy(reply, "ROU NOK\n");
     }
 }
 
@@ -507,6 +575,27 @@ int login_user(char *UID, char *pass) {
 
     mkdir(user_dir_path, 0700);
     make_file(user_login_path);
+
+    return 1;
+}
+
+
+int logout_user(char *UID, char *pass) {
+
+    int n;
+    char user_dir_path[MAX_SIZE];
+    char user_pass_path[MAX_SIZE];
+    char user_login_path[MAX_SIZE];
+
+    sprintf(user_dir_path, "USERS/%s", UID);
+    sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
+    sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
+
+    if (!check_password(pass, user_pass_path)) {
+        return 0;
+    }
+
+    delete_file(user_login_path);
 
     return 1;
 }
