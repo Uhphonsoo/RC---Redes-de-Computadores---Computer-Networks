@@ -255,6 +255,10 @@ void subscribe_command(char* command) {
     }
 
     sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
+    /* terminate_string_after_n_tokens(message, 4); */
+
+    /* DEBUG */
+    printf(">>> subscribe: message = %s|\n", message);
 
     // communication with server
     send_and_receive_UDP(message, reply);

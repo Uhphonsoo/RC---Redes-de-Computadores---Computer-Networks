@@ -321,7 +321,11 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     char client_ip[MAX_SIZE];
     char client_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
+
+    /* DEBUG */
+    printf(">>> subs: message = %s|\n", message);
     
+    /* terminate_string_after_n_tokens(message, 4); */
     process_subscribe_message(message, reply);
 
     // communication with server
@@ -333,9 +337,6 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     if (strcmp(reply, "ERR\n") == 0) {
         return;
     }
-
-    /* DEBUG */
-    printf(">>> verbose_mode = %d\n", verbose_mode);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -572,6 +573,19 @@ void process_subscribe_message(char *message, char *reply) {
     char GName[MAX_SIZE];
     
     number_of_tokens = get_number_of_tokens(message);
+
+    /* DEBUG */
+    char token[MAX_SIZE]; 
+    int ij = get_nth_token(message, 4, token);
+    message[ij] = '\0';
+    printf(">>> process_subscribe_message: token = %s|\n", token);
+    printf(">>> number_of_tokens = %d\n", number_of_tokens);
+
+    terminate_string_after_n_tokens(message, 4);
+
+    /* DEBUG */
+    printf(">>> 2: process_subscribe_message: token = %s|\n", token);
+    printf(">>> number_of_tokens = %d\n", number_of_tokens);
 
     if (number_of_tokens != 4) {
         strcpy(reply, "ERR\n");
@@ -1022,6 +1036,10 @@ void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr) {
     
     addrlen = sizeof((*addr));
     n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
+
+    /* DEBUG */
+    printf(">>> receive_message_UDP: message = %s|\n", message);
+    
     validate_recvfrom(n);
 }
 
