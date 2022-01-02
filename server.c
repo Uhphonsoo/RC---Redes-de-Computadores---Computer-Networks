@@ -44,7 +44,8 @@ int main(int argc, char *argv[]) {
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
     char DSport[MAX_SIZE];
-    char message[MAX_SIZE];
+    /* char message[MAX_SIZE]; */
+    char *message;
     struct sockaddr_in addr;
     // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
     // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
@@ -112,22 +113,25 @@ int main(int argc, char *argv[]) {
                     /* DEBUG */
                     printf(">>> ECHO 3\n");
 
+                    message = (char *)malloc(MAX_SIZE);
+
                     receive_message_UDP(fd_UDP, message, &addr);
 
                     /* DEBUG */
                     printf(">>> UDP: message = %s|\n", message);
-                    printf(">>> number_of_tokens_message = %d\n", get_number_of_tokens(message));
 
                     process_message(message, fd_UDP, &addr);
 
                     FD_CLR(i, &current_sockets);
-                    clear_string(message);
+                    free(message);
                 }
                 // if i == client_fd
                 else {
 
                     /* DEBUG */
                     /* printf(">>> ECHO 4\n"); */
+
+                    message = (char *)malloc(MAX_SIZE);
                     
                     /* struct sockaddr_in addr; */
                     receive_message_TCP(i, message);
@@ -138,7 +142,7 @@ int main(int argc, char *argv[]) {
                     process_message(message, i, &addr);
                     
                     FD_CLR(i, &current_sockets);
-                    clear_string(message);
+                    free(message);
                 }
             }
         }
