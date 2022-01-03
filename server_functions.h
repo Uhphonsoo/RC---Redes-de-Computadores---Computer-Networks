@@ -29,6 +29,7 @@ void process_login_message(char *message, char *reply);
 void process_logout_message(char *message, char *reply);
 void process_groups_message(char *message, char *reply);
 void process_subscribe_message(char *message, char *reply);
+void process_unsubscribe_message(char *message, char *reply);
 
 int user_is_registered(char *UID);
 int register_user(char *UID, char *pass);
@@ -36,6 +37,7 @@ int unregister_user(char *UID, char *pass);
 int login_user(char *UID, char *pass);
 int logout_user(char *UID, char *pass);
 int subscribe_user(char *UID, char *GID);
+int unsubscribe_user(char *UID, char *GID);
 int create_new_group(char *GID, char *GName);
 
 int check_password(char *pass, char *user_pass_path);
