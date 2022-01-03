@@ -326,7 +326,33 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
 
 void unsubscribe_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    
+    process_unsubscribe_message(message, reply);
+
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    // communication with server
+    send_reply_UDP(reply, fd, addr);
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    }
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        sscanf(message, "%s %s", aux, UID);
+        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+    }
+
+    clear_string(message);
+    free(reply);
 }
 
 
@@ -601,6 +627,53 @@ void process_subscribe_message(char *message, char *reply) {
 }
 
 
+void process_unsubscribe_message(char *message, char *reply) {
+
+    // int n;
+    int number_of_tokens;
+    char aux[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char GID[MAX_SIZE];
+    
+    number_of_tokens = get_number_of_tokens(message);
+
+    /* DEBUG */
+    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
+
+    // terminate_string_after_n_tokens(message, 3);
+    if (number_of_tokens != 3) {
+        strcpy(reply, "ERR\n");
+        return;
+    }
+
+    sscanf(message, "%s %s %s", aux, UID, GID);
+
+    if (!validate_UID(UID)) {
+        strcpy(reply, "RGU E_USR\n");
+        return;
+    }
+    if (!validate_GID(GID)) {
+        strcpy(reply, "RGU E_GRP\n");
+        return;
+    }
+
+    if(unsubscribe_user(UID, GID)) {
+        /* DEBUG */
+        /* printf(">>> case 1\n"); */
+
+        strcpy(reply, "RGU OK\n");
+    }
+    else {
+        /* DEBUG */
+        /* printf(">>> case 2\n");
+        printf(">>> UID = %s|\n", UID);
+        printf(">>> pass = %s|\n", pass); */
+
+        strcpy(reply, "RGU NOK\n");
+    }
+}
+
+
 int user_is_registered(char *UID) {
 
     char file_path[MAX_SIZE];
@@ -733,6 +806,27 @@ int subscribe_user(char *UID, char *GID) {
 
     sprintf(group_user_path, "GROUPS/%s/%s.txt", GID, UID);
     make_file(group_user_path);
+
+    return 1;
+}
+
+
+int unsubscribe_user(char *UID, char *GID) {
+
+    // int n;
+    char user_group_path[MAX_SIZE];
+    // char user_pass_path[MAX_SIZE];
+    // char user_login_path[MAX_SIZE];
+    FILE *fp;
+
+    sprintf(user_group_path, "GROUPS/%s/%s.txt", GID, UID);
+
+    fp = fopen(user_group_path, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    delete_file(user_group_path);
 
     return 1;
 }

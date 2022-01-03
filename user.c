@@ -3,6 +3,7 @@
  * validate file name FName
  * improve invalid input error messages with input format
  * handle ERR messages from server
+ * malloc message
 **/
 
 // ISSUES
@@ -43,7 +44,7 @@ int main(int argc, char *argv[]) {
 
     char command[MAX_SIZE];
     char keyword[MAX_SIZE];
-    char message[MAX_SIZE];
+    // char message[MAX_SIZE];
     /* strcpy(message, ""); */
 
     validate_program_input(argc, argv);
