@@ -44,9 +44,10 @@ int subscribe_user(char *UID, char *GID);
 int unsubscribe_user(char *UID, char *GID);
 int create_new_group(char *GID, char *GName);
 
-int check_password(char *pass, char *user_pass_path);
-int get_groups(GROUPLIST *list);
+int  check_password(char *pass, char *user_pass_path);
+int  get_groups(GROUPLIST *list);
 void SortGList(GROUPLIST *list);
+void swap_groups(int g1, int g2, GROUPLIST *list);
 void GROUPLIST_to_string(GROUPLIST *list, char *reply);
 
 int  create_socket_datagram();

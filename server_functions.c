@@ -966,6 +966,11 @@ int get_groups(GROUPLIST *list) {
         return(-1);
     }
 
+    /* DEBUG */
+    for (int i = 0; i < list->no_groups; i++) {
+        printf(">>> g[%d] = %s\n", i, list->group_no[i]);
+    }
+
     if(list->no_groups>1) {
         SortGList(list);
     }
@@ -976,7 +981,50 @@ int get_groups(GROUPLIST *list) {
 
 void SortGList(GROUPLIST *list) {
 
-    // TODO
+    int i, j;
+    int n;
+
+    n = list->no_groups;
+
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < n - i - 1;  j++) {
+            if (strcmp(list->group_name[j], list->group_name[j+1]) > 0) {
+
+                /* DEBUG */
+                printf(">>> swap %s with %s\n", list->group_no[j], list->group_no[j+1]);
+                
+                swap_groups(j, j+1, list);
+            }
+        }
+    }
+}
+
+
+void swap_groups(int g1, int g2, GROUPLIST *list) {
+
+    int number_of_messages_aux;
+    char group_no_aux[20];
+    char group_name_aux[30];
+    char last_message_available_aux[5];
+
+    // save first group's values
+    number_of_messages_aux = list->number_of_messages[g1];
+    strcpy(group_no_aux, list->group_no[g1]);
+    strcpy(group_name_aux, list->group_name[g1]);
+    strcpy(last_message_available_aux, list->last_message_available[g1]);
+
+    // copy second group's values onto first group's fields
+    list->number_of_messages[g1] = list->number_of_messages[g2];
+    strcpy(list->group_no[g1], list->group_no[g2]);
+    strcpy(list->group_name[g1], list->group_name[g2]);
+    strcpy(list->last_message_available[g1], list->last_message_available[g2]);
+
+    // copy first group's values onto second group's fields
+    list->number_of_messages[g2] = number_of_messages_aux;
+    strcpy(list->group_no[g2], group_no_aux);
+    strcpy(list->group_name[g2], group_name_aux);
+    strcpy(list->last_message_available[g2], last_message_available_aux);
+
 }
 
 
@@ -985,10 +1033,7 @@ void GROUPLIST_to_string(GROUPLIST *list, char *reply) {
     int i = 0;
     char *aux_string = (char *)malloc(MAX_REPLY_SIZE);
 
-
-
-    /* DEBUG */
-    printf(">>> ECHO: GROUPLIST_to_string\n");
+    SortGList(list);
 
     strcpy(aux_string, "");
 
@@ -1002,8 +1047,8 @@ void GROUPLIST_to_string(GROUPLIST *list, char *reply) {
     }
     
     sprintf(reply, "RGL %d ", list->no_groups);
-
     strcat(reply, aux_string);
+    free(aux_string);
 }
 
 

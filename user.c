@@ -3,7 +3,6 @@
  * validate file name FName
  * improve invalid input error messages with input format
  * handle ERR messages from server
- * malloc message
  * Testar se GID existe??? select()
  * retrieve_command tem de funcionar para imagens!!!
 **/
