@@ -61,13 +61,17 @@ void register_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     sscanf(command, "%s %s %s", aux, UID, pass);
     if(!validate_registration_command(command, UID, pass)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sprintf(message, "REG %s %s\n", UID, pass);
 
@@ -79,6 +83,7 @@ void register_command(char* command) {
 
     validate_register_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -88,13 +93,17 @@ void unregister_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_registration_command(command, UID, pass)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sprintf(message, "UNR %s %s\n", UID, pass);
 
@@ -106,6 +115,7 @@ void unregister_command(char* command) {
 
     validate_unregister_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -115,8 +125,9 @@ void login_command(char* command) {
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     /* if (logged_in) {
         printf("> Failed to login. A user is already logged in.\n");
@@ -127,6 +138,9 @@ void login_command(char* command) {
     if (!validate_login_command(command, UID, pass)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     strcpy(logged_in_UID, UID);
     strcpy(logged_in_pass, pass);
@@ -141,6 +155,7 @@ void login_command(char* command) {
 
     validate_login_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -148,8 +163,9 @@ void logout_command(char* command) {
 
     char aux[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
         printf("> No user is currently logged in.\n");
@@ -161,16 +177,23 @@ void logout_command(char* command) {
         return;
     }
 
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
+
     sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
     // communication with server
     send_and_receive_UDP(message, reply);
     /* terminate_string_after_n_tokens(reply, 2); */
 
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
     sscanf(reply, "%s %s", aux, status);
 
     validate_logout_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -207,13 +230,17 @@ void groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     sscanf(command, "%s", aux);
     if(!validate_groups_command(command)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sprintf(message, "GLS\n");
 
@@ -226,11 +253,14 @@ void groups_command(char* command) {
 
     if (strcmp(N, "0") == 0) {
         printf("> There are no available groups.\n");
+        free(message);
+        free(reply);
         return;
     }
 
     show_groups(reply, N);
     
+    free(message);
     free(reply);
 }
 
@@ -241,8 +271,9 @@ void subscribe_command(char* command) {
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -253,6 +284,9 @@ void subscribe_command(char* command) {
     if(!validate_subscribe_command(command, GID, GName)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
     /* terminate_string_after_n_tokens(message, 4); */
@@ -268,6 +302,7 @@ void subscribe_command(char* command) {
 
     validate_subscribe_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -277,8 +312,9 @@ void unsubscribe_command(char* command) {
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -290,6 +326,9 @@ void unsubscribe_command(char* command) {
         return;
     }
 
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
+
     sprintf(message, "GUR %s %s\n", logged_in_UID, GID);
 
     // communication with server
@@ -300,6 +339,7 @@ void unsubscribe_command(char* command) {
 
     validate_usubscribe_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -308,8 +348,9 @@ void my_groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -320,6 +361,9 @@ void my_groups_command(char* command) {
     if(!validate_my_groups_command(command)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sprintf(message, "GLM %s\n", logged_in_UID);
 
@@ -333,10 +377,15 @@ void my_groups_command(char* command) {
 
     if (strcmp(N, "0") == 0) {
         printf("> Currently not subscribed to any group.\n");
+        free(message);
+        free(reply);
         return;
     }
 
     show_groups(reply, N);
+
+    free(message);
+    free(reply);
 }
 
 
@@ -376,13 +425,17 @@ void ulist_command() {
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
 
     if (!has_active_group) {
         printf("> There is no active group.\n");
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     sprintf(message, "ULS %s\n", active_GID);
 
@@ -397,11 +450,14 @@ void ulist_command() {
 
     sscanf(reply, "%s %s", aux, status);
     if (!validate_ulist_reply(reply, aux, status)) {
+        free(message);
+        free(reply);
         return;
     }
 
     show_users(reply);
 
+    free(message);
     free(reply);
 }
 
@@ -417,10 +473,10 @@ void post_command(char* command) {
     char Fname[MAX_SIZE];
     // char *data;
     char *ptr;
-    char *message_post;
     char status[MAX_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
     FILE *fp;
 
     /* DEBUG */
@@ -440,6 +496,9 @@ void post_command(char* command) {
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent)) {
         return;
     }
+
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     Tsize = strlen(text);
 
@@ -510,6 +569,7 @@ void post_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_post_reply(reply, aux, status);
 
+    free(message);
     free(reply);
 }
 
@@ -527,8 +587,9 @@ void retrieve_command(char* command) {
     char *data;
     char status[MAX_SIZE];
     char N[MAX_FILE_SIZE];
-    char message[MAX_SIZE];
-    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    // char message[MAX_SIZE];
+    char *message;
+    char *reply;
     FILE *fp; 
 
     /* DEBUG */
@@ -549,6 +610,9 @@ void retrieve_command(char* command) {
         return;
     }
 
+    message = (char*)malloc(MAX_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
+
     sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
     /* DEBUG */
@@ -565,6 +629,7 @@ void retrieve_command(char* command) {
         show_messages(reply);
     }
 
+    free(message);
     free(reply);
 }
 

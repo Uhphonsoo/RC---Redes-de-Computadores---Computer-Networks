@@ -827,7 +827,6 @@ int unsubscribe_user(char *UID, char *GID) {
     }
 
     delete_file(user_group_path);
-
     return 1;
 }
 
