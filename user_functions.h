@@ -54,5 +54,12 @@ void  create_TCP_socket();
 void  get_address_info_TCP();
 void  send_and_receive_UDP(char*, char*);
 void  send_and_receive_TCP(char*, char*, int);
+void  input_error();
+void  invalid_UID();
+void  invalid_Upass();
+void  invalid_NArgs();
+void  invalid_GID();
+void  invalid_GName();
+void  invalid_MID();
 
 #endif

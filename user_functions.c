@@ -33,22 +33,34 @@ void validate_program_input(int argc, char** argv) {
         gethostname(DSIP, MAX_SIZE);
         sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
     }
+
+    else if (argc == 3){
+        if (!strcmp(argv[1], "-n")){
+            strcpy(DSIP, argv[2]);
+            sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
+        }
+
+        else if (!strcmp(argv[1], "-p")){
+            strcpy(DSport, argv[2]);
+            gethostname(DSIP, MAX_SIZE);
+        }
+
+        else 
+            input_error();
+    }
+
     else if (argc == 5) {
-        if (strcmp(argv[1], "-n")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
-            exit(EXIT_FAILURE);
-        }
-        if (strcmp(argv[3], "-p")){
-            fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
-            exit(EXIT_FAILURE);
-        }
+        if (strcmp(argv[1], "-n"))
+            input_error();
+
+        if (strcmp(argv[3], "-p"))
+            input_error();
+
         strcpy(DSIP, argv[2]);
         strcpy(DSport, argv[4]);
     }
-    else {
-        fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
-        exit(EXIT_FAILURE);
-    }
+    else 
+        input_error();
 }
 
 
@@ -633,20 +645,20 @@ void retrieve_command(char* command) {
     free(reply);
 }
 
+// Validation functions
 
 int validate_registration_command(char* command, char* UID, char* pass) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 3) {
-        fprintf(stderr, "> Wrong number of arguments in input.\n");
+    if (get_number_of_tokens(command) != 3) {
+        invalid_NArgs();
         return 0;
     }
     if (!validate_UID(UID)) {
-        fprintf(stderr, "> Invalid user ID.\n");
+        invalid_UID();
         return 0;
     }
     if (!validate_pass(pass)) {
-        fprintf(stderr, "> Invalid user password.\n");
+        invalid_Upass();
         return 0;
     }
     return 1;
@@ -655,17 +667,16 @@ int validate_registration_command(char* command, char* UID, char* pass) {
 
 int validate_login_command(char* command, char* UID, char* pass) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 3) {
-        fprintf(stderr, "> Ivalid input.\n");
+    if (get_number_of_tokens(command) != 3) {
+        invalid_NArgs();
         return 0;
     }
     if (!validate_UID(UID)) {
-        fprintf(stderr, "> Invalid user ID.\n");
+        invalid_UID();
         return 0;
     }
     if (!validate_pass(pass)) {
-        fprintf(stderr, "> Invalid user password.\n");
+        invalid_Upass();
         return 0;
     }
     return 1;
@@ -674,9 +685,8 @@ int validate_login_command(char* command, char* UID, char* pass) {
 
 int validate_logout_command(char* command) {
     
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> logout_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 1) {
+        invalid_NArgs();
         return 0;
     }
     return 1;
@@ -685,9 +695,8 @@ int validate_logout_command(char* command) {
 
 int validate_exit_command(char* command) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> exit_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 1) {
+        invalid_NArgs();
         return 0;
     }
     return 1;
@@ -696,9 +705,8 @@ int validate_exit_command(char* command) {
 
 int validate_groups_command(char* command) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> validate_groups_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 1) {
+        invalid_NArgs();
         return 0;
     }
     return 1;
@@ -707,17 +715,16 @@ int validate_groups_command(char* command) {
 
 int validate_subscribe_command(char* command, char* GID, char* GName) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 3) {
-        fprintf(stderr, "> validate_subscribe_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 3) {
+        invalid_NArgs();
         return 0;
     }
     if (!validate_GID(GID)) {
-        fprintf(stderr, "validate_subscribe_command: Invalid group ID.\n");
+        invalid_GID();
         return 0;
     }
     if (!validate_GName(GName)) {
-        fprintf(stderr, "validate_subscribe_command: Invalid group name.\n");
+        invalid_GName();
         return 0;
     }
     return 1;
@@ -726,13 +733,12 @@ int validate_subscribe_command(char* command, char* GID, char* GName) {
 
 int  validate_unsubscribe_command(char* command, char* GID) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 2) {
-        fprintf(stderr, "> validate_unsubscribe_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 2) {
+        invalid_NArgs();
         return 0;
     }
     if (!validate_GID(GID)) {
-        fprintf(stderr, "validate_unsubscribe_command: Invalid group ID.\n");
+        invalid_GID();
         return 0;
     }
     return 1;
@@ -741,9 +747,8 @@ int  validate_unsubscribe_command(char* command, char* GID) {
 
 int validate_my_groups_command(char* command) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 1) {
-        fprintf(stderr, "> validate_my_groups_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 1) {
+        invalid_NArgs();
         return 0;
     }
     return 1;
@@ -752,13 +757,12 @@ int validate_my_groups_command(char* command) {
 
 int validate_select_command(char* command, char* GID) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 2) {
-        fprintf(stderr, "> validate_select_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 2) {
+        invalid_NArgs();
         return 0;
     }
     if (!validate_GID(GID)) {
-        fprintf(stderr, "> validate_select_command: Invalid group ID.\n");
+        invalid_GID();
         return 0;
     }
     return 1;
@@ -811,23 +815,20 @@ int validate_post_command(char* command, char* aux, char* text, char* Fname, int
 
 int validate_retrieve_command(char *command, char *MID) {
 
-    int number_of_tokens_command = get_number_of_tokens(command);
-    if (number_of_tokens_command != 2) {
-        fprintf(stderr, "> validate_retrieve_command: Invalid input.\n");
+    if (get_number_of_tokens(command) != 2) {
+        invalid_NArgs();
         return 0;
     }
     if (!validate_MID(MID)) {
-        fprintf(stderr, "validate_retrieve_command: Invalid message ID.\n");
+        invalid_MID();
         return 0;
     }
     return 1;
 }
 
-
 void validate_register_reply(char *reply, char *aux, char *status) {
 
-    int number_of_tokens_reply = get_number_of_tokens(reply);
-    if ((number_of_tokens_reply != 2) || strcmp("RRG", aux)) {
+    if ((get_number_of_tokens(reply) != 2) || strcmp("RRG", aux)) {
         fprintf(stderr, "> register_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
@@ -1187,4 +1188,33 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
         read_bytes++;
     }
     close(fd_TCP);
+}
+
+void input_error(){
+    fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
+    exit(EXIT_FAILURE);
+}
+
+void invalid_UID(){
+    fprintf(stderr, "> Invalid user ID.\n");
+}
+
+void invalid_Upass(){
+    fprintf(stderr, "> Invalid user password.\n");
+}
+
+void invalid_NArgs(){
+    fprintf(stderr, "> Invalid number of arguments in input.\n");
+}
+
+void invalid_GID(){
+    fprintf(stderr, "Invalid group ID.\n");
+}
+
+void invalid_GName(){
+    fprintf(stderr, "Invalid group name.\n");
+}
+
+void invalid_MID(){
+    fprintf(stderr, "Invalid message ID.\n");
 }
