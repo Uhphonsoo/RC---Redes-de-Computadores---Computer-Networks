@@ -57,11 +57,6 @@ int main(int argc, char *argv[]) {
     Group_list = malloc(sizeof(*Group_list));
     Number_of_groups = get_groups(Group_list);
 
-    /* DEBUG */
-    for (int i = 0; i < Group_list->no_groups; i++) {
-        printf(">>> g[%d] = %s\n", i, Group_list->group_no[i]);
-    }
-
     // initialize group list
     for (int i = 0; i < MAX_GROUPS; i++) {
         Group_list->number_of_messages[i] = 0;

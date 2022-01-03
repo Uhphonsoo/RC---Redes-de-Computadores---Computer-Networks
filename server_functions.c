@@ -966,11 +966,6 @@ int get_groups(GROUPLIST *list) {
         return(-1);
     }
 
-    /* DEBUG */
-    for (int i = 0; i < list->no_groups; i++) {
-        printf(">>> g[%d] = %s\n", i, list->group_no[i]);
-    }
-
     if(list->no_groups>1) {
         SortGList(list);
     }
@@ -988,11 +983,7 @@ void SortGList(GROUPLIST *list) {
 
     for (i = 0; i < n; i++) {
         for (j = 0; j < n - i - 1;  j++) {
-            if (strcmp(list->group_name[j], list->group_name[j+1]) > 0) {
-
-                /* DEBUG */
-                printf(">>> swap %s with %s\n", list->group_no[j], list->group_no[j+1]);
-                
+            if (strcmp(list->group_no[j], list->group_no[j+1]) > 0) {
                 swap_groups(j, j+1, list);
             }
         }
