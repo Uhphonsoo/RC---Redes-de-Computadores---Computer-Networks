@@ -137,7 +137,11 @@ void login_command(char* command) {
     char *message;
     char *reply;
 
-    // VALIDATE command
+    if (logged_in) {
+        printf("> Failed to login. A user is already logged in.\n");
+        return;
+    }
+
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_login_command(command, UID, pass)) {
         return;
@@ -217,9 +221,7 @@ void exit_command(char* command) {
 
     // CLOSE & CLEAN
     freeaddrinfo(res_UDP);
-    close(fd_UDP);
     freeaddrinfo(res_TCP);
-    close(fd_TCP);
 
     exit(EXIT_SUCCESS);
 }
