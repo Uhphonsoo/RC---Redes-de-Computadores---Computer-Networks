@@ -275,9 +275,6 @@ void groups_command(char *message, int fd, struct sockaddr_in *addr) {
         return;
     }
 
-    /* DEBUG */
-    printf(">>> verbose_mode = %d\n", verbose_mode);
-
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
         
@@ -985,7 +982,28 @@ void SortGList(GROUPLIST *list) {
 
 void GROUPLIST_to_string(GROUPLIST *list, char *reply) {
 
-    // TODO
+    int i = 0;
+    char *aux_string = (char *)malloc(MAX_REPLY_SIZE);
+
+
+
+    /* DEBUG */
+    printf(">>> ECHO: GROUPLIST_to_string\n");
+
+    strcpy(aux_string, "");
+
+    for (i = 0; i < list->no_groups; i++) {
+        strcat(aux_string, list->group_no[i]);
+        strcat(aux_string, " ");
+        strcat(aux_string, list->group_name[i]);
+        strcat(aux_string, " ");
+        strcat(aux_string, list->last_message_available[i]);
+        strcat(aux_string, " ");
+    }
+    
+    sprintf(reply, "RGL %d ", list->no_groups);
+
+    strcat(reply, aux_string);
 }
 
 

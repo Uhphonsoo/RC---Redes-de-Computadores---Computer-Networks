@@ -1,10 +1,14 @@
 #ifndef _SERVER_FUNCTIONS_
 #define _SERVER_FUNCTIONS_
 
+#include "constants.h"
+
 typedef struct GROUPLIST_tag {
     int no_groups;
-    char group_no[99][20];
-    char group_name[99][30];
+    int number_of_messages[MAX_GROUPS];
+    char group_no[MAX_GROUPS][20];
+    char group_name[MAX_GROUPS][30];
+    char last_message_available[MAX_GROUPS][5];
 } GROUPLIST;
 
 void validate_program_input(int argc, char **argv, char *DSport);

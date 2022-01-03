@@ -57,6 +57,12 @@ int main(int argc, char *argv[]) {
     Group_list = malloc(sizeof(*Group_list));
     Number_of_groups = get_groups(Group_list);
 
+    // initialize group list
+    for (int i = 0; i < MAX_GROUPS; i++) {
+        Group_list->number_of_messages[i] = 0;
+        strcpy(Group_list->last_message_available[i], "0000");
+    }
+
     /* DEBUG */
     /* strcpy(Group_list->group_name[0], "teste");
     printf(">>> Group_list->group_name[0] = %s|\n", Group_list->group_name[0]);
