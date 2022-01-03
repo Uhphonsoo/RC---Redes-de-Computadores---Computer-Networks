@@ -251,6 +251,9 @@ void groups_command(char* command) {
     sscanf(reply, "%s %s", aux, N);
     validate_groups_reply(reply, aux, N);
 
+    /* DEBUG */
+    printf(">>> reply = %s|\n", reply);
+
     if (strcmp(N, "0") == 0)
         printf("> There are no available groups.\n");
     else

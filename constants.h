@@ -10,5 +10,6 @@
 #define PORT_CONST 58000
 #define PORT "58000"
 #define FENIX_GROUP_NUMBER 20
+#define MAX_GROUPS 99
 
 #endif
