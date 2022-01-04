@@ -5,6 +5,7 @@
  * handle ERR messages from server
  * Testar se GID existe??? select()
  * retrieve_command tem de funcionar para imagens!!!
+ * verificar tamanhos alocados para as strings todas
 **/
 
 // ISSUES

@@ -1,6 +1,7 @@
 // TODO
 /**
  * time out in select
+ * verificar tamanhos alocados para as strings todas
 **/
 
 // ISSUES
@@ -16,7 +17,7 @@
 #include <netdb.h> 
 #include <ctype.h>
 #include "functions.h"
-#include "server_functions.h"
+#include "DS_functions.h"
 #include "constants.h"
 
 int verbose_mode;
@@ -58,10 +59,7 @@ int main(int argc, char *argv[]) {
     Number_of_groups = get_groups(Group_list);
 
     // initialize group list
-    for (int i = 0; i < MAX_GROUPS; i++) {
-        Group_list->number_of_messages[i] = 0;
-        strcpy(Group_list->last_message_available[i], "0000");
-    }
+    initialize_group_list(Group_list);
 
     /* DEBUG */
     /* strcpy(Group_list->group_name[0], "teste");
@@ -130,6 +128,7 @@ int main(int argc, char *argv[]) {
                     printf(">>> ECHO 3\n");
 
                     message = (char *)malloc(MAX_SIZE);
+                    message[0] = '\0';
 
                     receive_message_UDP(fd_UDP, message, &addr);
 

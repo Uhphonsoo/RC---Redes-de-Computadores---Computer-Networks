@@ -1,16 +1,16 @@
-all: client server
+all: client DS
 
 client: user.o functions.o user_functions.o
 	gcc user.o functions.o user_functions.o -o user 
 
-server: server.o functions.o server_functions.o
-	gcc server.o functions.o server_functions.o -o server
+DS: DS.o functions.o DS_functions.o
+	gcc DS.o functions.o DS_functions.o -o DS
 
 user.o: user.c
 	gcc -c user.c
 
-server.o: server.c
-	gcc -c server.c
+DS.o: DS.c
+	gcc -c DS.c
 
 functions.o: functions.c
 	gcc -c functions.c
