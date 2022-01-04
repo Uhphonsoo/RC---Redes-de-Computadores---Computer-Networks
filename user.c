@@ -5,7 +5,8 @@
  * handle ERR messages from server
  * Testar se GID existe??? select()
  * retrieve_command tem de funcionar para imagens!!!
- * verificar tamanhos alocados para as strings todas
+ * check allocated sizes for all string
+ * reply is sometimes read incorrectly in ulist command
 **/
 
 // ISSUES
