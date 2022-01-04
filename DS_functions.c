@@ -1226,6 +1226,7 @@ int get_users_of_group(char *user_list, char *GID, char *GName) {
         return 0;
     }
     get_group_name(GID, GName);
+    terminate_string_after_n_tokens(GName, 1);
 
     strcpy(user_list, "");
     sprintf(group_path, "GROUPS/%s", GID);

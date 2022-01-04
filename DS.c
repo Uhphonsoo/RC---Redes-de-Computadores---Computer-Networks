@@ -1,11 +1,12 @@
 // TODO
 /**
  * time out in select
- * verificar tamanhos alocados para as strings todas
+ * check allocated sizes for all strings
 **/
 
 // ISSUES
 /**
+ * reply in ulist_command is sometimes read incorrectly (???)
  * not sure if get_client_ip_and_port is working as intended
 **/
 
