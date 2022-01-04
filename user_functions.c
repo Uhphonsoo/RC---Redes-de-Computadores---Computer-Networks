@@ -426,8 +426,14 @@ void ulist_command() {
 
     sprintf(message, "ULS %s\n", active_GID);
 
+    /* DEBUG */
+    printf(">>> ulist: message = %s|\n", message);
+
     // COMMUNICATION with server
     send_and_receive_TCP(message, reply, strlen(message));
+
+    /* DEBUG */
+    printf(">>> ulist: reply = %s|\n", reply);
 
     // VALIDATE server reply
     sscanf(reply, "%s %s", aux, status);
@@ -1095,16 +1101,20 @@ void get_address_info_TCP() {
 
 void send_and_receive_UDP(char* message, char* reply){
 
+    int n;
+
     // SOCKET creation
     create_UDP_socket();
     get_address_info_UDP();
 
     // SEND message and validate return value
-    validate_sendto(sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen));
+    n = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    validate_sendto(n);
 
     // RECEIVE reply and validate return value
     addrlen_UDP = sizeof(addr_UDP);
-    validate_recvfrom(recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP));
+    n = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+    validate_recvfrom(n);
 
     // CLOSE socket
     close(fd_UDP);
@@ -1134,6 +1144,11 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
     while (reply[read_bytes] != '\n') {
         n = read(fd_TCP, ptr, 1);
         validate_read(n);
+        
+        if (reply[read_bytes] == '\n') {
+            break;
+        }
+        
         ptr++;
         read_bytes++;
     }

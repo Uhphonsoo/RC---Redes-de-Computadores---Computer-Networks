@@ -12,7 +12,6 @@ typedef struct GROUPLIST_tag {
 } GROUPLIST;
 
 void validate_program_input(int argc, char **argv, char *DSport);
-
 void process_message(char *message, int fd, struct sockaddr_in *addr);
 
 void register_command(char *message, int fd, struct sockaddr_in *addr);
@@ -35,8 +34,10 @@ void process_groups_message(char *message, char *reply);
 void process_subscribe_message(char *message, char *reply);
 void process_unsubscribe_message(char *message, char *reply);
 void process_my_groups_message(char *message, char *reply);
+void process_ulist_message(char *message, char *reply);
 
 int user_is_registered(char *UID);
+int user_is_logged_in(char *UID);
 int register_user(char *UID, char *pass);
 int unregister_user(char *UID, char *pass);
 int login_user(char *UID, char *pass);
@@ -44,15 +45,20 @@ int logout_user(char *UID, char *pass);
 int subscribe_user(char *UID, char *GID);
 int unsubscribe_user(char *UID, char *GID);
 int create_new_group(char *GID, char *GName);
+int group_exists(char *GID);
 
-int  check_password(char *pass, char *user_pass_path);
-int  get_groups(GROUPLIST *list);
-int  get_my_groups(GROUPLIST *list, char *UID);
+int check_password(char *pass, char *user_pass_path);
+int get_groups(GROUPLIST *list);
+int get_my_groups(GROUPLIST *list, char *UID);
+int get_users_of_group(char *user_list, char *GID, char *GName);
+int get_group_name(char *GID, char *GName);
 
-void initialize_group_list(GROUPLIST *list);
-void SortGList(GROUPLIST *list);
-void swap_groups(int g1, int g2, GROUPLIST *list);
+void  initialize_group_list(GROUPLIST *list);
+void  SortGList(GROUPLIST *list);
+void  swap_groups(int g1, int g2, GROUPLIST *list);
 char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */);
+
+void get_UID_from_file_name(char *UID, char *file_name);
 
 int  create_socket_datagram();
 void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
@@ -65,6 +71,7 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_message_TCP(int fd, char *message);
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
+void send_reply_TCP(char *reply, int fd);
 
 void make_file(char *file_path);
 void delete_file(char *file_path);

@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 
     int n;
     int fd_TCP = 0, fd_UDP = 0, client_fd;
-    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP;
+    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP, *res_client, hints_client;
     struct sockaddr_in clientaddr;
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
@@ -144,15 +144,17 @@ int main(int argc, char *argv[]) {
                 else {
 
                     /* DEBUG */
-                    /* printf(">>> ECHO 4\n"); */
+                    printf(">>> ECHO 4\n");
 
                     message = (char *)malloc(MAX_SIZE);
-                    
-                    /* struct sockaddr_in addr; */
+
+                    /* DEBUG */
+                    /* n = read(i, message, 10); */
+
                     receive_message_TCP(i, message);
 
                     /* DEBUG */
-                    printf(">>> TCP: message = %s|\n", message);
+                    /* printf(">>> TCP: message = %s|\n", message); */
                     
                     process_message(message, i, &addr);
                     
