@@ -251,9 +251,6 @@ void groups_command(char* command) {
     sscanf(reply, "%s %s", aux, N);
     validate_groups_reply(reply, aux, N);
 
-    /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
-
     if (strcmp(N, "0") == 0)
         printf("> There are no available groups.\n");
     else
@@ -360,8 +357,14 @@ void my_groups_command(char* command) {
 
     sprintf(message, "GLM %s\n", logged_in_UID);
 
+    /* DEBUG */
+    printf(">>> message = %s|\n", message);
+
     // COMMUNICATION with server
     send_and_receive_UDP(message, reply);
+
+    /* DEBUG */
+    printf(">>> reply = %s|\n", reply);
 
     // VALIDATE server reply
     sscanf(reply, "%s %s", aux, N);

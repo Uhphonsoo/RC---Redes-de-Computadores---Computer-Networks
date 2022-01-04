@@ -34,6 +34,7 @@ void process_logout_message(char *message, char *reply);
 void process_groups_message(char *message, char *reply);
 void process_subscribe_message(char *message, char *reply);
 void process_unsubscribe_message(char *message, char *reply);
+void process_my_groups_message(char *message, char *reply);
 
 int user_is_registered(char *UID);
 int register_user(char *UID, char *pass);
@@ -46,9 +47,12 @@ int create_new_group(char *GID, char *GName);
 
 int  check_password(char *pass, char *user_pass_path);
 int  get_groups(GROUPLIST *list);
+int  get_my_groups(GROUPLIST *list, char *UID);
+
+void initialize_group_list(GROUPLIST *list);
 void SortGList(GROUPLIST *list);
 void swap_groups(int g1, int g2, GROUPLIST *list);
-void GROUPLIST_to_string(GROUPLIST *list, char *reply);
+char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */);
 
 int  create_socket_datagram();
 void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
