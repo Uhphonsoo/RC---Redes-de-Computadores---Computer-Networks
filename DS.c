@@ -2,6 +2,8 @@
 /**
  * time out in select
  * check allocated sizes for all strings
+ * frees for all mallocs
+ * validate_post_message
 **/
 
 // ISSUES
@@ -143,7 +145,8 @@ int main(int argc, char *argv[]) {
                 }
                 // if i == client_fd
                 else {
-
+                    
+                    char keyword[10];
                     /* DEBUG */
                     printf(">>> ECHO 4\n");
 
@@ -152,12 +155,20 @@ int main(int argc, char *argv[]) {
                     /* DEBUG */
                     /* n = read(i, message, 10); */
 
-                    receive_message_TCP(i, message);
+                    // receive_message_TCP(i, message);
 
                     /* DEBUG */
                     /* printf(">>> TCP: message = %s|\n", message); */
                     
-                    process_message(message, i, &addr);
+                    // process_message(message, i, &addr);
+
+                    /* receive_keyword_TCP(keyword, i); */
+                    receive_n_chars_TCP(3, keyword, i);
+
+                    /* DEBUG */
+                    printf(">>> >>> keyword = %s|\n", keyword);
+                    
+                    process_keyword(keyword, i, &addr);
                     
                     FD_CLR(i, &current_sockets);
                     free(message);
