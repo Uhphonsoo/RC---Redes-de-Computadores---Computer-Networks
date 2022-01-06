@@ -13,6 +13,7 @@ typedef struct GROUPLIST_tag {
 
 void validate_program_input(int argc, char **argv, char *DSport);
 void process_message(char *message, int fd, struct sockaddr_in *addr);
+void process_keyword(char *keyword, int fd, struct sockaddr_in *addr);
 
 void register_command(char *message, int fd, struct sockaddr_in *addr);
 void unregister_command(char *message, int fd, struct sockaddr_in *addr);
@@ -57,6 +58,9 @@ void  initialize_group_list(GROUPLIST *list);
 void  SortGList(GROUPLIST *list);
 void  swap_groups(int g1, int g2, GROUPLIST *list);
 char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */);
+void increment_last_message_available(GROUPLIST *list, char *GID);
+int  get_index(GROUPLIST *list, char *GID);
+void get_next_MID(char *MID, GROUPLIST *list, char *GID);
 
 void get_UID_from_file_name(char *UID, char *file_name);
 
@@ -70,10 +74,18 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 // void get_address_info_server_TCP();
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_message_TCP(int fd, char *message);
+void receive_keyword_TCP(char *keyword, int fd);
+void receive_n_chars_TCP(int n, char *string, int fd);
+int  receive_n_plus_1_chars_TCP(int n, char *string, int fd);
+void receive_first_tokens_post_TCP(char *string, int fd);
+void receive_n_tokens_TCP(int n, char *string, int fd);
+void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd);
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 void send_reply_TCP(char *reply, int fd);
 
 void make_file(char *file_path);
+void make_author_file(char *UID, char *GID,char *MID);
+void make_text_file(char *text, char *GID, char *MID);
 void delete_file(char *file_path);
 
 

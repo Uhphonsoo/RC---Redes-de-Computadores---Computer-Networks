@@ -460,6 +460,10 @@ void post_command(char* command) {
     char *reply;
     FILE *fp;
 
+    /* DEBUG */
+    login_command("login 77777 password\n");
+    select_command("select 06\n");
+
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;

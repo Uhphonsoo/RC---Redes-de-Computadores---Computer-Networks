@@ -124,6 +124,30 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
 }
 
 
+void process_keyword(char *keyword, int fd, struct sockaddr_in *addr) {
+
+    if (strcmp(keyword, "ULS") == 0) {
+
+        ulist_command(keyword, fd, addr);
+        clear_string(keyword);
+    }
+    else if (strcmp(keyword, "PST") == 0) {
+
+        post_command(keyword, fd, addr);
+        clear_string(keyword);
+    }
+    else if (strcmp(keyword, "RTV") == 0) {
+
+        retrieve_command(keyword, fd, addr);
+        clear_string(keyword);
+    }
+    else {
+        // ERR
+        fprintf(stderr, "ERROR: process_keyword\n");
+    }
+}
+
+
 void register_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
@@ -385,7 +409,7 @@ void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
 }
 
 
-void ulist_command(char *message, int fd, struct sockaddr_in *addr) {
+void ulist_command(char *keyword, int fd, struct sockaddr_in *addr) {
 
     // char aux[MAX_SIZE];
     // char UID[MAX_SIZE];
@@ -393,8 +417,10 @@ void ulist_command(char *message, int fd, struct sockaddr_in *addr) {
     char client_ip[MAX_SIZE];
     char client_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
-    
-    process_ulist_message(message, reply);
+    char message_remainder[MAX_SIZE];
+
+    receive_n_chars_TCP(4, message_remainder, fd);
+    process_ulist_message(message_remainder, reply);
 
     // communication with server
     send_reply_TCP(reply, fd);
@@ -412,14 +438,70 @@ void ulist_command(char *message, int fd, struct sockaddr_in *addr) {
         printf("Request with IP %s on port %s.\n", client_ip, client_port);
     }
 
-    clear_string(message);
+    clear_string(message_remainder);
     free(reply);
 }
 
 
-void post_command(char *message, int fd, struct sockaddr_in *addr) {
+void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    int i;
+    int number_of_tokens;
+    int file_is_being_sent = 0;
+    int Tsize_int;
+    // char aux[MAX_SIZE];
+    // char UID[MAX_SIZE];
+    // char status[MAX_SIZE];
+    char UID[MAX_SIZE];
+    char GID[MAX_SIZE];
+    char Tsize[MAX_SIZE];
+    char FName[MAX_SIZE];
+    char Fsize[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char text[241];
+    char MID[MAX_SIZE];
+
+    char *message_aux1 = (char *)malloc(MAX_SIZE);
+    char *message_aux2 = (char *)malloc(MAX_SIZE);
+    char *reply = (char*)malloc(MAX_SIZE);
+    
+    /* validate_post_message(message); */ // !!!
+
+    /* vvv */
+
+    receive_first_tokens_post_TCP(message_aux1, fd);
+
+    sscanf(message_aux1, "%s %s %s", UID, GID, Tsize);
+    Tsize_int = atoi(Tsize);
+    file_is_being_sent = receive_n_plus_1_chars_TCP(Tsize_int, text, fd);
+
+    get_next_MID(MID, Group_list, GID);
+
+    if (file_is_being_sent) {
+
+        receive_n_tokens_TCP(2, message_aux2, fd);        
+        sscanf(message_aux2, "%s %s", FName, Fsize);
+
+        receive_to_file_TCP(FName, Fsize, GID, MID, fd);
+    }
+
+    /* ^^^ */
+
+    make_author_file(UID, GID, MID);
+    make_text_file(text, GID, MID);
+
+    increment_last_message_available(Group_list, GID);
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+    }
+
+    clear_string(message_aux1);
+    clear_string(message_aux2);
+    free(reply);
 }
 
 
@@ -775,7 +857,7 @@ void process_my_groups_message(char *message, char *reply) {
 }
 
 
-void process_ulist_message(char *message, char *reply) {
+void process_ulist_message(char *message_remainder, char *reply) {
 
     // int n;
     int number_of_tokens;
@@ -788,15 +870,16 @@ void process_ulist_message(char *message, char *reply) {
     /* GROUPLIST *list; */
     // int number_of_groups;
     
-    terminate_string_after_n_tokens(message, 2);
-    number_of_tokens = get_number_of_tokens(message);
+    terminate_string_after_n_tokens(message_remainder, 1);
+    number_of_tokens = get_number_of_tokens(message_remainder);
 
-    if (number_of_tokens != 2) {
+    if (number_of_tokens != 1) {
         strcpy(reply, "ERR\n");
         return;
     }
 
-    sscanf(message, "%s %s", aux, GID);
+    /* sscanf(message, "%s %s", aux, GID); */
+    sscanf(message_remainder, "%s", GID);
 
     if (!group_exists(GID)) {
         strcpy(reply, "RUL NOK\n");
@@ -1226,7 +1309,13 @@ int get_users_of_group(char *user_list, char *GID, char *GName) {
         return 0;
     }
     get_group_name(GID, GName);
-    terminate_string_after_n_tokens(GName, 1);
+    /* DEBUG */
+    printf(">>> GName = %s\n", GName);
+
+    /* terminate_string_after_n_tokens(GName, 1); */
+
+    /* DEBUG */
+    printf(">>> GName = %s\n", GName);
 
     strcpy(user_list, "");
     sprintf(group_path, "GROUPS/%s", GID);
@@ -1261,6 +1350,9 @@ int get_group_name(char *GID, char *GName) {
 
     fp = fopen(group_name_path, "r");
     Fsize = get_file_size(fp);
+    /* DEBUG */
+    /* printf(">>> Fsize = %d\n", Fsize); */
+
     fread(GName, Fsize, 1, fp);
 
     return 1;
@@ -1347,6 +1439,107 @@ char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */) {
     /* sprintf(reply, "RGL %d ", list->no_groups);
     strcat(reply, aux_string); */
     /* free(aux_string); */
+}
+
+
+void increment_last_message_available(GROUPLIST *list, char *GID) {
+
+    int i;
+    int last_message_available_int;
+    int new_last_message_available_int;
+    char last_message_available[10];
+    char new_last_message_available[10];
+
+    i = get_index(list, GID);
+
+    /* DEBUG */
+    printf(">>> index = %d\n", i);
+
+    last_message_available_int = atoi(list->last_message_available[i]);
+    new_last_message_available_int = last_message_available_int + 1;
+
+    /* DEBUG */
+    printf(">>> last_message_available_int = %d\n", last_message_available_int);
+    printf(">>> next_message_available_int = %d\n", new_last_message_available_int);
+
+    if (new_last_message_available_int > 0 && new_last_message_available_int < 10) {
+        sprintf(new_last_message_available, "000%d", new_last_message_available_int);
+    }
+    else if (new_last_message_available_int > 9 && new_last_message_available_int < 100) {
+        sprintf(new_last_message_available, "00%d", new_last_message_available_int);
+    }
+    else if (new_last_message_available_int > 99 && new_last_message_available_int < 1000) {
+        sprintf(new_last_message_available, "0%d", new_last_message_available_int);
+    }
+    else if (new_last_message_available_int > 999 && new_last_message_available_int < 10000) {
+        sprintf(new_last_message_available, "%d", new_last_message_available_int);
+    }
+    else {
+        fprintf(stderr, ">>> ERROR: increment_last_message_available\n");
+    }
+
+    /* DEBUG */
+    printf(">>> new_last_message_available = %s\n", new_last_message_available);
+
+    strcpy(list->last_message_available[i], new_last_message_available);
+}
+
+
+void get_next_MID(char *MID, GROUPLIST *list, char *GID) {
+
+    int i;
+    int last_message_available_int;
+    int new_last_message_available_int;
+    char last_message_available[10];
+    char new_last_message_available[10];
+
+    i = get_index(list, GID);
+
+    /* DEBUG */
+    printf("@@@ index = %d\n", i);
+
+    last_message_available_int = atoi(list->last_message_available[i]);
+    new_last_message_available_int = last_message_available_int + 1;
+
+    /* DEBUG */
+    printf("@@@ last_message_available_int = %d\n", last_message_available_int);
+    printf("@@@ next_message_available_int = %d\n", new_last_message_available_int);
+
+    if (new_last_message_available_int > 0 && new_last_message_available_int < 10) {
+        sprintf(new_last_message_available, "000%d", new_last_message_available_int);
+    }
+    else if (new_last_message_available_int > 9 && new_last_message_available_int < 100) {
+        sprintf(new_last_message_available, "00%d", new_last_message_available_int);
+    }
+    else if (new_last_message_available_int > 99 && new_last_message_available_int < 1000) {
+        sprintf(new_last_message_available, "0%d", new_last_message_available_int);
+    }
+    else if (new_last_message_available_int > 999 && new_last_message_available_int < 10000) {
+        sprintf(new_last_message_available, "%d", new_last_message_available_int);
+    }
+    else {
+        fprintf(stderr, "@@@ ERROR: increment_last_message_available\n");
+    }
+
+    /* DEBUG */
+    printf("@@@ new_last_message_available = %s\n", new_last_message_available);
+
+    strcpy(MID, new_last_message_available);
+}
+
+
+int  get_index(GROUPLIST *list, char *GID) {
+
+    int i;
+    int n = list->no_groups;
+
+    for (i = 0; i < n; i++) {
+        if (strcmp(GID, list->group_no[i]) == 0) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 
@@ -1529,6 +1722,157 @@ void receive_message_TCP(int fd, char *message) {
 }
 
 
+void receive_keyword_TCP(char *keyword, int fd) {
+
+    int n;
+    int bytes_to_read = 10*sizeof(char);
+    int read_bytes = 0;
+
+    keyword[0] = '\0';
+
+    n = read(fd, keyword, bytes_to_read);
+    validate_read(n);
+}
+
+
+void receive_n_chars_TCP(int n, char *string, int fd) {
+
+    int ret;
+    int bytes_to_read = n * sizeof(char);
+    int read_bytes = 0;
+
+    string[0] = '\0';
+
+    ret = read(fd, string, bytes_to_read);
+    validate_read(ret);
+
+    string[n] = '\0';
+}
+
+
+/**
+ * Returns 1 if char after nth char is ' ' and 0 otherwise 
+ **/
+int receive_n_plus_1_chars_TCP(int n, char *string, int fd) {
+
+    int ret;
+    int bytes_to_read = (n + 1) * sizeof(char);
+    int read_bytes = 0;
+
+    string[0] = '\0';
+
+    ret = read(fd, string, bytes_to_read);
+    validate_read(ret);
+
+    if (string[n] == ' ') {
+        ret = 1;
+    }
+    else {
+        ret = 0;
+    }
+
+    string[n] = '\0';
+    return ret;
+}
+
+
+void receive_first_tokens_post_TCP(char *string, int fd) {
+
+    // int ret;
+    // int bytes_to_read = n * sizeof(char);
+    // int read_bytes = 0;
+    int ret;
+    int spaces_to_read = 4;
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (spaces_to_read > 0) {
+        ret = read(fd, ptr, 1);
+        validate_read(ret);
+
+        if (*ptr == ' ') {
+            spaces_to_read--;
+        }
+
+        ptr++;
+    }
+    *ptr = '\0';
+}
+
+
+void receive_n_tokens_TCP(int n, char *string, int fd) {
+
+    int ret;
+    int spaces_to_read = n;
+    char *ptr;
+    char aux[1];
+
+    string[0] = '\0';
+    ptr = string;
+
+    // leading spaces don't count towards spaces_to_read
+    ret = read(fd, aux, 1);
+    validate_read(ret);
+
+    if (!isspace(*aux)) {
+        string[0] = *aux;
+        ptr++; 
+    }
+
+    while (isspace(*aux)) {
+        ret = read(fd, aux, 1);
+        validate_read(ret);
+    }
+
+    // after leading spaces
+    while (spaces_to_read > 0) {
+        ret = read(fd, ptr, 1);
+        validate_read(ret);
+
+        if (isspace(*ptr)) {
+            spaces_to_read--;
+        }
+
+        ptr++;
+    }
+
+    ptr--;
+    *ptr = '\0';
+}
+
+
+void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd) {
+
+    int n;
+    int n_bytes = atoi(Fsize);
+    FILE *fp;
+    char file_path[MAX_SIZE];
+    char message_dir_path[MAX_SIZE];
+    char *buffer = (char *)malloc(n_bytes);
+
+    sprintf(message_dir_path, "GROUPS/%s/MSG/%s", GID, MID);
+    sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
+
+    n = mkdir(message_dir_path, 0700);
+
+    /* DEBUG */
+    printf(">>> file_path = %s|\n", file_path);
+
+    /* make_file(file_path); */
+
+    fp = fopen(file_path, "a");
+    /* validate_fopen(fp); */
+
+    n = read(fd, buffer, n_bytes);
+    validate_read(n);
+    fwrite(buffer, 1, n_bytes, fp);
+
+    fclose(fp);
+}
+
+
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr) {
 
     int n;
@@ -1579,7 +1923,46 @@ void make_file(char *file_path) {
 
     fp = fopen(file_path ,"a");
     /* validate_fopen(fp); */
+    /* fclose(fp); */ // ???
 }
+
+
+void make_author_file(char *UID, char *GID, char *MID) {
+
+    char author_file_path[MAX_SIZE];
+    FILE *fp;
+
+    /* get_next_MID(MID, Group_list, GID); */
+
+    sprintf(author_file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
+
+    /* DEBUG */
+    printf(">>> UID = %s|\n", UID);
+
+    fp = fopen(author_file_path, "w");
+    fprintf(fp, "%s", UID);
+
+    fclose(fp);
+}
+
+
+void make_text_file(char *text, char *GID, char *MID) {
+
+    char text_file_path[MAX_SIZE];
+    FILE *fp;
+
+    /* get_next_MID(MID, Group_list, GID); */
+
+    sprintf(text_file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
+
+    fp = fopen(text_file_path, "w");
+    fprintf(fp, "%s", text);
+
+    fclose(fp);
+}
+
+
+
 
 void delete_file(char *file_path) {
 
