@@ -4,9 +4,10 @@
  * improve invalid input error messages with input format
  * handle ERR messages from server
  * Testar se GID existe??? select()
- * retrieve_command tem de funcionar para imagens!!!
  * check allocated sizes for all string
  * reply is sometimes read incorrectly in ulist command
+ * loop for write and read in post and retrieve commands
+ * // TODO !!! the receive part for retrieve command
 **/
 
 // ISSUES

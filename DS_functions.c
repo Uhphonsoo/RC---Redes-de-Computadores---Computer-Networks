@@ -507,7 +507,51 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
 
 void retrieve_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    char UID[MAX_SIZE];
+    char GID[MAX_SIZE];
+    char MID[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    char message_remainder[MAX_SIZE];
+
+    /* process_retrieve_message(message_remainder, reply); */
+
+    receive_n_chars_TCP(14, message_remainder, fd);
+    sscanf(message_remainder, "%s %s %s", UID, GID, MID);
+
+    /* DEBUG */
+    /* printf(">>> message_remainder = %s|\n", message_remainder);
+    printf(">>> UID = %s| GID = %s| MID = %s|\n", UID, GID, MID); */
+
+    if (!validate_retrieve_message(UID, GID, MID)) {
+        strcpy(reply, "RRT NOK\n");
+        send_reply_TCP(reply, fd);
+        return;
+    }
+    if (!group_has_messages(GID, MID)) {
+        strcpy(reply, "RRT EOF\n");
+        send_reply_TCP(reply, fd);
+        return;
+    }
+
+    retrieve_and_send_messages_TCP(UID, GID, MID, fd);
+
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    /* if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    } */
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+    }
+
+    clear_string(message_remainder);
+    free(reply);
 }
 
 
@@ -893,6 +937,16 @@ void process_ulist_message(char *message_remainder, char *reply) {
 }
 
 
+int validate_retrieve_message(char *UID, char *GID, char *MID) {
+
+    if (!validate_UID(UID) || !validate_GID(GID) || !validate_MID(MID)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+
 int user_is_registered(char *UID) {
 
     char file_path[MAX_SIZE];
@@ -1156,6 +1210,22 @@ int group_exists(char *GID) {
         fclose(fp);
         return 1;
     }
+}
+
+
+int group_has_messages(char *GID, char *MID) {
+
+    char message_path[30];
+    FILE *fp;
+
+    sprintf(message_path, "GROUPS/%s/MSG/%s", GID, MID);
+
+    fp = fopen(message_path, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    return 1;
 }
 
 
@@ -1527,6 +1597,34 @@ void get_next_MID(char *MID, GROUPLIST *list, char *GID) {
     strcpy(MID, new_last_message_available);
 }
 
+void increment_MID(char *MID) {
+
+    int MID_int;
+    int new_MID_int;
+    char new_MID[10];
+
+    MID_int = atoi(MID);
+    new_MID_int = MID_int + 1;
+
+    if (new_MID_int > 0 && new_MID_int < 10) {
+        sprintf(new_MID, "000%d", new_MID_int);
+    }
+    else if (new_MID_int > 9 && new_MID_int < 100) {
+        sprintf(new_MID, "00%d", new_MID_int);
+    }
+    else if (new_MID_int > 99 && new_MID_int < 1000) {
+        sprintf(new_MID, "0%d", new_MID_int);
+    }
+    else if (new_MID_int > 999 && new_MID_int < 10000) {
+        sprintf(new_MID, "%d", new_MID_int);
+    }
+    else {
+        fprintf(stderr, "ERROR: increment_MID\n");
+    }
+
+    strcpy(MID, new_MID);
+}
+
 
 int  get_index(GROUPLIST *list, char *GID) {
 
@@ -1739,12 +1837,16 @@ void receive_n_chars_TCP(int n, char *string, int fd) {
 
     int ret;
     int bytes_to_read = n * sizeof(char);
-    int read_bytes = 0;
+    int bytes_read = 0;
 
     string[0] = '\0';
 
-    ret = read(fd, string, bytes_to_read);
-    validate_read(ret);
+    /* while (bytes_read < bytes_to_read) { */
+        ret = read(fd, string, bytes_to_read);
+        validate_read(ret);
+
+    /*     bytes_read += ret;
+    } */
 
     string[n] = '\0';
 }
@@ -1773,6 +1875,26 @@ int receive_n_plus_1_chars_TCP(int n, char *string, int fd) {
 
     string[n] = '\0';
     return ret;
+}
+
+
+void send_n_chars_TCP(int n, char *string, int fd) {
+    
+    // TODO!
+    int ret;
+    int bytes_to_read = n * sizeof(char);
+    int bytes_read = 0;
+
+    string[0] = '\0';
+
+    while (bytes_read < bytes_to_read) {
+        ret = read(fd, string, bytes_to_read);
+        validate_read(ret);
+
+        bytes_read += ret;
+    }
+
+    string[n] = '\0';
 }
 
 
@@ -1890,12 +2012,12 @@ void send_reply_TCP(char *reply, int fd) {
     int write_bytes_left = strlen(reply);
 
     /* DEBUG */
-    printf(">>> REPLY = %s|\n", reply);
-    printf(">>> write_bytes_left = %d\n", write_bytes_left);
+    /* printf(">>> REPLY = %s|\n", reply);
+    printf(">>> write_bytes_left = %d\n", write_bytes_left); */
 
     while (write_bytes_left > 0) {
         /* DEBUG */
-        printf(">>> wrote\n");
+        /* printf(">>> wrote\n"); */
         
         n = write(fd, reply, strlen(reply));
         validate_write(n);
@@ -1905,8 +2027,8 @@ void send_reply_TCP(char *reply, int fd) {
         } */
 
         /* DEBUG */
-        printf(">>> write_bytes_left = %d\n", write_bytes_left);
-        printf(">>> n = %d\n", n);
+        /* printf(">>> write_bytes_left = %d\n", write_bytes_left);
+        printf(">>> n = %d\n", n); */
 
         write_bytes_left -= n;
         reply += n;
@@ -1914,6 +2036,193 @@ void send_reply_TCP(char *reply, int fd) {
 
     /* DEBUG */
     /* printf(">>> OUT\n"); */
+}
+
+
+// ??? e escrever de 1 em 1?
+void send_TCP(char *string, int fd) {
+
+    int n;
+    int length = strlen(string);
+    int write_bytes_left = length;
+
+    while (write_bytes_left > 0) {
+        
+        n = write(fd, string, length);
+        validate_write(n);
+
+        write_bytes_left -= n;
+        string += n;
+
+        if (write_bytes_left == 0) {
+            break;
+        }
+    }
+}
+
+
+void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
+
+    int  N;
+    int  Tsize_int;
+    int  Fsize_int;
+    int  number_of_files = 0;
+    int read_messages = 0;
+    char group_message_path[30];
+    char group_messages_path[30];
+    char *message_aux = (char *)malloc(MAX_REPLY_SIZE);
+    char FName[MAX_SIZE];
+    char Fsize[MAX_SIZE];
+    char Tsize[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
+    char file_path[MAX_SIZE];
+    char aux[10];
+    DIR  *d;
+    FILE *fp;
+    struct dirent *dir;
+
+    if (!group_exists(GID)) {
+        return;
+    }
+
+    sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
+    N = get_number_of_files(group_messages_path);
+
+    /* DEBUG */
+    /* printf(">>> group_messages_path = %s|\n", group_messages_path);
+    printf(">>> N = %d\n", N); */
+
+    sprintf(message_aux, "RRT OK %d", N);
+    send_TCP(message_aux, fd);
+    /* send_n_chars_TCP(strlen(message_aux), message_aux, fd); */
+
+    sprintf(group_message_path, "GROUPS/%s/MSG/%s", GID, MID);
+
+    /* DEBUG */
+    printf(">>> group_message_path = %s|\n", group_message_path);
+
+    fp = fopen(group_message_path, "r");
+
+    // one iteration per message
+    while (fp != NULL && read_messages <= 20) {
+        send_TCP(" ", fd);
+
+        // gets
+
+        number_of_files = get_number_of_files(group_message_path);
+
+        // if there is file associated with message
+        if (number_of_files == 3) {
+
+            d = opendir(group_message_path);
+            while ((dir = readdir(d)) != NULL) {
+
+                if (dir->d_name[0] == '.') {
+                    continue;
+                }
+                if (strcmp(dir->d_name, "A U T H O R.txt") && strcmp(dir->d_name, "T E X T.txt")) {
+                    strcpy(FName, dir->d_name);
+
+                    /* DEBUG */
+                    printf(">>> FName = %s|\n", FName);
+                }
+            }
+
+            sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
+            Fsize_int = get_file_size_char(file_path);
+            sprintf(Fsize, "%d", Fsize_int);
+
+            sprintf(file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
+            Tsize_int = get_file_size_char(file_path);
+            sprintf(Tsize, "%d", Tsize_int);
+
+            /* DEBUG */
+            printf(">>> file_path = %s|\n", file_path);
+            printf(">>> Fsize = %s|\n", Fsize);
+            printf(">>> Tsize = %s|\n", Tsize);
+
+            read_text_from_file(text, file_path, Tsize_int);
+
+            /* DEBUG */
+            printf(">>> text = %s|\n", text);
+
+            sprintf(message_aux, "%s %s %s %s %s %s ", MID, UID, Tsize, text, FName, Fsize);
+
+            /* DEBUG */
+            printf(">>> message_aux = %s|\n", message_aux);
+            
+            send_TCP(message_aux, fd);
+            
+            sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
+            send_data_TCP(file_path, Fsize, fd);
+
+            /* DEBUG */
+            /* printf(">>> file_path2 = %s|\n", file_path); */
+
+            /* DEBUG */
+            printf("-----------------\n");
+
+            /* strcpy(aux, " ");
+            send_n_chars_TCP(1, aux, fd); */
+        }
+        else {
+            sprintf(message_aux, "%s %s %s %s", MID, UID, Tsize, text);
+            send_TCP(message_aux, fd);
+        }
+
+        read_messages++;
+        if (read_messages == 20) {
+            break;
+        }
+
+        increment_MID(MID); 
+        sprintf(group_message_path, "GROUPS/%s/MSG/%s", GID, MID);
+        
+        fp = fopen(group_message_path, "r");
+    }
+
+    strcpy(aux, "\n");
+    send_n_chars_TCP(1, aux, fd);
+}
+
+
+void send_data_TCP(char *file_path, char *Fsize, int fd) {
+
+    int n;
+    int Fsize_int;
+    int bytes_to_write = 0;
+    char buffer[1024];
+    FILE *fp;
+
+    fp = fopen(file_path, "r");
+    validate_fopen(fp);
+
+    /* DEBUG */
+    printf(">>> file_path3 = %s\n", file_path);
+
+    /* Fsize = get_file_size(fp); */
+    Fsize_int = atoi(Fsize);
+
+    while(!feof(fp)) {
+        bytes_to_write = sizeof(buffer);
+
+        while (bytes_to_write > 0) { /* (???) */
+
+            fread(buffer, 1, sizeof(buffer), fp);
+            n = write(fd, buffer, sizeof(buffer));
+            validate_write(n);
+
+            bytes_to_write -= n;
+
+            if (bytes_to_write == 0) {
+                break;
+            }
+
+            bzero(buffer, sizeof(buffer));
+        } /* (???) */
+        
+    }
+    fclose(fp);
 }
 
 
@@ -1967,4 +2276,32 @@ void make_text_file(char *text, char *GID, char *MID) {
 void delete_file(char *file_path) {
 
     unlink(file_path);
+}
+
+
+int get_number_of_files(char *dir_path) {
+
+    int number_of_files = 0;
+    DIR *d;
+    struct dirent *dir;
+
+    d = opendir(dir_path);
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_name[0] == '.') {
+            continue;
+        }
+        number_of_files++;
+    }
+    return number_of_files;
+}
+
+
+void read_text_from_file(char *text, char *file_path, int size) {
+
+    FILE *fp;
+
+    fp = fopen(file_path, "r");
+    fread(text, size, 1, fp);
+
+    text[size] = '\0';
 }

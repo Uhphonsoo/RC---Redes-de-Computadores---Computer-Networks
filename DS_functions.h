@@ -37,6 +37,8 @@ void process_unsubscribe_message(char *message, char *reply);
 void process_my_groups_message(char *message, char *reply);
 void process_ulist_message(char *message, char *reply);
 
+int validate_retrieve_message(char *UID, char *GID, char *MID);
+
 int user_is_registered(char *UID);
 int user_is_logged_in(char *UID);
 int register_user(char *UID, char *pass);
@@ -47,6 +49,7 @@ int subscribe_user(char *UID, char *GID);
 int unsubscribe_user(char *UID, char *GID);
 int create_new_group(char *GID, char *GName);
 int group_exists(char *GID);
+int group_has_messages(char *GID, char *MID);
 
 int check_password(char *pass, char *user_pass_path);
 int get_groups(GROUPLIST *list);
@@ -58,9 +61,11 @@ void  initialize_group_list(GROUPLIST *list);
 void  SortGList(GROUPLIST *list);
 void  swap_groups(int g1, int g2, GROUPLIST *list);
 char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */);
-void increment_last_message_available(GROUPLIST *list, char *GID);
-int  get_index(GROUPLIST *list, char *GID);
-void get_next_MID(char *MID, GROUPLIST *list, char *GID);
+void  increment_last_message_available(GROUPLIST *list, char *GID);
+int   get_index(GROUPLIST *list, char *GID);
+void  get_next_MID(char *MID, GROUPLIST *list, char *GID);
+void increment_MID(char *MID);
+int   get_number_of_messages(char *GID);
 
 void get_UID_from_file_name(char *UID, char *file_name);
 
@@ -77,16 +82,22 @@ void receive_message_TCP(int fd, char *message);
 void receive_keyword_TCP(char *keyword, int fd);
 void receive_n_chars_TCP(int n, char *string, int fd);
 int  receive_n_plus_1_chars_TCP(int n, char *string, int fd);
+void send_n_chars_TCP(int n, char *string, int fd);
 void receive_first_tokens_post_TCP(char *string, int fd);
 void receive_n_tokens_TCP(int n, char *string, int fd);
 void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd);
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 void send_reply_TCP(char *reply, int fd);
+void send_TCP(char *string, int fd);
+void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd);
+void send_data_TCP(char *FName, char *Fsize, int fd);
 
 void make_file(char *file_path);
 void make_author_file(char *UID, char *GID,char *MID);
 void make_text_file(char *text, char *GID, char *MID);
 void delete_file(char *file_path);
+int  get_number_of_files(char *dir_path);
+void read_text_from_file(char *text, char *file_path, int size);
 
 
 void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr);

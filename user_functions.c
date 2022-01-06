@@ -557,9 +557,12 @@ void post_command(char* command) {
 
 void retrieve_command(char* command) {
 
+    int n;
+    int write_bytes_left;
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
+    int read_bytes = 0;
     char aux[MAX_SIZE];
     char MID[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
@@ -569,7 +572,12 @@ void retrieve_command(char* command) {
     char N[MAX_FILE_SIZE];
     char *message;
     char *reply;
+    char *ptr;
     FILE *fp; 
+
+    /* DEBUG */
+    login_command("login 77777 password\n");
+    select_command("select 06\n");
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -591,8 +599,46 @@ void retrieve_command(char* command) {
 
     sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
+    /* DEBUG */
+    printf("message = %s|\n", message);
+
+    /* vvv */
+
+    create_TCP_socket();
+    get_address_info_TCP();
+
+    n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_connect(n);
+
+    write_bytes_left = strlen(message);
+    while (write_bytes_left > 0) {
+        n = write(fd_TCP, message, strlen(message));
+        validate_write(n);
+        write_bytes_left -= n;
+        message += n;
+    }
+
+    // TODO !!! the receive part
+    ptr = reply;
+    while (reply[read_bytes] != '\n') {
+        n = read(fd_TCP, ptr, 1);
+        validate_read(n);
+        
+        if (reply[read_bytes] == '\n') {
+            break;
+        }
+        
+        ptr++;
+        read_bytes++;
+    }
+
+    /* DEBUG */
+    printf(">>> retrieve: reply = %s|\n", reply);
+
+    /* ^^^ */
+
     // COMMUNICATION with server
-    send_and_receive_TCP(message, reply, strlen(message));
+    /* send_and_receive_TCP(message, reply, strlen(message)); */
 
     // VALIDATE server reply
     sscanf(reply, "%s %s, %s", aux, status, N);
@@ -1138,6 +1184,7 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
     validate_connect(n);
 
     while (write_bytes_left > 0) {
+        
         n = write(fd_TCP, message, strlen(message));
         validate_write(n);
         write_bytes_left -= n;
@@ -1158,6 +1205,33 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
     }
     close(fd_TCP);
 }
+
+
+void receive_first_tokens_retrieve_TCP(char *string, int fd) {
+
+    // int ret;
+    // int bytes_to_read = n * sizeof(char);
+    // int read_bytes = 0;
+    int ret;
+    int spaces_to_read = 4;
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (spaces_to_read > 0) {
+        ret = read(fd, ptr, 1);
+        validate_read(ret);
+
+        if (*ptr == ' ') {
+            spaces_to_read--;
+        }
+
+        ptr++;
+    }
+    *ptr = '\0';
+}
+
 
 void input_error(){
     fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
