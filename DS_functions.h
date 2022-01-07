@@ -57,6 +57,7 @@ int get_my_groups(GROUPLIST *list, char *UID);
 int get_users_of_group(char *user_list, char *GID, char *GName);
 int get_group_name(char *GID, char *GName);
 
+// GROUPLIST related functions
 void  initialize_group_list(GROUPLIST *list);
 void  SortGList(GROUPLIST *list);
 void  swap_groups(int g1, int g2, GROUPLIST *list);
@@ -64,19 +65,14 @@ char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */);
 void  increment_last_message_available(GROUPLIST *list, char *GID);
 int   get_index(GROUPLIST *list, char *GID);
 void  get_next_MID(char *MID, GROUPLIST *list, char *GID);
-void increment_MID(char *MID);
+void  increment_MID(char *MID);
 int   get_number_of_messages(char *GID);
 
-void get_UID_from_file_name(char *UID, char *file_name);
-
+// socket related functions
 int  create_socket_datagram();
 void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
 int  create_socket_stream();
 void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port);
-// void create_server_socket_UDP();
-// void get_address_info_server_UDP();
-// void create_server_socket_TCP();
-// void get_address_info_server_TCP();
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_message_TCP(int fd, char *message);
 void receive_keyword_TCP(char *keyword, int fd);
@@ -92,12 +88,14 @@ void send_TCP(char *string, int fd);
 void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd);
 void send_data_TCP(char *FName, char *Fsize, int fd);
 
+// file related functions
 void make_file(char *file_path);
 void make_author_file(char *UID, char *GID,char *MID);
 void make_text_file(char *text, char *GID, char *MID);
 void delete_file(char *file_path);
 int  get_number_of_files(char *dir_path);
 void read_text_from_file(char *text, char *file_path, int size);
+void get_UID_from_file_name(char *UID, char *file_name);
 
 
 void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr);
