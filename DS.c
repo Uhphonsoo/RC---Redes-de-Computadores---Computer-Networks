@@ -4,12 +4,15 @@
  * check allocated sizes for all strings
  * frees for all mallocs
  * validate_post_message
+ * 
 **/
 
 // ISSUES
 /**
  * reply in ulist_command is sometimes read incorrectly (???)
  * not sure if get_client_ip_and_port is working as intended
+ * post_command not working for pictures
+ * last_MID is not persistent!
 **/
 
 #include <stdio.h>
@@ -128,7 +131,7 @@ int main(int argc, char *argv[]) {
                 else if (i == fd_UDP) {
 
                     /* DEBUG */
-                    printf(">>> ECHO 3\n");
+                    /* printf(">>> ECHO 3\n"); */
 
                     message = (char *)malloc(MAX_SIZE);
                     message[0] = '\0';
@@ -136,10 +139,11 @@ int main(int argc, char *argv[]) {
                     receive_message_UDP(fd_UDP, message, &addr);
 
                     /* DEBUG */
-                    printf(">>> UDP: message = %s|\n", message);
+                    /* printf(">>> UDP: message = %s|\n", message); */
 
                     process_message(message, fd_UDP, &addr);
 
+                    /* close(fd_UDP); */ // ???
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }
@@ -148,7 +152,7 @@ int main(int argc, char *argv[]) {
                     
                     char keyword[10];
                     /* DEBUG */
-                    printf(">>> ECHO 4\n");
+                    /* printf(">>> ECHO 4\n"); */
 
                     message = (char *)malloc(MAX_SIZE);
 
@@ -166,10 +170,12 @@ int main(int argc, char *argv[]) {
                     receive_n_chars_TCP(3, keyword, i);
 
                     /* DEBUG */
-                    printf(">>> >>> keyword = %s|\n", keyword);
+                    /* printf(">>> >>> keyword = %s|\n", keyword); */
+                    printf(">>> TCP: keyword = %s|\n", keyword);
                     
                     process_keyword(keyword, i, &addr);
                     
+                    /* close(i); */ // ???
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }

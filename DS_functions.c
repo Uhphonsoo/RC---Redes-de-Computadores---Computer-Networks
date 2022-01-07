@@ -449,49 +449,84 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     int number_of_tokens;
     int file_is_being_sent = 0;
     int Tsize_int;
-    // char aux[MAX_SIZE];
-    // char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char UID[MAX_SIZE];
-    char GID[MAX_SIZE];
+    char UID[10];
+    char GID[10];
     char Tsize[MAX_SIZE];
     char FName[MAX_SIZE];
     char Fsize[MAX_SIZE];
     char client_ip[MAX_SIZE];
     char client_port[MAX_SIZE];
     char text[241];
-    char MID[MAX_SIZE];
-
-    char *message_aux1 = (char *)malloc(MAX_SIZE);
-    char *message_aux2 = (char *)malloc(MAX_SIZE);
-    char *reply = (char*)malloc(MAX_SIZE);
-    
-    /* validate_post_message(message); */ // !!!
+    char MID[10];
+    char buffer[MAX_SIZE];
+    char message_dir_path[30];
+    char *reply = (char *)malloc(MAX_REPLY_SIZE);
 
     /* vvv */
+    receive_n_chars_TCP(13, buffer, fd);
 
-    receive_first_tokens_post_TCP(message_aux1, fd);
-
-    sscanf(message_aux1, "%s %s %s", UID, GID, Tsize);
+    sscanf(buffer, "%s %s %s", UID, GID, Tsize);
     Tsize_int = atoi(Tsize);
     file_is_being_sent = receive_n_plus_1_chars_TCP(Tsize_int, text, fd);
 
+    if (!validate_post_message(UID, GID)) {
+        strcpy(reply, "RPT NOK\n");
+        send_TCP(reply, fd);
+        return;
+    }
+
+    /* DEBUG */
+    // printf(">>> UID = %s|\n", UID);
+    // printf(">>> GID = %s|\n", GID);
+    // printf(">>> Tsize = %s|\n", Tsize);
+    /* printf(">>> text = %s|\n", text);
+    printf(">>> file_is_being_sent = %d\n", file_is_being_sent); */
+
+    // TODO
+    int index = get_index(Group_list, GID);
+    strcpy(MID, Group_list->last_message_available[index]);
+    /* DEBUG */
+    /* printf(">>> current MID = %s|\n", MID); */
+
     get_next_MID(MID, Group_list, GID);
+
+    /* DEBUG */
+    printf(">>> next MID = %s|\n", MID);
+
+    // make message directory
+    sprintf(message_dir_path, "GROUPS/%s/MSG/%s", GID, MID);
+    mkdir(message_dir_path, 0700);
 
     if (file_is_being_sent) {
 
-        receive_n_tokens_TCP(2, message_aux2, fd);        
-        sscanf(message_aux2, "%s %s", FName, Fsize);
+        receive_n_tokens_TCP(2, buffer, fd);        
+        sscanf(buffer, "%s %s", FName, Fsize);
+
+        /* DEBUG */
+        /* printf(">>> buffer = %s|\n", buffer);
+        printf(">>> FName = %s|\n", FName);
+        printf(">>> Fsize = %s|\n", Fsize); */
 
         receive_to_file_TCP(FName, Fsize, GID, MID, fd);
     }
 
     /* ^^^ */
 
+    /* DEBUG */
+    /* printf("-------\n");
+    printf(">>> UID = %s|\n", UID);
+    printf(">>> GID = %s|\n", GID);
+    printf(">>> MID = %s|\n", MID);
+    printf(">>> text = %s|\n", text); */
+
     make_author_file(UID, GID, MID);
     make_text_file(text, GID, MID);
 
+    // TODO
     increment_last_message_available(Group_list, GID);
+
+    sprintf(reply, "RPT %s\n", MID);
+    send_TCP(reply, fd);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -499,15 +534,57 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
         printf("Request with IP %s on port %s.\n", client_ip, client_port);
     }
 
-    clear_string(message_aux1);
-    clear_string(message_aux2);
     free(reply);
 }
 
 
 void retrieve_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // TODO
+    char UID[MAX_SIZE];
+    char GID[MAX_SIZE];
+    char MID[MAX_SIZE];
+    char client_ip[MAX_SIZE];
+    char client_port[MAX_SIZE];
+    char *reply = (char*)malloc(MAX_REPLY_SIZE);
+    char message_remainder[MAX_SIZE];
+
+    /* process_retrieve_message(message_remainder, reply); */
+
+    receive_n_chars_TCP(14, message_remainder, fd);
+    sscanf(message_remainder, "%s %s %s", UID, GID, MID);
+
+    /* DEBUG */
+    /* printf(">>> message_remainder = %s|\n", message_remainder);
+    printf(">>> UID = %s| GID = %s| MID = %s|\n", UID, GID, MID); */
+
+    if (!validate_retrieve_message(UID, GID, MID)) {
+        strcpy(reply, "RRT NOK\n");
+        send_reply_TCP(reply, fd);
+        return;
+    }
+    if (!group_has_messages(GID, MID)) {
+        strcpy(reply, "RRT EOF\n");
+        send_reply_TCP(reply, fd);
+        return;
+    }
+
+    retrieve_and_send_messages_TCP(UID, GID, MID, fd);
+
+    /* DEBUG */
+    /* printf(">>> reply = %s|\n", reply); */
+
+    /* if (strcmp(reply, "ERR\n") == 0) {
+        return;
+    } */
+
+    if (verbose_mode) {
+        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        
+        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+    }
+
+    clear_string(message_remainder);
+    free(reply);
 }
 
 
@@ -893,6 +970,29 @@ void process_ulist_message(char *message_remainder, char *reply) {
 }
 
 
+int validate_post_message(char *UID, char *GID) {
+
+    if (!validate_UID(UID) || !user_is_registered(UID)) {
+        return 0;
+    }
+    if (!validate_GID(GID) || !group_exists(GID)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+
+int validate_retrieve_message(char *UID, char *GID, char *MID) {
+
+    if (!validate_UID(UID) || !validate_GID(GID) || !validate_MID(MID)) {
+        return 0;
+    }
+
+    return 1;
+}
+
+
 int user_is_registered(char *UID) {
 
     char file_path[MAX_SIZE];
@@ -1156,6 +1256,22 @@ int group_exists(char *GID) {
         fclose(fp);
         return 1;
     }
+}
+
+
+int group_has_messages(char *GID, char *MID) {
+
+    char message_path[30];
+    FILE *fp;
+
+    sprintf(message_path, "GROUPS/%s/MSG/%s", GID, MID);
+
+    fp = fopen(message_path, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    return 1;
 }
 
 
@@ -1496,14 +1612,14 @@ void get_next_MID(char *MID, GROUPLIST *list, char *GID) {
     i = get_index(list, GID);
 
     /* DEBUG */
-    printf("@@@ index = %d\n", i);
+    /* printf("@@@ index = %d\n", i); */
 
     last_message_available_int = atoi(list->last_message_available[i]);
     new_last_message_available_int = last_message_available_int + 1;
 
     /* DEBUG */
-    printf("@@@ last_message_available_int = %d\n", last_message_available_int);
-    printf("@@@ next_message_available_int = %d\n", new_last_message_available_int);
+    /* printf("@@@ last_message_available_int = %d\n", last_message_available_int);
+    printf("@@@ next_message_available_int = %d\n", new_last_message_available_int); */
 
     if (new_last_message_available_int > 0 && new_last_message_available_int < 10) {
         sprintf(new_last_message_available, "000%d", new_last_message_available_int);
@@ -1522,9 +1638,37 @@ void get_next_MID(char *MID, GROUPLIST *list, char *GID) {
     }
 
     /* DEBUG */
-    printf("@@@ new_last_message_available = %s\n", new_last_message_available);
+    /* printf("@@@ new_last_message_available = %s\n", new_last_message_available); */
 
     strcpy(MID, new_last_message_available);
+}
+
+void increment_MID(char *MID) {
+
+    int MID_int;
+    int new_MID_int;
+    char new_MID[10];
+
+    MID_int = atoi(MID);
+    new_MID_int = MID_int + 1;
+
+    if (new_MID_int > 0 && new_MID_int < 10) {
+        sprintf(new_MID, "000%d", new_MID_int);
+    }
+    else if (new_MID_int > 9 && new_MID_int < 100) {
+        sprintf(new_MID, "00%d", new_MID_int);
+    }
+    else if (new_MID_int > 99 && new_MID_int < 1000) {
+        sprintf(new_MID, "0%d", new_MID_int);
+    }
+    else if (new_MID_int > 999 && new_MID_int < 10000) {
+        sprintf(new_MID, "%d", new_MID_int);
+    }
+    else {
+        fprintf(stderr, "ERROR: increment_MID\n");
+    }
+
+    strcpy(MID, new_MID);
 }
 
 
@@ -1538,7 +1682,6 @@ int  get_index(GROUPLIST *list, char *GID) {
             return i;
         }
     }
-
     return -1;
 }
 
@@ -1739,14 +1882,20 @@ void receive_n_chars_TCP(int n, char *string, int fd) {
 
     int ret;
     int bytes_to_read = n * sizeof(char);
-    int read_bytes = 0;
+    char *ptr;
 
     string[0] = '\0';
 
-    ret = read(fd, string, bytes_to_read);
-    validate_read(ret);
+    ptr = string;
+    while (bytes_to_read > 0) {
 
-    string[n] = '\0';
+        ret = read(fd, ptr, 1);
+        validate_read(ret);
+
+        bytes_to_read--;
+        ptr++;
+    }
+    *ptr = '\0';
 }
 
 
@@ -1755,50 +1904,52 @@ void receive_n_chars_TCP(int n, char *string, int fd) {
  **/
 int receive_n_plus_1_chars_TCP(int n, char *string, int fd) {
 
-    int ret;
+    int ret = -1;
     int bytes_to_read = (n + 1) * sizeof(char);
-    int read_bytes = 0;
-
-    string[0] = '\0';
-
-    ret = read(fd, string, bytes_to_read);
-    validate_read(ret);
-
-    if (string[n] == ' ') {
-        ret = 1;
-    }
-    else {
-        ret = 0;
-    }
-
-    string[n] = '\0';
-    return ret;
-}
-
-
-void receive_first_tokens_post_TCP(char *string, int fd) {
-
-    // int ret;
-    // int bytes_to_read = n * sizeof(char);
-    // int read_bytes = 0;
-    int ret;
-    int spaces_to_read = 4;
     char *ptr;
 
     string[0] = '\0';
 
     ptr = string;
-    while (spaces_to_read > 0) {
+    while (bytes_to_read > 0) {
+
         ret = read(fd, ptr, 1);
         validate_read(ret);
 
-        if (*ptr == ' ') {
-            spaces_to_read--;
-        }
-
+        bytes_to_read--;
         ptr++;
     }
+
+    ptr--;
+    if (*ptr == ' ') {
+        ret = 1;
+    }
+    else if (*ptr == '\n') {
+        ret = 0;
+    }
+
     *ptr = '\0';
+    return ret;
+}
+
+
+void send_n_chars_TCP(int n, char *string, int fd) {
+    
+    // TODO!
+    int ret;
+    int bytes_to_read = n * sizeof(char);
+    int bytes_read = 0;
+
+    string[0] = '\0';
+
+    while (bytes_read < bytes_to_read) {
+        ret = read(fd, string, bytes_to_read);
+        validate_read(ret);
+
+        bytes_read += ret;
+    }
+
+    string[n] = '\0';
 }
 
 
@@ -1807,37 +1958,20 @@ void receive_n_tokens_TCP(int n, char *string, int fd) {
     int ret;
     int spaces_to_read = n;
     char *ptr;
-    char aux[1];
 
     string[0] = '\0';
+
     ptr = string;
-
-    // leading spaces don't count towards spaces_to_read
-    ret = read(fd, aux, 1);
-    validate_read(ret);
-
-    if (!isspace(*aux)) {
-        string[0] = *aux;
-        ptr++; 
-    }
-
-    while (isspace(*aux)) {
-        ret = read(fd, aux, 1);
-        validate_read(ret);
-    }
-
-    // after leading spaces
     while (spaces_to_read > 0) {
+
         ret = read(fd, ptr, 1);
         validate_read(ret);
 
         if (isspace(*ptr)) {
             spaces_to_read--;
         }
-
         ptr++;
     }
-
     ptr--;
     *ptr = '\0';
 }
@@ -1845,30 +1979,26 @@ void receive_n_tokens_TCP(int n, char *string, int fd) {
 
 void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd) {
 
-    int n;
-    int n_bytes = atoi(Fsize);
+    int ret;
+    int bytes_to_read = atoi(Fsize);
     FILE *fp;
     char file_path[MAX_SIZE];
-    char message_dir_path[MAX_SIZE];
-    char *buffer = (char *)malloc(n_bytes);
+    char *buffer = (char *)malloc(bytes_to_read);
+    char *ptr;
 
-    sprintf(message_dir_path, "GROUPS/%s/MSG/%s", GID, MID);
     sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
 
-    n = mkdir(message_dir_path, 0700);
+    fp = fopen(file_path, "w");
+    validate_fopen(fp);
 
-    /* DEBUG */
-    printf(">>> file_path = %s|\n", file_path);
+    while (bytes_to_read > 0) {
 
-    /* make_file(file_path); */
+        ret = read(fd, buffer, bytes_to_read);
+        validate_read(ret);
 
-    fp = fopen(file_path, "a");
-    /* validate_fopen(fp); */
-
-    n = read(fd, buffer, n_bytes);
-    validate_read(n);
-    fwrite(buffer, 1, n_bytes, fp);
-
+        fwrite(buffer, ret, 1, fp);
+        bytes_to_read -= ret;
+    }
     fclose(fp);
 }
 
@@ -1890,12 +2020,12 @@ void send_reply_TCP(char *reply, int fd) {
     int write_bytes_left = strlen(reply);
 
     /* DEBUG */
-    printf(">>> REPLY = %s|\n", reply);
-    printf(">>> write_bytes_left = %d\n", write_bytes_left);
+    /* printf(">>> REPLY = %s|\n", reply);
+    printf(">>> write_bytes_left = %d\n", write_bytes_left); */
 
     while (write_bytes_left > 0) {
         /* DEBUG */
-        printf(">>> wrote\n");
+        /* printf(">>> wrote\n"); */
         
         n = write(fd, reply, strlen(reply));
         validate_write(n);
@@ -1905,8 +2035,8 @@ void send_reply_TCP(char *reply, int fd) {
         } */
 
         /* DEBUG */
-        printf(">>> write_bytes_left = %d\n", write_bytes_left);
-        printf(">>> n = %d\n", n);
+        /* printf(">>> write_bytes_left = %d\n", write_bytes_left);
+        printf(">>> n = %d\n", n); */
 
         write_bytes_left -= n;
         reply += n;
@@ -1914,6 +2044,188 @@ void send_reply_TCP(char *reply, int fd) {
 
     /* DEBUG */
     /* printf(">>> OUT\n"); */
+}
+
+
+void send_TCP(char *string, int fd) {
+
+    int ret;
+    int bytes_to_write = strlen(string) * sizeof(char);
+    char *ptr;
+
+    while (bytes_to_write > 0) {
+        
+        ret = write(fd, string, bytes_to_write);
+        validate_write(ret);
+
+        bytes_to_write -= ret;
+        string += ret;
+    }
+}
+
+
+void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
+
+    int  N;
+    int  Tsize_int;
+    int  Fsize_int;
+    int  number_of_files = 0;
+    int read_messages = 0;
+    char group_message_path[30];
+    char group_messages_path[30];
+    char *message_aux = (char *)malloc(MAX_REPLY_SIZE);
+    char FName[MAX_SIZE];
+    char Fsize[MAX_SIZE];
+    char Tsize[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
+    char file_path[MAX_SIZE];
+    char aux[10];
+    DIR  *d;
+    FILE *fp;
+    struct dirent *dir;
+
+    if (!group_exists(GID)) {
+        return;
+    }
+
+    sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
+    N = get_number_of_files(group_messages_path);
+
+    /* DEBUG */
+    /* printf(">>> group_messages_path = %s|\n", group_messages_path);
+    printf(">>> N = %d\n", N); */
+
+    sprintf(message_aux, "RRT OK %d", N);
+    send_TCP(message_aux, fd);
+    /* send_n_chars_TCP(strlen(message_aux), message_aux, fd); */
+
+    sprintf(group_message_path, "GROUPS/%s/MSG/%s", GID, MID);
+
+    /* DEBUG */
+    printf(">>> group_message_path = %s|\n", group_message_path);
+
+    fp = fopen(group_message_path, "r");
+
+    // one iteration per message
+    while (fp != NULL && read_messages <= 20) {
+        send_TCP(" ", fd);
+
+        // gets
+
+        number_of_files = get_number_of_files(group_message_path);
+
+        // if there is file associated with message
+        if (number_of_files == 3) {
+
+            d = opendir(group_message_path);
+            while ((dir = readdir(d)) != NULL) {
+
+                if (dir->d_name[0] == '.') {
+                    continue;
+                }
+                if (strcmp(dir->d_name, "A U T H O R.txt") && strcmp(dir->d_name, "T E X T.txt")) {
+                    strcpy(FName, dir->d_name);
+
+                    /* DEBUG */
+                    printf(">>> FName = %s|\n", FName);
+                }
+            }
+
+            sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
+            Fsize_int = get_file_size_char(file_path);
+            sprintf(Fsize, "%d", Fsize_int);
+
+            sprintf(file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
+            Tsize_int = get_file_size_char(file_path);
+            sprintf(Tsize, "%d", Tsize_int);
+
+            /* DEBUG */
+            printf(">>> file_path = %s|\n", file_path);
+            printf(">>> Fsize = %s|\n", Fsize);
+            printf(">>> Tsize = %s|\n", Tsize);
+
+            read_text_from_file(text, file_path, Tsize_int);
+
+            /* DEBUG */
+            printf(">>> text = %s|\n", text);
+
+            sprintf(message_aux, "%s %s %s %s %s %s ", MID, UID, Tsize, text, FName, Fsize);
+
+            /* DEBUG */
+            printf(">>> message_aux = %s|\n", message_aux);
+            
+            send_TCP(message_aux, fd);
+            
+            sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
+            send_data_TCP(file_path, Fsize, fd);
+
+            /* DEBUG */
+            /* printf(">>> file_path2 = %s|\n", file_path); */
+
+            /* DEBUG */
+            printf("-----------------\n");
+
+            /* strcpy(aux, " ");
+            send_n_chars_TCP(1, aux, fd); */
+        }
+        else {
+            sprintf(message_aux, "%s %s %s %s", MID, UID, Tsize, text);
+            send_TCP(message_aux, fd);
+        }
+
+        read_messages++;
+        if (read_messages == 20) {
+            break;
+        }
+
+        increment_MID(MID); 
+        sprintf(group_message_path, "GROUPS/%s/MSG/%s", GID, MID);
+        
+        fp = fopen(group_message_path, "r");
+    }
+
+    strcpy(aux, "\n");
+    send_n_chars_TCP(1, aux, fd);
+}
+
+
+void send_data_TCP(char *file_path, char *Fsize, int fd) {
+
+    int n;
+    int Fsize_int;
+    int bytes_to_write = 0;
+    char buffer[1024];
+    FILE *fp;
+
+    fp = fopen(file_path, "r");
+    validate_fopen(fp);
+
+    /* DEBUG */
+    printf(">>> file_path3 = %s\n", file_path);
+
+    /* Fsize = get_file_size(fp); */
+    Fsize_int = atoi(Fsize);
+
+    while(!feof(fp)) {
+        bytes_to_write = sizeof(buffer);
+
+        while (bytes_to_write > 0) { /* (???) */
+
+            fread(buffer, 1, sizeof(buffer), fp);
+            n = write(fd, buffer, sizeof(buffer));
+            validate_write(n);
+
+            bytes_to_write -= n;
+
+            if (bytes_to_write == 0) {
+                break;
+            }
+
+            bzero(buffer, sizeof(buffer));
+        } /* (???) */
+        
+    }
+    fclose(fp);
 }
 
 
@@ -1931,16 +2243,15 @@ void make_author_file(char *UID, char *GID, char *MID) {
 
     char author_file_path[MAX_SIZE];
     FILE *fp;
-
-    /* get_next_MID(MID, Group_list, GID); */
+    int size = 5 * sizeof(char);
 
     sprintf(author_file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
 
-    /* DEBUG */
-    printf(">>> UID = %s|\n", UID);
-
     fp = fopen(author_file_path, "w");
-    fprintf(fp, "%s", UID);
+    validate_fopen(fp);
+
+    /* fprintf(fp, "%s", UID); */
+    fwrite(UID, size, 1, fp);
 
     fclose(fp);
 }
@@ -1950,13 +2261,14 @@ void make_text_file(char *text, char *GID, char *MID) {
 
     char text_file_path[MAX_SIZE];
     FILE *fp;
-
-    /* get_next_MID(MID, Group_list, GID); */
+    int Tsize = strlen(text) * sizeof(char);
 
     sprintf(text_file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
 
     fp = fopen(text_file_path, "w");
-    fprintf(fp, "%s", text);
+    validate_fopen(fp);
+    /* fprintf(fp, "%s", text); */
+    fwrite(text, Tsize, 1, fp);
 
     fclose(fp);
 }
@@ -1967,4 +2279,32 @@ void make_text_file(char *text, char *GID, char *MID) {
 void delete_file(char *file_path) {
 
     unlink(file_path);
+}
+
+
+int get_number_of_files(char *dir_path) {
+
+    int number_of_files = 0;
+    DIR *d;
+    struct dirent *dir;
+
+    d = opendir(dir_path);
+    while ((dir = readdir(d)) != NULL) {
+        if (dir->d_name[0] == '.') {
+            continue;
+        }
+        number_of_files++;
+    }
+    return number_of_files;
+}
+
+
+void read_text_from_file(char *text, char *file_path, int size) {
+
+    FILE *fp;
+
+    fp = fopen(file_path, "r");
+    fread(text, size, 1, fp);
+
+    text[size] = '\0';
 }

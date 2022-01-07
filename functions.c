@@ -346,6 +346,35 @@ long get_file_size(FILE *fp) {
 }
 
 
+long  get_file_size_char(char *file_path) {
+
+    FILE *fp;
+    long Fsize = 0;
+
+    fp = fopen(file_path, "r");
+    validate_fopen(fp);
+
+    if (fp) {
+        if (fseek(fp, 0, SEEK_END)) {
+            perror("ERROR: fseek\n");
+            exit(EXIT_FAILURE);
+        }
+
+        Fsize = ftell(fp);
+        if (Fsize == -1) {
+            perror("ERROR: ftell\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if(fseek(fp, 0, SEEK_SET)) {
+            perror("ERROR: fseek\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return Fsize;
+}
+
+
 void show_groups(char* reply, char* N_string) {
 
     int N = atoi(N_string);
