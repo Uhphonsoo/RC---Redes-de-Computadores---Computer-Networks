@@ -460,31 +460,27 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     char MID[10];
     char buffer[MAX_SIZE];
     char message_dir_path[30];
-
-    char *message_aux1 = (char *)malloc(MAX_SIZE);
-    char *message_aux2 = (char *)malloc(MAX_SIZE);
-    char *reply = (char*)malloc(MAX_SIZE);
-    
-    /* validate_post_message(message); */ // !!!
+    char *reply = (char *)malloc(MAX_REPLY_SIZE);
 
     /* vvv */
-
-    /* receive_first_tokens_post_TCP(message_aux1, fd); */
     receive_n_chars_TCP(13, buffer, fd);
-
-    /* DEBUG */
-    /* printf(">>> buffer = %s|\n", buffer); */
 
     sscanf(buffer, "%s %s %s", UID, GID, Tsize);
     Tsize_int = atoi(Tsize);
     file_is_being_sent = receive_n_plus_1_chars_TCP(Tsize_int, text, fd);
 
+    if (!validate_post_message(UID, GID)) {
+        strcpy(reply, "RPT NOK\n");
+        send_TCP(reply, fd);
+        return;
+    }
+
     /* DEBUG */
     // printf(">>> UID = %s|\n", UID);
     // printf(">>> GID = %s|\n", GID);
     // printf(">>> Tsize = %s|\n", Tsize);
-    printf(">>> text = %s|\n", text);
-    printf(">>> file_is_being_sent = %d\n", file_is_being_sent);
+    /* printf(">>> text = %s|\n", text);
+    printf(">>> file_is_being_sent = %d\n", file_is_being_sent); */
 
     // TODO
     int index = get_index(Group_list, GID);
@@ -507,9 +503,9 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
         sscanf(buffer, "%s %s", FName, Fsize);
 
         /* DEBUG */
-        printf(">>> buffer = %s|\n", buffer);
+        /* printf(">>> buffer = %s|\n", buffer);
         printf(">>> FName = %s|\n", FName);
-        printf(">>> Fsize = %s|\n", Fsize);
+        printf(">>> Fsize = %s|\n", Fsize); */
 
         receive_to_file_TCP(FName, Fsize, GID, MID, fd);
     }
@@ -526,7 +522,11 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     make_author_file(UID, GID, MID);
     make_text_file(text, GID, MID);
 
+    // TODO
     increment_last_message_available(Group_list, GID);
+
+    sprintf(reply, "RPT %s\n", MID);
+    send_TCP(reply, fd);
 
     if (verbose_mode) {
         get_client_ip_and_port(fd, client_ip, client_port, addr);
@@ -534,8 +534,6 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
         printf("Request with IP %s on port %s.\n", client_ip, client_port);
     }
 
-    clear_string(message_aux1);
-    clear_string(message_aux2);
     free(reply);
 }
 
@@ -969,6 +967,19 @@ void process_ulist_message(char *message_remainder, char *reply) {
     get_users_of_group(user_list, GID, GName);
 
     sprintf(reply, "RUL OK %s %s\n", GName, user_list);
+}
+
+
+int validate_post_message(char *UID, char *GID) {
+
+    if (!validate_UID(UID) || !user_is_registered(UID)) {
+        return 0;
+    }
+    if (!validate_GID(GID) || !group_exists(GID)) {
+        return 0;
+    }
+
+    return 1;
 }
 
 
@@ -1942,32 +1953,6 @@ void send_n_chars_TCP(int n, char *string, int fd) {
 }
 
 
-void receive_first_tokens_post_TCP(char *string, int fd) {
-
-    // int ret;
-    // int bytes_to_read = n * sizeof(char);
-    // int read_bytes = 0;
-    int ret;
-    int spaces_to_read = 4;
-    char *ptr;
-
-    string[0] = '\0';
-
-    ptr = string;
-    while (spaces_to_read > 0) {
-        ret = read(fd, ptr, 1);
-        validate_read(ret);
-
-        if (*ptr == ' ') {
-            spaces_to_read--;
-        }
-
-        ptr++;
-    }
-    *ptr = '\0';
-}
-
-
 void receive_n_tokens_TCP(int n, char *string, int fd) {
 
     int ret;
@@ -2062,24 +2047,19 @@ void send_reply_TCP(char *reply, int fd) {
 }
 
 
-// ??? e escrever de 1 em 1?
 void send_TCP(char *string, int fd) {
 
-    int n;
-    int length = strlen(string);
-    int write_bytes_left = length;
+    int ret;
+    int bytes_to_write = strlen(string) * sizeof(char);
+    char *ptr;
 
-    while (write_bytes_left > 0) {
+    while (bytes_to_write > 0) {
         
-        n = write(fd, string, length);
-        validate_write(n);
+        ret = write(fd, string, bytes_to_write);
+        validate_write(ret);
 
-        write_bytes_left -= n;
-        string += n;
-
-        if (write_bytes_left == 0) {
-            break;
-        }
+        bytes_to_write -= ret;
+        string += ret;
     }
 }
 

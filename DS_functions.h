@@ -37,6 +37,7 @@ void process_unsubscribe_message(char *message, char *reply);
 void process_my_groups_message(char *message, char *reply);
 void process_ulist_message(char *message, char *reply);
 
+int validate_post_message(char *UID, char *GID);
 int validate_retrieve_message(char *UID, char *GID, char *MID);
 
 int user_is_registered(char *UID);
@@ -76,17 +77,16 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_message_TCP(int fd, char *message);
 void receive_keyword_TCP(char *keyword, int fd);
-void receive_n_chars_TCP(int n, char *string, int fd);
-int  receive_n_plus_1_chars_TCP(int n, char *string, int fd);
-void send_n_chars_TCP(int n, char *string, int fd);
-void receive_first_tokens_post_TCP(char *string, int fd);
-void receive_n_tokens_TCP(int n, char *string, int fd);
-void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd);
+void receive_n_chars_TCP(int n, char *string, int fd); // !!!
+int  receive_n_plus_1_chars_TCP(int n, char *string, int fd); // !!!
+void receive_n_tokens_TCP(int n, char *string, int fd); // !!!
+void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd); // !!!
+void send_n_chars_TCP(int n, char *string, int fd); // !!!
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 void send_reply_TCP(char *reply, int fd);
-void send_TCP(char *string, int fd);
+void send_TCP(char *string, int fd); // !!!
 void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd);
-void send_data_TCP(char *FName, char *Fsize, int fd);
+void send_data_TCP(char *FName, char *Fsize, int fd); // !!!
 
 // file related functions
 void make_file(char *file_path);

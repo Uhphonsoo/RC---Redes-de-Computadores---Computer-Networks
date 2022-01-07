@@ -143,6 +143,7 @@ int main(int argc, char *argv[]) {
 
                     process_message(message, fd_UDP, &addr);
 
+                    /* close(fd_UDP); */ // ???
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }
@@ -174,6 +175,7 @@ int main(int argc, char *argv[]) {
                     
                     process_keyword(keyword, i, &addr);
                     
+                    /* close(i); */ // ???
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }

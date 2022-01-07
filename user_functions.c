@@ -447,7 +447,7 @@ void ulist_command() {
 
 void post_command(char* command) {
 
-    int n, read_bytes = 0;
+    int n, ret, read_bytes = 0;
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
@@ -486,7 +486,6 @@ void post_command(char* command) {
     if (!file_is_being_sent) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
-        // COMMUNICATION with server
         send_and_receive_TCP(message, reply, strlen(message));
     }
     else {
@@ -502,51 +501,18 @@ void post_command(char* command) {
 
         Fsize = get_file_size(fp);
 
-        // data = (char*)malloc(Fsize + 1);
-        /* if (fread(data, 1, Fsize, fp) == 0) {
-            perror("ERROR: fread\n");
-            exit(EXIT_FAILURE);
-        } */
-        /* fread(data, Fsize, 1, fp);
-        fclose(fp);
-
-        data[Fsize] = '\0'; */
-
         sprintf(message, "PST %s %s %d %s %s %d ", logged_in_UID, active_GID, Tsize, text, Fname, Fsize);
-        n = write(fd_TCP, message, strlen(message));
-        validate_write(n);
 
-        /* fread(buffer_aux, 1, sizeof(buffer_aux), fp);
-        n = write(fd_TCP, buffer_aux, strlen(buffer_aux));
-        validate_write(n);
-        bzero(buffer_aux, sizeof(buffer_aux)); */
-
-        while(!feof(fp)) {
-            fread(buffer_aux, 1, sizeof(buffer_aux), fp);
-            /* n = write(fd_TCP, buffer_aux, strlen(buffer_aux)); */
-            n = write(fd_TCP, buffer_aux, sizeof(buffer_aux));
-            validate_write(n);
-            bzero(buffer_aux, sizeof(buffer_aux));
-        }
+        send_TCP(message);
+        send_data_TCP(fp, Fsize);
         fclose(fp);
 
         sprintf(message, "\n");
-        n = write(fd_TCP, message, strlen(message));
-        validate_write(n);
-        // send_TCP(message); TODO
+        send_TCP(message);
 
-        ptr = reply;
-        while (reply[read_bytes] != '\n') {
-            n = read(fd_TCP, ptr, 1);
-            /* validate_read(n); */
-            ptr++;
-            read_bytes++;
-        }
+        receive_TCP(reply);
         close(fd_TCP);
     }
-
-    /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
 
     sscanf(reply, "%s %s", aux, status);
     validate_post_reply(reply, aux, status);
@@ -1229,8 +1195,6 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
 
     int ret;
     int bytes_to_write = strlen(message) * sizeof(char);
-    // int write_bytes_left = write_n;
-    // int read_bytes = 0;
     char *ptr;
 
     create_TCP_socket();
@@ -1248,25 +1212,79 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
         message += ret;
     }
 
-    /* DEBUG */
-    printf(">>> ECHO\n");
-
     ptr = reply;
-    while (*ptr != '\n') {
+    while (1) {
 
         ret = read(fd_TCP, ptr, 1);
-        validate_read(n);
+        validate_read(ret);
         
-        /* if (reply[read_bytes] == '\n') {
+        if (*ptr == '\n') {
             break;
-        } */
+        }
         
         ptr++;
-        /* read_bytes++; */
     }
     *ptr = '\0';
-
     close(fd_TCP);
+}
+
+
+void send_TCP(char *string) {
+
+    int ret;
+    int bytes_to_write = strlen(string) * sizeof(char);
+    char *ptr;
+
+    while (bytes_to_write > 0) {
+
+        ret = write(fd_TCP, string, bytes_to_write);
+        validate_write(ret);
+
+        bytes_to_write -= ret;
+        string += ret;
+    }
+}
+
+
+void send_data_TCP(FILE *fp, int Fsize) {
+
+    int ret;
+    int bytes_to_write = Fsize;
+    char *buffer = (char *)malloc(Fsize);
+
+    fread(buffer, Fsize, 1, fp);
+    while (bytes_to_write > 0) {
+
+        ret = write(fd_TCP, buffer, bytes_to_write);
+        validate_write(ret);
+
+        bytes_to_write -= ret;
+        buffer += ret;
+    }
+}
+
+
+void receive_TCP(char *string) {
+
+    int ret;
+    int i = 0;
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (1) {
+
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        if (*ptr == '\n') {
+            break;
+        }
+
+        ptr++;
+    }
+    *ptr = '\0';
 }
 
 
@@ -1323,18 +1341,18 @@ void receive_n_tokens_TCP(int n, char *string) {
 void receive_n_chars_TCP(int n, char *string) {
 
     int ret;
-    int chars_to_read = n;
+    int bytes_to_read = n * sizeof(char);
     char *ptr;
 
     string[0] = '\0';
 
     ptr = string;
-    while (chars_to_read > 0) {
+    while (bytes_to_read > 0) {
 
         ret = read(fd_TCP, ptr, 1);
         validate_read(ret);
 
-        chars_to_read--;
+        bytes_to_read--;
         ptr++;
     }
 }
@@ -1376,6 +1394,7 @@ void receive_data_TCP(char *file_path, char *Fsize) {
         validate_read(ret);
 
         fwrite(buffer, ret, 1, fp);
+        
         bytes_to_read -= ret;   
     }
     fclose(fp);
