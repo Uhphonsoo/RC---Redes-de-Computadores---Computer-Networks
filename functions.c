@@ -21,7 +21,6 @@ extern char DSport[MAX_SIZE];
 extern char logged_in_UID[MAX_SIZE];
 extern char logged_in_pass[MAX_SIZE];
 extern char active_GID[MAX_SIZE];
-extern char buffer_aux[1024];
 extern socklen_t addrlen_UDP, addrlen_TCP;
 extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 extern struct sockaddr_in addr_UDP, addr_TCP;
@@ -324,6 +323,35 @@ int get_next_token(char* string, int i, char* ret) {
 long get_file_size(FILE *fp) {
 
     long Fsize;
+
+    if (fp) {
+        if (fseek(fp, 0, SEEK_END)) {
+            perror("ERROR: fseek\n");
+            exit(EXIT_FAILURE);
+        }
+
+        Fsize = ftell(fp);
+        if (Fsize == -1) {
+            perror("ERROR: ftell\n");
+            exit(EXIT_FAILURE);
+        }
+
+        if(fseek(fp, 0, SEEK_SET)) {
+            perror("ERROR: fseek\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+    return Fsize;
+}
+
+
+long  get_file_size_char(char *file_path) {
+
+    FILE *fp;
+    long Fsize = 0;
+
+    fp = fopen(file_path, "r");
+    validate_fopen(fp);
 
     if (fp) {
         if (fseek(fp, 0, SEEK_END)) {

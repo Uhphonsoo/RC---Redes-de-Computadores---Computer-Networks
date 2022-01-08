@@ -3,14 +3,14 @@
  * validate file name FName
  * improve invalid input error messages with input format
  * handle ERR messages from server
- * Testar se GID existe??? select()
- * retrieve_command tem de funcionar para imagens!!!
- * verificar tamanhos alocados para as strings todas
+ * check allocated sizes for all string
 **/
 
 // ISSUES
 /**
- * 
+ * reply is sometimes read incorrectly in ulist command
+ * post_command receiving NOK before sending data
+ * post and retrieve not working for tejo
 **/
 
 #include <stdio.h>
@@ -25,19 +25,13 @@
 #include "constants.h"
 
 int  fd_UDP, fd_TCP;
-int  errcode;
 int  logged_in;
 int  has_active_group;
-// char Message[MAX_SIZE];
-// char Reply[MAX_REPLY_SIZE];
-char message_buffer[MAX_SIZE];
-char reply_buffer[MAX_REPLY_SIZE];
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
 char logged_in_pass[MAX_SIZE];
 char active_GID[MAX_SIZE];
-char buffer_aux[1024];
 socklen_t addrlen_UDP, addrlen_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
@@ -49,7 +43,7 @@ int main(int argc, char *argv[]) {
 
     validate_program_input(argc, argv);
 
-    while(1) {
+    while (1) {
         
         fgets(command, MAX_SIZE, stdin);
         get_first_token(command, keyword);

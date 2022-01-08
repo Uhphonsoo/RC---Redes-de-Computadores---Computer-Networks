@@ -10,19 +10,13 @@
 #include "constants.h"
 
 extern int  fd_UDP, fd_TCP;
-extern int  errcode;
 extern int  logged_in;
 extern int  has_active_group;
-// extern char Message[MAX_SIZE];
-// extern char Reply[MAX_REPLY_SIZE];
-extern char message_buffer[MAX_SIZE];
-extern char reply_buffer[MAX_REPLY_SIZE];
 extern char DSIP[MAX_SIZE];
 extern char DSport[MAX_SIZE];
 extern char logged_in_UID[MAX_SIZE];
 extern char logged_in_pass[MAX_SIZE];
 extern char active_GID[MAX_SIZE];
-extern char buffer_aux[1024];
 extern socklen_t addrlen_UDP, addrlen_TCP;
 extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 extern struct sockaddr_in addr_UDP, addr_TCP;
@@ -426,8 +420,14 @@ void ulist_command() {
 
     sprintf(message, "ULS %s\n", active_GID);
 
+    /* DEBUG */
+    printf(">>> ulist: message = %s|\n", message);
+
     // COMMUNICATION with server
     send_and_receive_TCP(message, reply, strlen(message));
+
+    /* DEBUG */
+    printf(">>> ulist: reply = %s|\n", reply);
 
     // VALIDATE server reply
     sscanf(reply, "%s %s", aux, status);
@@ -441,7 +441,7 @@ void ulist_command() {
 
 void post_command(char* command) {
 
-    int n, read_bytes = 0;
+    int n, ret, read_bytes = 0;
     int file_is_being_sent = 0;
     int Tsize = 0;
     int Fsize = 0;
@@ -453,6 +453,12 @@ void post_command(char* command) {
     char *message;
     char *reply;
     FILE *fp;
+
+    /* DEBUG */
+    /* login_command("login 72182 hhhhhhhh\n");
+    select_command("select 72\n"); */
+    login_command("login 77777 password\n");
+    select_command("select 01\n");
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -476,7 +482,6 @@ void post_command(char* command) {
     if (!file_is_being_sent) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
-        // COMMUNICATION with server
         send_and_receive_TCP(message, reply, strlen(message));
     }
     else {
@@ -493,50 +498,38 @@ void post_command(char* command) {
 
         Fsize = get_file_size(fp);
 
-        // data = (char*)malloc(Fsize + 1);
-        /* if (fread(data, 1, Fsize, fp) == 0) {
-            perror("ERROR: fread\n");
-            exit(EXIT_FAILURE);
-        } */
-        /* fread(data, Fsize, 1, fp);
-        fclose(fp);
-
-        data[Fsize] = '\0'; */
-
         sprintf(message, "PST %s %s %d %s %s %d ", logged_in_UID, active_GID, Tsize, text, Fname, Fsize);
-        n = write(fd_TCP, message, strlen(message));
-        validate_write(n);
 
-        /* fread(buffer_aux, 1, sizeof(buffer_aux), fp);
-        n = write(fd_TCP, buffer_aux, strlen(buffer_aux));
-        validate_write(n);
-        bzero(buffer_aux, sizeof(buffer_aux)); */
-
-        while(!feof(fp)) {
-            fread(buffer_aux, 1, sizeof(buffer_aux), fp);
-            /* n = write(fd_TCP, buffer_aux, strlen(buffer_aux)); */
-            n = write(fd_TCP, buffer_aux, sizeof(buffer_aux));
-            validate_write(n);
-            bzero(buffer_aux, sizeof(buffer_aux));
-        }
+        send_TCP(message);
+        send_data_TCP(fp, Fsize);
         fclose(fp);
 
-        sprintf(message, "\n%c", '\0');
-        n = write(fd_TCP, message, strlen(message));
-        validate_write(n);
+        sprintf(message, "\n");
+        send_TCP(message);
+
+        /* DEBUG vvvvvv */
+        /* reply = (char*)malloc(MAX_REPLY_SIZE);
 
         ptr = reply;
-        while (reply[read_bytes] != '\n') {
-            n = read(fd_TCP, ptr, 1);
-            /* validate_read(n); */
+        while (1) {
+
+            int ret = read(fd_TCP, ptr, 1);
+            validate_read(ret);
+
+            if (*ptr == '\n') {
+                break;
+            }
+
             ptr++;
-            read_bytes++;
         }
+        *ptr = '\0';
+
+        return; */
+        /* DEBUG ^^^^^^ */
+
+        receive_TCP(reply);
         close(fd_TCP);
     }
-
-    /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
 
     sscanf(reply, "%s %s", aux, status);
     validate_post_reply(reply, aux, status);
@@ -548,19 +541,33 @@ void post_command(char* command) {
 
 void retrieve_command(char* command) {
 
+    int n;
+    int write_bytes_left;
     int file_is_being_sent = 0;
-    int Tsize = 0;
-    int Fsize = 0;
-    char aux[MAX_SIZE];
-    char MID[MAX_SIZE];
+    int read_bytes = 0;
+    int N_int;
+    int Tsize_int;
+    char buffer[MAX_SIZE];
+    char aux[10];
+    char MID[10];
+    char UID[10];
+    char Tsize[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
+    char Fsize[MAX_SIZE];
     char Fname[MAX_SIZE];
     char *data;
-    char status[MAX_SIZE];
+    char status[10];
     char N[MAX_FILE_SIZE];
     char *message;
     char *reply;
+    char *ptr;
     FILE *fp; 
+
+    /* DEBUG */
+    login_command("login 72182 hhhhhhhh\n");
+    select_command("select 27\n");
+    /* login_command("login 77777 password\n");
+    select_command("select 06\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -582,13 +589,107 @@ void retrieve_command(char* command) {
 
     sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
+    /* DEBUG */
+    /* printf("message = %s|\n", message); */
+
+    /* vvv */
+
+    create_TCP_socket();
+    get_address_info_TCP();
+
+    n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_connect(n);
+
+    send_TCP(message);
+
+    /* DEBUV vvvvvv */
+    /* reply = (char*)malloc(MAX_REPLY_SIZE);
+
+    ptr = reply;
+    while (1) {
+
+        int ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        if (*ptr == '\n') {
+            break;
+        }
+
+        ptr++;
+    }
+    *ptr = '\0';
+
+    return; */
+    /* DEBUG ^^^^^^ */
+
+    // receive keyword and status
+    receive_n_tokens_TCP(2, reply);
+
+    sscanf(reply, "%s %s", aux, status);
+    if (strcmp(status, "NOK") == 0) {
+        printf("> Could not retrieve. There was a problem with the retrieve request.\n");
+        return;
+    }
+    if (strcmp(status, "EOF") == 0) {
+        printf("> There are no messages to retrieve.\n");
+        return;
+    }
+
+    // receive N
+    receive_n_tokens_TCP(1, reply);
+    sscanf(reply, "%s", N);
+
+    /* DEBUG */
+    /* printf(">>> N = %s|\n", N); */
+
+    N_int = atoi(N);
+    for (int i = 0; i < N_int; i++) {
+
+        // receive MID and UID
+        receive_n_chars_TCP(11, reply);
+        sscanf(reply, "%s %s", MID, UID);
+
+        /* DEBUG */
+        printf(">>> MID = %s|\n", MID);
+        printf(">>> UID = %s|\n", UID);
+
+        // receive Tsize
+        receive_n_tokens_TCP(1, Tsize);
+        
+        // receive text
+        Tsize_int = atoi(Tsize);
+        receive_n_bytes_TCP(Tsize_int, text);
+
+        /* DEBUG */
+        printf(">>> text = %s|\n", text);
+
+        // read next char to test for file
+        receive_n_chars_TCP(1, buffer);
+
+        // if there is a file
+        if (buffer[0] == ' ') {
+
+            receive_n_chars_TCP(2, buffer);
+
+            receive_n_tokens_TCP(2, buffer);
+            sscanf(buffer, "%s %s", Fname, Fsize);
+
+            receive_data_TCP(Fname, Fsize);
+        }
+
+        /* DEBUG */
+        printf("---------------------\n");
+    }
+
+    /* ^^^ */
+
     // COMMUNICATION with server
-    send_and_receive_TCP(message, reply, strlen(message));
+    /* send_and_receive_TCP(message, reply, strlen(message)); */
 
     // VALIDATE server reply
-    sscanf(reply, "%s %s, %s", aux, status, N);
+    /* sscanf(reply, "%s %s, %s", aux, status, N);
     if (validate_retrieve_reply(reply, aux, status, N))
-        show_messages(reply);
+        show_messages(reply); */
 
     free(message);
     free(reply);
@@ -1059,6 +1160,8 @@ void create_UDP_socket() {
 
 void get_address_info_UDP() {
 
+    int errcode;
+
     memset(&hints_UDP, 0, sizeof(hints_UDP)); 
     hints_UDP.ai_family = AF_INET;        // IPv4
     hints_UDP.ai_socktype = SOCK_DGRAM;   // UDP socket
@@ -1083,6 +1186,8 @@ void create_TCP_socket() {
 
 void get_address_info_TCP() {
 
+    int errcode;
+
     memset(&hints_TCP, 0, sizeof(hints_TCP)); 
     hints_TCP.ai_family = AF_INET;        // IPv4
     hints_TCP.ai_socktype = SOCK_STREAM;  // TCP socket
@@ -1096,16 +1201,20 @@ void get_address_info_TCP() {
 
 void send_and_receive_UDP(char* message, char* reply){
 
+    int n;
+
     // SOCKET creation
     create_UDP_socket();
     get_address_info_UDP();
 
     // SEND message and validate return value
-    validate_sendto(sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen));
+    n = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    validate_sendto(n);
 
     // RECEIVE reply and validate return value
     addrlen_UDP = sizeof(addr_UDP);
-    validate_recvfrom(recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP));
+    n = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+    validate_recvfrom(n);
 
     // CLOSE socket
     close(fd_UDP);
@@ -1114,8 +1223,8 @@ void send_and_receive_UDP(char* message, char* reply){
 
 void send_and_receive_TCP(char* message, char* reply, int write_n) {
 
-    int write_bytes_left = write_n;
-    int read_bytes = 0;
+    int ret;
+    int bytes_to_write = strlen(message) * sizeof(char);
     char *ptr;
 
     create_TCP_socket();
@@ -1124,22 +1233,203 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
     int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_connect(n);
 
-    while (write_bytes_left > 0) {
-        n = write(fd_TCP, message, strlen(message));
-        validate_write(n);
-        write_bytes_left -= n;
-        message += n;
+    while (bytes_to_write > 0) {
+        
+        ret = write(fd_TCP, message, bytes_to_write);
+        validate_write(ret);
+
+        bytes_to_write -= ret;
+        message += ret;
     }
 
     ptr = reply;
-    while (reply[read_bytes] != '\n') {
-        n = read(fd_TCP, ptr, 1);
-        validate_read(n);
+    while (1) {
+
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+        
+        if (*ptr == '\n') {
+            break;
+        }
+        
         ptr++;
-        read_bytes++;
     }
+    *ptr = '\0';
     close(fd_TCP);
 }
+
+
+void send_TCP(char *string) {
+
+    int ret;
+    int bytes_to_write = strlen(string) * sizeof(char);
+    char *ptr;
+
+    while (bytes_to_write > 0) {
+
+        ret = write(fd_TCP, string, bytes_to_write);
+        validate_write(ret);
+
+        bytes_to_write -= ret;
+        string += ret;
+    }
+}
+
+
+void send_data_TCP(FILE *fp, int Fsize) {
+
+    int ret;
+    int bytes_to_write = Fsize;
+    char *buffer = (char *)malloc(Fsize + 1);
+
+    fread(buffer, Fsize, 1, fp);
+    buffer[Fsize] = '\0';
+    while (bytes_to_write > 0) {
+
+        ret = write(fd_TCP, buffer, bytes_to_write);
+        validate_write(ret);
+
+        bytes_to_write -= ret;
+        buffer += ret;
+    }
+
+    /* free(buffer); */
+}
+
+
+void receive_TCP(char *string) {
+
+    int ret;
+    int i = 0;
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (1) {
+
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        if (*ptr == '\n') {
+            break;
+        }
+
+        ptr++;
+    }
+    *ptr = '\0';
+}
+
+
+/* void receive_first_tokens_retrieve_TCP(char *string) {
+
+    int ret;
+    int spaces_to_read = 2;
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (spaces_to_read > 0) {
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        if (isspace(*ptr)) {
+            spaces_to_read--;
+        }
+        ptr++;
+    }
+    *ptr = '\0';
+} */
+
+
+void receive_n_tokens_TCP(int n, char *string) {
+
+    int ret;
+    int spaces_to_read = n;
+    char *ptr;
+    
+    string[0] = '\0';
+
+    ptr = string;
+    while (spaces_to_read > 0) {
+        
+        // (1 char = 1 Byte)
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        if (isspace(*ptr)) {
+            spaces_to_read--;
+        }
+        ptr++;
+    }
+    ptr--;
+    *ptr = '\0';
+}
+
+
+void receive_n_chars_TCP(int n, char *string) {
+
+    int ret;
+    int bytes_to_read = n * sizeof(char);
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (bytes_to_read > 0) {
+
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        bytes_to_read--;
+        ptr++;
+    }
+}
+
+void receive_n_bytes_TCP(int n, char *string) {
+
+    int ret;
+    int bytes_to_read = n;
+    char *ptr;
+
+    string[0] = '\0';
+
+    ptr = string;
+    while (bytes_to_read > 0) {
+
+        ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        bytes_to_read--;
+        ptr++;
+    }
+}
+
+
+void receive_data_TCP(char *file_path, char *Fsize) {
+
+    int ret;
+    int Fsize_int = atoi(Fsize);
+    int bytes_to_read = Fsize_int;
+    char buffer[1024];
+    FILE *fp;
+
+    fp = fopen(file_path, "w");
+    validate_fopen(fp);
+
+    while(bytes_to_read > 0) {
+
+        ret = read(fd_TCP, buffer, 1024);
+        validate_read(ret);
+
+        fwrite(buffer, ret, 1, fp);
+
+        bytes_to_read -= ret;   
+    }
+    fclose(fp);
+}
+
 
 void input_error(){
     fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");

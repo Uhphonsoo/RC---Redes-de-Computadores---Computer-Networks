@@ -1,6 +1,8 @@
 #ifndef _USER_FUNCTIONS_
 #define _USER_FUNCTIONS_
 
+#include <stdio.h>
+
 // client functions
 // registration commands
 void register_command(char*);
@@ -48,12 +50,22 @@ void  validate_my_groups_reply(char*, char*, char*);
 int   validate_ulist_reply(char*, char*, char*);
 void  validate_post_reply(char*, char*, char*);
 int   validate_retrieve_reply(char*, char*, char*, char*);
-void  create_UDP_socket();
-void  get_address_info_UDP();
-void  create_TCP_socket();
-void  get_address_info_TCP();
-void  send_and_receive_UDP(char*, char*);
-void  send_and_receive_TCP(char*, char*, int);
+
+// socket related functions
+void create_UDP_socket();
+void get_address_info_UDP();
+void create_TCP_socket();
+void get_address_info_TCP();
+void send_and_receive_UDP(char*, char*);
+void send_and_receive_TCP(char *message, char *reply, int); // ccc
+void send_TCP(char *string); // ccc
+void send_data_TCP(FILE *fp, int Fsize); // ccc
+void receive_TCP(char *string); // ccc
+// void receive_first_tokens_retrieve_TCP(char *string); // !!!
+void receive_n_tokens_TCP(int n, char *string); // ccc
+void receive_n_chars_TCP(int n, char *string); // ccc
+void receive_n_bytes_TCP(int n, char *string); // ccc
+void receive_data_TCP(char *file_path, char *Fsize); // ccc
 
 void  input_error();
 void  invalid_UID();
