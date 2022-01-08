@@ -21,7 +21,6 @@ extern char DSport[MAX_SIZE];
 extern char logged_in_UID[MAX_SIZE];
 extern char logged_in_pass[MAX_SIZE];
 extern char active_GID[MAX_SIZE];
-extern char buffer_aux[1024];
 extern socklen_t addrlen_UDP, addrlen_TCP;
 extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 extern struct sockaddr_in addr_UDP, addr_TCP;

@@ -61,7 +61,7 @@ void send_and_receive_TCP(char *message, char *reply, int); // ccc
 void send_TCP(char *string); // ccc
 void send_data_TCP(FILE *fp, int Fsize); // ccc
 void receive_TCP(char *string); // ccc
-void receive_first_tokens_retrieve_TCP(char *string); // !!!
+// void receive_first_tokens_retrieve_TCP(char *string); // !!!
 void receive_n_tokens_TCP(int n, char *string); // ccc
 void receive_n_chars_TCP(int n, char *string); // ccc
 void receive_n_bytes_TCP(int n, char *string); // ccc

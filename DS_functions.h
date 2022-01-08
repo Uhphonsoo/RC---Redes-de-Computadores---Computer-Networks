@@ -68,6 +68,8 @@ int   get_index(GROUPLIST *list, char *GID);
 void  get_next_MID(char *MID, GROUPLIST *list, char *GID);
 void  increment_MID(char *MID);
 int   get_number_of_messages(char *GID);
+void  update_last_available_message(GROUPLIST *list, char *GID, int i);
+void convert_GID_int_to_string(int MID_int, char *MID);
 
 // socket related functions
 int  create_socket_datagram();

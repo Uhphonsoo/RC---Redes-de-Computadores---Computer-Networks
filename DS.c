@@ -4,7 +4,6 @@
  * check allocated sizes for all strings
  * frees for all mallocs
  * validate_post_message
- * 
 **/
 
 // ISSUES
@@ -29,19 +28,6 @@
 int verbose_mode;
 int Number_of_groups;
 GROUPLIST *Group_list;
-/* socklen_t addrlen_UDP;
-struct sockaddr_in addr_UDP; */
-// int  logged_in;
-// int  has_active_group;
-// char message[MAX_SIZE];
-// char Reply[MAX_REPLY_SIZE];
-// char message_buffer[MAX_SIZE];
-// char reply_buffer[MAX_REPLY_SIZE];
-// char DSIP[MAX_SIZE];
-// char logged_in_UID[MAX_SIZE];
-// char logged_in_pass[MAX_SIZE];
-// char active_GID[MAX_SIZE];
-// char buffer_aux[1024];
 
 
 int main(int argc, char *argv[]) {
@@ -53,24 +39,16 @@ int main(int argc, char *argv[]) {
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
     char DSport[MAX_SIZE];
-    /* char message[MAX_SIZE]; */
     char *message;
     struct sockaddr_in addr;
-    // socklen_t addrlen_UDP, addrlen_TCP, addrlen; /* DEBUG */
-    // struct sockaddr_in addr_UDP, addr_TCP, addr; /* DEBUG */
 
     validate_program_input(argc, argv, DSport);
 
     Group_list = malloc(sizeof(*Group_list));
-    Number_of_groups = get_groups(Group_list);
 
     // initialize group list
     initialize_group_list(Group_list);
-
-    /* DEBUG */
-    /* strcpy(Group_list->group_name[0], "teste");
-    printf(">>> Group_list->group_name[0] = %s|\n", Group_list->group_name[0]);
-    printf(">>> Number_of_groups = %d\n", Number_of_groups); */
+    Number_of_groups = get_groups(Group_list);
 
     fd_TCP = create_socket_stream();
     get_address_info_stream(&hints_TCP, &res_TCP, DSport);
