@@ -15,12 +15,6 @@
 extern int  verbose_mode;
 extern int Number_of_groups;
 extern GROUPLIST *Group_list;
-/* extern socklen_t addrlen_UDP;
-extern struct sockaddr_in addr_UDP; */
-// extern char DSIP[MAX_SIZE];
-// extern char DSport[MAX_SIZE];
-// extern char Message[MAX_SIZE];
-// extern char reply[MAX_REPLY_SIZE];
 
 void validate_program_input(int argc, char **argv, char *DSport) {
 
@@ -461,7 +455,7 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     char buffer[MAX_SIZE];
     char message_dir_path[30];
     char *reply = (char *)malloc(MAX_REPLY_SIZE);
-
+ 
     /* vvv */
     receive_n_chars_TCP(13, buffer, fd);
 
@@ -482,16 +476,16 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     /* printf(">>> text = %s|\n", text);
     printf(">>> file_is_being_sent = %d\n", file_is_being_sent); */
 
-    // TODO
     int index = get_index(Group_list, GID);
     strcpy(MID, Group_list->last_message_available[index]);
+
     /* DEBUG */
-    /* printf(">>> current MID = %s|\n", MID); */
+    /* printf(">>> Group_list->last_message_available[index] = %s|\n", Group_list->last_message_available[index]); */
 
     get_next_MID(MID, Group_list, GID);
 
     /* DEBUG */
-    printf(">>> next MID = %s|\n", MID);
+    /* printf(">>> next MID = %s|\n", MID); */
 
     // make message directory
     sprintf(message_dir_path, "GROUPS/%s/MSG/%s", GID, MID);
@@ -1001,9 +995,6 @@ int user_is_registered(char *UID) {
     sprintf(file_path, "USERS/%s", UID);
     fp = fopen(file_path, "r");
 
-    /* DEBUG */
-    printf(">>> file_paht = %s|\n", file_path);
-
     if (fp == NULL) {
         return 0;
     }
@@ -1307,7 +1298,7 @@ int get_groups(GROUPLIST *list) {
 
     DIR *d;
     struct dirent *dir;
-    int i=0;
+    int i = 0;
     FILE *fp;
     char GIDname[30];
     
@@ -1326,6 +1317,8 @@ int get_groups(GROUPLIST *list) {
             strcpy(list->group_no[i], dir->d_name);
             sprintf(GIDname, "GROUPS/%s/%s_name.txt", dir->d_name, dir->d_name);
             fp = fopen(GIDname, "r");
+
+            update_last_available_message(list, dir->d_name, i);
 
             if(fp) {
                 fscanf(fp, "%24s", list->group_name[i]);
@@ -1568,15 +1561,8 @@ void increment_last_message_available(GROUPLIST *list, char *GID) {
 
     i = get_index(list, GID);
 
-    /* DEBUG */
-    printf(">>> index = %d\n", i);
-
     last_message_available_int = atoi(list->last_message_available[i]);
     new_last_message_available_int = last_message_available_int + 1;
-
-    /* DEBUG */
-    printf(">>> last_message_available_int = %d\n", last_message_available_int);
-    printf(">>> next_message_available_int = %d\n", new_last_message_available_int);
 
     if (new_last_message_available_int > 0 && new_last_message_available_int < 10) {
         sprintf(new_last_message_available, "000%d", new_last_message_available_int);
@@ -1593,9 +1579,6 @@ void increment_last_message_available(GROUPLIST *list, char *GID) {
     else {
         fprintf(stderr, ">>> ERROR: increment_last_message_available\n");
     }
-
-    /* DEBUG */
-    printf(">>> new_last_message_available = %s\n", new_last_message_available);
 
     strcpy(list->last_message_available[i], new_last_message_available);
 }
@@ -1669,6 +1652,65 @@ void increment_MID(char *MID) {
     }
 
     strcpy(MID, new_MID);
+}
+
+
+void update_last_available_message(GROUPLIST *list, char *GID, int i) {
+
+    int largest_MID_int = 0;
+    int current_MID_int;
+    DIR *d;
+    struct dirent *dir;
+    char group_messages_path[30];
+    char largest_MID[10];
+    // int i = 0;
+    // FILE *fp;
+    // char GIDname[30];
+    
+    sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
+    d = opendir(group_messages_path);
+    if (d) {
+
+        while ((dir = readdir(d)) != NULL) {
+
+            if (dir->d_name[0] == '.') {
+                continue;
+            }
+            if (strlen(dir->d_name) != 4) {
+                continue;
+            }
+
+            current_MID_int = atoi(dir->d_name);
+            if (current_MID_int > largest_MID_int) {
+                largest_MID_int = current_MID_int;
+            }
+            list->number_of_messages[i]++;
+        }
+        closedir(d);
+
+        convert_GID_int_to_string(largest_MID_int, largest_MID);
+        strcpy(list->last_message_available[i], largest_MID);
+    }
+}
+
+
+void convert_GID_int_to_string(int MID_int, char *MID) {
+
+    if (MID_int >= 0 && MID_int <= 9) {
+        sprintf(MID, "000%d", MID_int);
+    }
+    else if (MID_int >= 10 && MID_int <= 99) {
+        sprintf(MID, "00%d", MID_int);
+    }
+    else if (MID_int >= 100 && MID_int <= 999) {
+        sprintf(MID, "0%d", MID_int);
+    }
+    else if (MID_int >= 1000 && MID_int <= 9999) {
+        sprintf(MID, "%d", MID_int);
+    }
+    else {
+        fprintf(stderr, "ERROR: convert_GID_int_to_string\n");
+    }
 }
 
 

@@ -10,19 +10,13 @@
 #include "constants.h"
 
 extern int  fd_UDP, fd_TCP;
-extern int  errcode;
 extern int  logged_in;
 extern int  has_active_group;
-// extern char Message[MAX_SIZE];
-// extern char Reply[MAX_REPLY_SIZE];
-extern char message_buffer[MAX_SIZE];
-extern char reply_buffer[MAX_REPLY_SIZE];
 extern char DSIP[MAX_SIZE];
 extern char DSport[MAX_SIZE];
 extern char logged_in_UID[MAX_SIZE];
 extern char logged_in_pass[MAX_SIZE];
 extern char active_GID[MAX_SIZE];
-extern char buffer_aux[1024];
 extern socklen_t addrlen_UDP, addrlen_TCP;
 extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 extern struct sockaddr_in addr_UDP, addr_TCP;
@@ -461,6 +455,8 @@ void post_command(char* command) {
     FILE *fp;
 
     /* DEBUG */
+    /* login_command("login 72182 hhhhhhhh\n");
+    select_command("select 72\n"); */
     login_command("login 77777 password\n");
     select_command("select 01\n");
 
@@ -510,6 +506,26 @@ void post_command(char* command) {
         sprintf(message, "\n");
         send_TCP(message);
 
+        /* DEBUG vvvvvv */
+        /* reply = (char*)malloc(MAX_REPLY_SIZE);
+
+        ptr = reply;
+        while (1) {
+
+            int ret = read(fd_TCP, ptr, 1);
+            validate_read(ret);
+
+            if (*ptr == '\n') {
+                break;
+            }
+
+            ptr++;
+        }
+        *ptr = '\0';
+
+        return; */
+        /* DEBUG ^^^^^^ */
+
         receive_TCP(reply);
         close(fd_TCP);
     }
@@ -548,11 +564,9 @@ void retrieve_command(char* command) {
 
     /* DEBUG */
     login_command("login 72182 hhhhhhhh\n");
-    select_command("select 72\n");
-    /* login_command("login 77777 hhhhhhhh\n"); */
-    /* login_command("login 77777 password\n"); */
-    /* select_command("select 06\n"); */
-
+    select_command("select 27\n");
+    /* login_command("login 77777 password\n");
+    select_command("select 06\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -585,19 +599,30 @@ void retrieve_command(char* command) {
     n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_connect(n);
 
-    write_bytes_left = strlen(message);
-    while (write_bytes_left > 0) {
-        n = write(fd_TCP, message, strlen(message));
-        validate_write(n);
-        write_bytes_left -= n;
-        message += n;
+    send_TCP(message);
+
+    /* DEBUV vvvvvv */
+    /* reply = (char*)malloc(MAX_REPLY_SIZE);
+
+    ptr = reply;
+    while (1) {
+
+        int ret = read(fd_TCP, ptr, 1);
+        validate_read(ret);
+
+        if (*ptr == '\n') {
+            break;
+        }
+
+        ptr++;
     }
+    *ptr = '\0';
 
-    // TODO !!! the receive part
-    receive_first_tokens_retrieve_TCP(reply);
+    return; */
+    /* DEBUG ^^^^^^ */
 
-    /* DEBUG */
-    /* printf(">>> retrieve: reply = %s|\n", reply); */
+    // receive keyword and status
+    receive_n_tokens_TCP(2, reply);
 
     sscanf(reply, "%s %s", aux, status);
     if (strcmp(status, "NOK") == 0) {
@@ -609,17 +634,17 @@ void retrieve_command(char* command) {
         return;
     }
 
-    /* DEBUG */
-    /* printf(">>> aux = %s|\n", aux);
-    printf(">>> status = %s|\n", status); */
-
+    // receive N
     receive_n_tokens_TCP(1, reply);
     sscanf(reply, "%s", N);
 
-    N_int = atoi(N);
+    /* DEBUG */
+    /* printf(">>> N = %s|\n", N); */
 
+    N_int = atoi(N);
     for (int i = 0; i < N_int; i++) {
 
+        // receive MID and UID
         receive_n_chars_TCP(11, reply);
         sscanf(reply, "%s %s", MID, UID);
 
@@ -627,7 +652,7 @@ void retrieve_command(char* command) {
         printf(">>> MID = %s|\n", MID);
         printf(">>> UID = %s|\n", UID);
 
-        // space
+        // receive Tsize
         receive_n_tokens_TCP(1, Tsize);
         
         // receive text
@@ -1134,6 +1159,8 @@ void create_UDP_socket() {
 
 void get_address_info_UDP() {
 
+    int errcode;
+
     memset(&hints_UDP, 0, sizeof(hints_UDP)); 
     hints_UDP.ai_family = AF_INET;        // IPv4
     hints_UDP.ai_socktype = SOCK_DGRAM;   // UDP socket
@@ -1157,6 +1184,8 @@ void create_TCP_socket() {
 
 
 void get_address_info_TCP() {
+
+    int errcode;
 
     memset(&hints_TCP, 0, sizeof(hints_TCP)); 
     hints_TCP.ai_family = AF_INET;        // IPv4
@@ -1250,9 +1279,10 @@ void send_data_TCP(FILE *fp, int Fsize) {
 
     int ret;
     int bytes_to_write = Fsize;
-    char *buffer = (char *)malloc(Fsize);
+    char *buffer = (char *)malloc(Fsize + 1);
 
     fread(buffer, Fsize, 1, fp);
+    buffer[Fsize] = '\0';
     while (bytes_to_write > 0) {
 
         ret = write(fd_TCP, buffer, bytes_to_write);
@@ -1261,6 +1291,8 @@ void send_data_TCP(FILE *fp, int Fsize) {
         bytes_to_write -= ret;
         buffer += ret;
     }
+
+    /* free(buffer); */
 }
 
 
@@ -1288,11 +1320,8 @@ void receive_TCP(char *string) {
 }
 
 
-void receive_first_tokens_retrieve_TCP(char *string) {
+/* void receive_first_tokens_retrieve_TCP(char *string) {
 
-    // int ret;
-    // int bytes_to_read = n * sizeof(char);
-    // int read_bytes = 0;
     int ret;
     int spaces_to_read = 2;
     char *ptr;
@@ -1310,7 +1339,7 @@ void receive_first_tokens_retrieve_TCP(char *string) {
         ptr++;
     }
     *ptr = '\0';
-}
+} */
 
 
 void receive_n_tokens_TCP(int n, char *string) {
@@ -1394,7 +1423,7 @@ void receive_data_TCP(char *file_path, char *Fsize) {
         validate_read(ret);
 
         fwrite(buffer, ret, 1, fp);
-        
+
         bytes_to_read -= ret;   
     }
     fclose(fp);
