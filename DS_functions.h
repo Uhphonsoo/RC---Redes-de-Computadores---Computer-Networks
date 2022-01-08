@@ -77,8 +77,8 @@ void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, ch
 int  create_socket_stream();
 void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port);
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
-void receive_message_TCP(int fd, char *message);
-void receive_keyword_TCP(char *keyword, int fd);
+void receive_message_TCP(int fd, char *message); // !!!
+void receive_keyword_TCP(char *keyword, int fd); // !!!
 void receive_n_chars_TCP(int n, char *string, int fd); // !!!
 int  receive_n_plus_1_chars_TCP(int n, char *string, int fd); // !!!
 void receive_n_tokens_TCP(int n, char *string, int fd); // !!!
@@ -87,7 +87,7 @@ void send_n_chars_TCP(int n, char *string, int fd); // !!!
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 void send_reply_TCP(char *reply, int fd);
 void send_TCP(char *string, int fd); // !!!
-void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd);
+void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd); // !!!
 void send_data_TCP(char *FName, char *Fsize, int fd); // !!!
 
 // file related functions
