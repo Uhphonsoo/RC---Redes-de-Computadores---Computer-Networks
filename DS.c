@@ -41,6 +41,7 @@ int main(int argc, char *argv[]) {
     char DSport[MAX_SIZE];
     char *message;
     struct sockaddr_in addr;
+    struct timeval timeout = {20, 0};
 
     validate_program_input(argc, argv, DSport);
 
@@ -85,7 +86,7 @@ int main(int argc, char *argv[]) {
         ready_sockets = current_sockets;
 
         /* Block server until timeout */
-        n = select(FD_SETSIZE, &ready_sockets, NULL, NULL, NULL);
+        n = select(FD_SETSIZE, &ready_sockets, NULL, NULL, &timeout);
         validate_select(n);
 
         /* Check for requests */
