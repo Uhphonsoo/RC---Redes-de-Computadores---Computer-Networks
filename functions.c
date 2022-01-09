@@ -409,6 +409,12 @@ void show_users(char* reply) {
     printf("> Group name: %s\n", GName);
     printf(">> Subscribed users:\n");
 
+    // if there are no users
+    if (number_of_tokens == 3) {
+        printf(">> None\n");
+        return;
+    }
+
     while (i <= number_of_tokens) {
         get_nth_token(reply, i++, UID);
         printf(">> User ID: %s\n", UID);
@@ -545,6 +551,19 @@ void clear_message_and_reply(char *message, char *reply) {
     clear_string(message);
     clear_string(reply);
 }
+
+
+void strip_quotes_from_string(char *string) {
+
+    int i = 0;
+    int length = strlen(string);
+
+    for (i = 0; i < length - 2; i++) {
+        string[i] = string[i+1];
+    }
+    string[i] = '\0';
+}
+
 
 int is_empty_string(char* string) {
 

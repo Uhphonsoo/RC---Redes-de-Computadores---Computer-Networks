@@ -1,9 +1,9 @@
 // TODO
 /**
- * time out in select
  * check allocated sizes for all strings
  * frees for all mallocs
  * validate_post_message
+ * cut quotes "" from text in retrieve
 **/
 
 // ISSUES
@@ -11,7 +11,6 @@
  * reply in ulist_command is sometimes read incorrectly (???)
  * not sure if get_client_ip_and_port is working as intended
  * post_command not working for pictures
- * last_MID is not persistent!
 **/
 
 #include <stdio.h>

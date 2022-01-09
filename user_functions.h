@@ -65,7 +65,7 @@ void receive_TCP(char *string); // ccc
 void receive_n_tokens_TCP(int n, char *string); // ccc
 void receive_n_chars_TCP(int n, char *string); // ccc
 void receive_n_bytes_TCP(int n, char *string); // ccc
-void receive_data_TCP(char *file_path, char *Fsize); // ccc
+void receive_data_TCP(char *file_path, char *Fsize); // '\0'???
 
 void  input_error();
 void  invalid_UID();

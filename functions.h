@@ -35,5 +35,6 @@ int   is_empty_string(char *string);
 void  clear_string(char *string);
 void  terminate_string_after_n_tokens(char *string, int n);
 void  clear_message_and_reply(char *message_, char *reply_);
+void  strip_quotes_from_string(char *string);
 
 #endif
