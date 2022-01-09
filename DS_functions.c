@@ -960,7 +960,7 @@ int validate_post_message(char *UID, char *GID) {
 
 int validate_retrieve_message(char *UID, char *GID, char *MID) {
 
-    if (!validate_UID(UID) || !validate_GID(GID) || !validate_MID(MID)) {
+    if (!validate_UID(UID) || !validate_GID(GID) || !validate_MID(MID) || !user_is_subscribed_to_group(UID, GID)) {
         return 0;
     }
 

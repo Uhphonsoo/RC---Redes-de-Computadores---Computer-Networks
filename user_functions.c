@@ -604,7 +604,7 @@ void retrieve_command(char* command) {
     send_TCP(message);
 
     /* DEBUV vvvvvv */
-    reply = (char*)malloc(MAX_REPLY_SIZE);
+    /* reply = (char*)malloc(MAX_REPLY_SIZE);
 
     ptr = reply;
     while (1) {
@@ -620,7 +620,7 @@ void retrieve_command(char* command) {
     }
     *ptr = '\0';
 
-    return;
+    return; */
     /* DEBUG ^^^^^^ */
 
     // receive keyword and status
@@ -628,7 +628,7 @@ void retrieve_command(char* command) {
 
     sscanf(reply, "%s %s", aux, status);
     if (strcmp(status, "NOK") == 0) {
-        printf("> Could not retrieve. There was a problem with the retrieve request.\n");
+        printf("> Could not retrieve messages.\n");
         return;
     }
     if (strcmp(status, "EOF") == 0) {
