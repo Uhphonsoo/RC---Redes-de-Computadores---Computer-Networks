@@ -457,8 +457,8 @@ void post_command(char* command) {
     /* DEBUG */
     /* login_command("login 72182 hhhhhhhh\n");
     select_command("select 72\n"); */
-    login_command("login 77777 password\n");
-    select_command("select 01\n");
+    /* login_command("login 77777 password\n");
+    select_command("select 01\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -563,8 +563,8 @@ void retrieve_command(char* command) {
     FILE *fp; 
 
     /* DEBUG */
-    login_command("login 72182 hhhhhhhh\n");
-    select_command("select 27\n");
+    /* login_command("login 72182 hhhhhhhh\n");
+    select_command("select 27\n"); */
     /* login_command("login 77777 password\n");
     select_command("select 06\n"); */
 
@@ -907,6 +907,9 @@ void validate_unregister_reply(char* reply,char* aux, char* status) {
     }
 
     if (strcmp(status, "OK") == 0) {
+        logged_in = 0;
+        clear_string(logged_in_UID);
+        clear_string(logged_in_pass);
         printf("> User successfully unregistered.\n");
     }
     else if (strcmp(status, "NOK") == 0) {
@@ -1200,20 +1203,22 @@ void get_address_info_TCP() {
 
 void send_and_receive_UDP(char* message, char* reply){
 
-    int n;
+    int ret;
 
     // SOCKET creation
     create_UDP_socket();
     get_address_info_UDP();
 
     // SEND message and validate return value
-    n = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
-    validate_sendto(n);
+    ret = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    validate_sendto(ret);
 
     // RECEIVE reply and validate return value
     addrlen_UDP = sizeof(addr_UDP);
-    n = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
-    validate_recvfrom(n);
+    ret = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+    validate_recvfrom(ret);
+
+    reply[ret] = '\0';
 
     // CLOSE socket
     close(fd_UDP);
@@ -1262,7 +1267,6 @@ void send_TCP(char *string) {
 
     int ret;
     int bytes_to_write = strlen(string) * sizeof(char);
-    char *ptr;
 
     while (bytes_to_write > 0) {
 
@@ -1292,14 +1296,13 @@ void send_data_TCP(FILE *fp, int Fsize) {
         buffer += ret;
     }
 
-    /* free(buffer); */
+    free(buffer);
 }
 
 
 void receive_TCP(char *string) {
 
     int ret;
-    int i = 0;
     char *ptr;
 
     string[0] = '\0';
@@ -1384,6 +1387,7 @@ void receive_n_chars_TCP(int n, char *string) {
         bytes_to_read--;
         ptr++;
     }
+    *ptr = '\0';
 }
 
 void receive_n_bytes_TCP(int n, char *string) {
@@ -1408,10 +1412,9 @@ void receive_n_bytes_TCP(int n, char *string) {
 
 void receive_data_TCP(char *file_path, char *Fsize) {
 
-    int ret;
-    int Fsize_int = atoi(Fsize);
-    int bytes_to_read = Fsize_int;
-    char buffer[1024];
+    int   ret;
+    int   bytes_to_read = atoi(Fsize);
+    char  buffer[1024];
     FILE *fp;
 
     fp = fopen(file_path, "w");
@@ -1423,7 +1426,6 @@ void receive_data_TCP(char *file_path, char *Fsize) {
         validate_read(ret);
 
         fwrite(buffer, ret, 1, fp);
-
         bytes_to_read -= ret;   
     }
     fclose(fp);
