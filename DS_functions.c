@@ -534,6 +534,9 @@ void retrieve_command(char *message, int fd, struct sockaddr_in *addr) {
     receive_n_chars_TCP(14, buffer, fd);
     sscanf(buffer, "%s %s %s", UID, GID, MID);
 
+    /* DEBUG */
+    printf("--- MID = %s|\n", MID);
+
     if (!validate_retrieve_message(UID, GID, MID)) {
         strcpy(reply, "RRT NOK\n");
         send_TCP(reply, fd);
@@ -544,6 +547,9 @@ void retrieve_command(char *message, int fd, struct sockaddr_in *addr) {
         send_TCP(reply, fd);
         return;
     }
+
+    /* DEBUG */
+    printf("--- MID = %s|\n", MID);
 
     retrieve_and_send_messages_TCP(UID, GID, MID, fd);
 
@@ -2084,6 +2090,12 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
 
         number_of_files = get_number_of_files(group_message_path);
 
+        sprintf(file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
+        Tsize_int = get_file_size_char(file_path);
+        sprintf(Tsize, "%d", Tsize_int);
+
+        read_text_from_file(text, file_path, Tsize_int);
+
         if (number_of_files == 3) { // if there is file associated with message
 
             d = opendir(group_message_path);
@@ -2101,24 +2113,7 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
             Fsize_int = get_file_size_char(file_path);
             sprintf(Fsize, "%d", Fsize_int);
 
-            sprintf(file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
-            Tsize_int = get_file_size_char(file_path);
-            sprintf(Tsize, "%d", Tsize_int);
-
-            /* DEBUG */
-            printf(">>> file_path = %s|\n", file_path);
-            printf(">>> Fsize = %s|\n", Fsize);
-            printf(">>> Tsize = %s|\n", Tsize);
-
-            read_text_from_file(text, file_path, Tsize_int);
-
-            /* DEBUG */
-            printf(">>> text = %s|\n", text);
-
-            sprintf(reply_aux, "%s %s %s %s %s %s ", MID, UID, Tsize, text, FName, Fsize);
-
-            /* DEBUG */
-            printf(">>> reply_aux = %s|\n", reply_aux);
+            sprintf(reply_aux, "%s %s %s %s / %s %s ", MID, UID, Tsize, text, FName, Fsize);
             
             send_TCP(reply_aux, fd);
             
@@ -2128,13 +2123,18 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
             /* DEBUG */
             /* printf(">>> file_path2 = %s|\n", file_path); */
 
-            /* DEBUG */
-            printf("-----------------\n");
-
             /* strcpy(aux, " ");
             send_n_chars_TCP(1, aux, fd); */
+
+            /* DEBUG */
+            printf("=== FILE\n");
+            printf("=== FName = %s|\n", FName);
+            printf("=== Fsize = %s|\n", Fsize);
         }
         else {
+            /* DEBUG */
+            printf("=== NO FILE\n");
+
             sprintf(reply_aux, "%s %s %s %s", MID, UID, Tsize, text);
             send_TCP(reply_aux, fd);
         }
@@ -2143,6 +2143,13 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
         if (read_messages == 20) {
             break;
         }
+
+        /* DEBUG */
+        printf("=== MID = %s|\n", MID);
+        printf("=== UID = %s|\n", UID);
+        printf("=== Tsize = %s|\n", Tsize);
+        printf("=== text = %s|\n", text);
+        printf("-----------------\n");
 
         increment_MID(MID); 
         sprintf(group_message_path, "GROUPS/%s/MSG/%s", GID, MID);
@@ -2197,7 +2204,7 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
         
     } */
     fclose(fp);
-    free(buffer);
+    /* free(buffer); */
 }
 
 

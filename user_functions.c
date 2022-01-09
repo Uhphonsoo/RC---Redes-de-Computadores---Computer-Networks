@@ -565,8 +565,8 @@ void retrieve_command(char* command) {
     /* DEBUG */
     /* login_command("login 72182 hhhhhhhh\n");
     select_command("select 27\n"); */
-    /* login_command("login 77777 password\n");
-    select_command("select 06\n"); */
+    login_command("login 77777 password\n");
+    select_command("select 01\n");
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -1296,7 +1296,7 @@ void send_data_TCP(FILE *fp, int Fsize) {
         buffer += ret;
     }
 
-    free(buffer);
+    /* free(buffer); */
 }
 
 
