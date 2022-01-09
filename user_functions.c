@@ -1407,6 +1407,7 @@ void receive_n_bytes_TCP(int n, char *string) {
         bytes_to_read--;
         ptr++;
     }
+    *ptr = '\0';
 }
 
 

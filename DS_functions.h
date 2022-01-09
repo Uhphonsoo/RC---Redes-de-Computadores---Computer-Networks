@@ -82,7 +82,7 @@ void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 void receive_n_chars_TCP(int n, char *string, int fd); // ccc
 int  receive_n_plus_1_chars_TCP(int n, char *string, int fd); // ccc
 void receive_n_tokens_TCP(int n, char *string, int fd); // ccc
-void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd); // ccc
+void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd); // '\0'???
 void send_n_chars_TCP(int n, char *string, int fd); // ccc
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 // void send_reply_TCP(char *reply, int fd); // !!!

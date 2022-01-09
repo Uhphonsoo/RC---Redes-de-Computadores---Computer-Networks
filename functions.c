@@ -409,6 +409,12 @@ void show_users(char* reply) {
     printf("> Group name: %s\n", GName);
     printf(">> Subscribed users:\n");
 
+    // if there are no users
+    if (number_of_tokens == 3) {
+        printf(">> None\n");
+        return;
+    }
+
     while (i <= number_of_tokens) {
         get_nth_token(reply, i++, UID);
         printf(">> User ID: %s\n", UID);

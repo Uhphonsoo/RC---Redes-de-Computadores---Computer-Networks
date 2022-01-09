@@ -1422,9 +1422,10 @@ int get_group_name(char *GID, char *GName) {
     fp = fopen(group_name_path, "r");
     Fsize = get_file_size(fp);
     /* DEBUG */
-    /* printf(">>> Fsize = %d\n", Fsize); */
+    printf(">>> Fsize = %d\n", Fsize);
 
     fread(GName, Fsize, 1, fp);
+    GName[2] = '\0';
 
     return 1;
 }
@@ -1826,14 +1827,15 @@ void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char
 
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr) {
 
-    int n;
+    int ret;
     /* struct sockaddr_in addr; */
     socklen_t addrlen ;
     
     addrlen = sizeof(*addr);
-    n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
-    
-    validate_recvfrom(n);
+    ret = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
+    validate_recvfrom(ret);
+
+    message[ret] = '\0';
 }
 
 
