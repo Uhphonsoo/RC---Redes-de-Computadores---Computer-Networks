@@ -3,6 +3,7 @@
  * check allocated sizes for all strings
  * frees for all mallocs
  * validate_post_message
+ * cut quotes "" from text in retrieve
 **/
 
 // ISSUES

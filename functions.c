@@ -552,6 +552,19 @@ void clear_message_and_reply(char *message, char *reply) {
     clear_string(reply);
 }
 
+
+void strip_quotes_from_string(char *string) {
+
+    int i = 0;
+    int length = strlen(string);
+
+    for (i = 0; i < length - 2; i++) {
+        string[i] = string[i+1];
+    }
+    string[i] = '\0';
+}
+
+
 int is_empty_string(char* string) {
 
     if (string == NULL) {

@@ -477,6 +477,8 @@ void post_command(char* command) {
     message = (char*)malloc(MAX_SIZE);
     reply = (char*)malloc(MAX_REPLY_SIZE);
 
+    strip_quotes_from_string(text);
+
     Tsize = strlen(text);
 
     if (!file_is_being_sent) {
@@ -563,10 +565,10 @@ void retrieve_command(char* command) {
     FILE *fp; 
 
     /* DEBUG */
-    /* login_command("login 72182 hhhhhhhh\n");
-    select_command("select 27\n"); */
-    login_command("login 77777 password\n");
-    select_command("select 01\n");
+    /* login_command("login 12390 password\n");
+    select_command("select 01\n"); */
+    /* login_command("login 77777 password\n");
+    select_command("select 01\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -602,7 +604,7 @@ void retrieve_command(char* command) {
     send_TCP(message);
 
     /* DEBUV vvvvvv */
-    /* reply = (char*)malloc(MAX_REPLY_SIZE);
+    reply = (char*)malloc(MAX_REPLY_SIZE);
 
     ptr = reply;
     while (1) {
@@ -618,7 +620,7 @@ void retrieve_command(char* command) {
     }
     *ptr = '\0';
 
-    return; */
+    return;
     /* DEBUG ^^^^^^ */
 
     // receive keyword and status
@@ -1344,7 +1346,7 @@ void receive_TCP(char *string) {
     *ptr = '\0';
 } */
 
-
+// reads and "kills" last space
 void receive_n_tokens_TCP(int n, char *string) {
 
     int ret;

@@ -445,9 +445,18 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     char *reply = (char *)malloc(MAX_REPLY_SIZE);
  
     /* vvv */
-    receive_n_chars_TCP(13, buffer, fd);
+    receive_n_chars_TCP(10, buffer, fd);
 
-    sscanf(buffer, "%s %s %s", UID, GID, Tsize);
+    sscanf(buffer, "%s %s", UID, GID);
+
+    /* DEBUG */
+    printf(">>> UID = %s| GID = %s|\n", UID, GID);
+
+    receive_n_tokens_TCP(1, Tsize, fd);
+
+    /* DEBUG */
+    printf(">>> Tsize = %s|\n", Tsize);
+
     Tsize_int = atoi(Tsize);
     file_is_being_sent = receive_n_plus_1_chars_TCP(Tsize_int, text, fd);
 
@@ -938,7 +947,7 @@ void process_ulist_message(char *message_remainder, char *reply) {
 
 int validate_post_message(char *UID, char *GID) {
 
-    if (!validate_UID(UID) || !user_is_registered(UID)) {
+    if (!validate_UID(UID) || !user_is_registered(UID) || !user_is_subscribed_to_group(UID, GID)) {
         return 0;
     }
     if (!validate_GID(GID) || !group_exists(GID)) {
@@ -993,6 +1002,25 @@ int user_is_logged_in(char *UID) {
     else {
         return 1;
     }
+}
+
+
+int user_is_subscribed_to_group(char *UID, char *GID) {
+
+    char file_path[MAX_SIZE];
+    FILE *fp;
+
+    sprintf(file_path, "GROUPS/%s/%s.txt", GID, UID);
+
+    /* DEBUG */
+    printf(">>> file_path = %s|\n", file_path);
+
+    fp = fopen(file_path, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+
+    return 1;
 }
 
 
@@ -1957,8 +1985,6 @@ void receive_n_tokens_TCP(int n, char *string, int fd) {
     int ret;
     int spaces_to_read = n;
     char *ptr;
-
-    string[0] = '\0';
 
     ptr = string;
     while (spaces_to_read > 0) {

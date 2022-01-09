@@ -42,6 +42,7 @@ int validate_retrieve_message(char *UID, char *GID, char *MID);
 
 int user_is_registered(char *UID);
 int user_is_logged_in(char *UID);
+int user_is_subscribed_to_group(char *UID, char *GID);
 int register_user(char *UID, char *pass);
 int unregister_user(char *UID, char *pass);
 int login_user(char *UID, char *pass);
