@@ -136,6 +136,15 @@ void  validate_fprintf(int n) {
 }
 
 
+void validate_mkdir(int ret) {
+
+    if (ret == -1) {
+        perror("ERROR: mkdir\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 int validate_UID(char* UID) {
 
     int length = strlen(UID);
@@ -248,6 +257,7 @@ int get_nth_token(char* string, int n, char* token) {
         return -1;
     }
 
+    // position i on nth token
     while(j != n) {
         if (isspace(string[i])) {
             j++;
@@ -256,7 +266,7 @@ int get_nth_token(char* string, int n, char* token) {
     }
 
     int k = 0;
-    while(!isspace(string[i])) {
+    while (!isspace(string[i])) {
         token[k++] = string[i++];
     }
     token[k] = '\0';
@@ -416,6 +426,7 @@ void show_users(char* reply) {
     }
 
     while (i <= number_of_tokens) {
+
         get_nth_token(reply, i++, UID);
         printf(">> User ID: %s\n", UID);
     }

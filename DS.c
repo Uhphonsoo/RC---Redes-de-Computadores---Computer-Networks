@@ -5,6 +5,7 @@
  * validate_post_message
  * cut quotes "" from text in retrieve
  * read data 1024
+ * timer
 **/
 
 // ISSUES

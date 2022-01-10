@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netdb.h> 
 #include <ctype.h>
+#include <sys/stat.h>
 #include "functions.h"
 #include "user_functions.h"
 #include "constants.h"
@@ -427,12 +428,14 @@ void ulist_command() {
     send_and_receive_TCP(message, reply, strlen(message));
 
     /* DEBUG */
-    printf(">>> ulist: reply = %s|\n", reply);
+    /* printf(">>> ulist: reply = %s|\n", reply); */
 
     // VALIDATE server reply
     sscanf(reply, "%s %s", aux, status);
-    if (validate_ulist_reply(reply, aux, status))
+    if (validate_ulist_reply(reply, aux, status)) {
+        strcat(reply, "\n");
         show_users(reply);
+    }
 
     free(message);
     free(reply);
@@ -556,6 +559,7 @@ void retrieve_command(char* command) {
     char text[MAX_TEXT_SIZE];
     char Fsize[MAX_SIZE];
     char Fname[MAX_SIZE];
+    char MID_aux[MAX_SIZE];
     char *data;
     char status[10];
     char N[MAX_FILE_SIZE];
@@ -565,8 +569,8 @@ void retrieve_command(char* command) {
     FILE *fp; 
 
     /* DEBUG */
-    /* login_command("login 12390 password\n");
-    select_command("select 01\n"); */
+    /* login_command("login 44444 password\n");
+    select_command("select 07\n"); */
     /* login_command("login 77777 password\n");
     select_command("select 01\n"); */
 
@@ -644,14 +648,87 @@ void retrieve_command(char* command) {
     /* printf(">>> N = %s|\n", N); */
 
     N_int = atoi(N);
+    printf("> There are %s messages:\n", N);
+
+    // read first char of MID
+    receive_n_chars_TCP(1, buffer);
+    buffer[1] = buffer[0]; // this is done in preparation for the string manipulation
+
+    int file_came_before = 0;
     for (int i = 0; i < N_int; i++) {
+        if (!file_came_before) {
+
+            /* DEBUG */
+            /* printf("@@@ NO file came before\n"); */
+
+            // receive MID and UID
+            receive_n_chars_TCP(10, reply);
+            sscanf(reply, "%s %s", MID_aux, UID);
+
+            /* DEBUG */
+            /* printf("??? MID_aux = %s|\n", MID_aux); */
+            
+            sprintf(MID, "%c%s", buffer[1], MID_aux);
+
+            /* DEBUG */
+            /* printf("!!! %s\n", MID); */
+        }
+        else {
+
+            /* DEBUG */
+            /* printf("@@@ A file came before\n"); */
+
+            // receive MID and UID
+            receive_n_chars_TCP(12, reply);
+            sscanf(reply, "%s %s", MID, UID);
+        }
+
+        printf("> MID: %s | by UID: %s", MID, UID);
+
+        // receive Tsize
+        receive_n_tokens_TCP(1, Tsize);
+
+        /* DEBUG */
+        /* printf("!!! Tsize = %s|\n", Tsize); */
+        
+        // receive text
+        Tsize_int = atoi(Tsize);
+        receive_n_bytes_TCP(Tsize_int, text);
+
+        printf(" | Message: %s\n", text);
+        
+        // read next two chars to test for file
+        receive_n_chars_TCP(2, buffer);
+
+        if (buffer[1] == '/') {  // if there is a file
+   
+            // receive space
+            receive_n_chars_TCP(1, buffer);
+            
+            // receive Fname and Fsize
+            receive_n_tokens_TCP(2, buffer);
+            sscanf(buffer, "%s %s", Fname, Fsize);
+
+            printf(">  Associated file: %s\n", Fname);
+
+            // receive data
+            receive_data_TCP(Fname, Fsize);
+
+            file_came_before = 1; 
+        }
+        else {
+            file_came_before = 0;
+        }
+    }
+
+    /* for (int i = 0; i < N_int; i++) {
 
         // receive MID and UID
         receive_n_chars_TCP(11, reply);
         sscanf(reply, "%s %s", MID, UID);
 
-        /* DEBUG */
-        printf(">>> MID = %s|\n", MID);
+        printf("> MID: %s | by UID: %s\n", MID, UID);
+
         printf(">>> UID = %s|\n", UID);
 
         // receive Tsize
@@ -661,26 +738,31 @@ void retrieve_command(char* command) {
         Tsize_int = atoi(Tsize);
         receive_n_bytes_TCP(Tsize_int, text);
 
-        /* DEBUG */
-        printf(">>> text = %s|\n", text);
+        printf(">   Message: %s\n", text);
 
-        // read next char to test for file
-        receive_n_chars_TCP(1, buffer);
+        // read next two chars to test for file
+        receive_n_chars_TCP(2, buffer);
 
         // if there is a file
-        if (buffer[0] == ' ') {
+        if (buffer[1] == '/') {
 
-            receive_n_chars_TCP(2, buffer);
-
+            // receive space
+            receive_n_chars_TCP(1, buffer);
+            
+            // receive Fname and Fsize
             receive_n_tokens_TCP(2, buffer);
             sscanf(buffer, "%s %s", Fname, Fsize);
 
+            printf(">   Associated file: %s\n", Fname);
+
+            // receive data
             receive_data_TCP(Fname, Fsize);
         }
+        else {
 
-        /* DEBUG */
-        printf("---------------------\n");
-    }
+        } 
+
+    } */
 
     /* ^^^ */
 
@@ -1371,7 +1453,16 @@ void receive_n_tokens_TCP(int n, char *string) {
         ptr++;
     }
     ptr--;
+
+    /* DEBUG */
+    /* printf("=1= primeiro lido: %c\n", string[0]);
+    printf("=2= penultimo lido: %c\n", *(ptr-1));
+    printf("=3= ultimo lido: %c\n", *ptr); */
+    
     *ptr = '\0';
+
+    /* DEBUG */
+    /* printf("=LIDO= |%s|\n", string); */
 }
 
 
@@ -1392,7 +1483,16 @@ void receive_n_chars_TCP(int n, char *string) {
         bytes_to_read--;
         ptr++;
     }
+
+    /* DEBUG */
+    /* printf("=1= primeiro lido: %c\n", string[0]);
+    printf("=2= penultimo lido: %c\n", *(ptr-2));
+    printf("=3= ultimo lido: %c\n", *(ptr-1)); */
+
     *ptr = '\0';
+
+    /* DEBUG */
+    /* printf("-LIDO- |%s|\n", string); */
 }
 
 void receive_n_bytes_TCP(int n, char *string) {
@@ -1412,23 +1512,46 @@ void receive_n_bytes_TCP(int n, char *string) {
         bytes_to_read--;
         ptr++;
     }
+
+    /* DEBUG */
+    /* printf("@1@ primeiro lido: %c\n", string[0]);
+    printf("@2@ penultimo lido: %c\n", *(ptr-2));
+    printf("@3@ ultimo lido: %c\n", *(ptr-1)); */
+
     *ptr = '\0';
+
+    /* DEBUG */
+    /* printf("-LIDO- |%s|\n", string); */
 }
 
 
-void receive_data_TCP(char *file_path, char *Fsize) {
+void receive_data_TCP(char *FName, char *Fsize) {
 
     int   ret;
     int   bytes_to_read = atoi(Fsize);
-    char  buffer[1024];
+    char file_path[MAX_SIZE];
+    char  *buffer = (char *)malloc(bytes_to_read);
     FILE *fp;
+
+    sprintf(file_path, "RECEIVED");
+
+    fp = fopen(file_path, "r");
+    if (fp == NULL) {
+        ret = mkdir(file_path, 0700);
+        validate_mkdir(ret);
+    }
+    else {
+        fclose(fp);
+    }
+
+    sprintf(file_path, "RECEIVED/%s", FName);
 
     fp = fopen(file_path, "w");
     validate_fopen(fp);
 
-    while(bytes_to_read > 0) {
+    while (bytes_to_read > 0) {
 
-        ret = read(fd_TCP, buffer, 1024);
+        ret = read(fd_TCP, buffer, bytes_to_read);
         validate_read(ret);
 
         fwrite(buffer, ret, 1, fp);

@@ -1216,9 +1216,6 @@ int create_new_group(char *GID, char *GName) {
     sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
     n = mkdir(group_messages_path, 0700);
     if(n == -1) {
-        /* DEBUG */
-        printf(">>> echoo 2\n");
-
         return 0;
     }
 
@@ -2130,6 +2127,14 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
                 if (dir->d_name[0] == '.') {
                     continue;
                 }
+                if (strcmp(dir->d_name, "A U T H O R.txt") == 0) {
+                    
+                    sprintf(file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
+                    read_text_from_file(UID, file_path, 5);
+
+                    /* DEBUG */
+                    printf("!!! UID = %s|\n", UID);
+                }
                 if (strcmp(dir->d_name, "A U T H O R.txt") && strcmp(dir->d_name, "T E X T.txt")) {
                     strcpy(FName, dir->d_name);
                 }
@@ -2160,6 +2165,22 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
         else {
             /* DEBUG */
             printf("=== NO FILE\n");
+
+            d = opendir(group_message_path);
+            while ((dir = readdir(d)) != NULL) {
+
+                if (dir->d_name[0] == '.') {
+                    continue;
+                }
+                if (strcmp(dir->d_name, "A U T H O R.txt") == 0) {
+                    
+                    sprintf(file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
+                    read_text_from_file(UID, file_path, 5);
+
+                    /* DEBUG */
+                    printf("!!! UID = %s|\n", UID);
+                }
+            }
 
             sprintf(reply_aux, "%s %s %s %s", MID, UID, Tsize, text);
             send_TCP(reply_aux, fd);
@@ -2296,4 +2317,6 @@ void read_text_from_file(char *text, char *file_path, int size) {
     fread(text, size, 1, fp);
 
     text[size] = '\0';
+
+    fclose(fp);
 }

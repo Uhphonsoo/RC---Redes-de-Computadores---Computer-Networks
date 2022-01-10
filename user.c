@@ -11,6 +11,8 @@
  * reply is sometimes read incorrectly in ulist command
  * post_command receiving NOK before sending data
  * post and retrieve not working for tejo
+ * s 06 g6 funciona mesmo que 06 nao exista
+ * login 77777 password > select 95 > ulist
 **/
 
 #include <stdio.h>
