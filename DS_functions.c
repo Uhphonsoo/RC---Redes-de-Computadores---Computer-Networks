@@ -768,6 +768,7 @@ void process_subscribe_message(char *message, char *reply) {
     char UID[MAX_SIZE];
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
+    char GName_aux[MAX_SIZE];
     
     number_of_tokens = get_number_of_tokens(message);
     if (number_of_tokens != 4) {
@@ -776,16 +777,17 @@ void process_subscribe_message(char *message, char *reply) {
     }
 
     sscanf(message, "%s %s %s %s", aux, UID, GID, GName);
+    get_group_name(GID, GName_aux);
 
-    if (!validate_UID(UID)) {
+    if (!validate_UID(UID) || !user_is_registered(UID)) {
         strcpy(reply, "RGS E_USR\n");
         return;
     }
-    else if (!validate_GID(GID)) {
+    else if (!validate_GID(GID) || !group_exists(GID)) {
         strcpy(reply, "RGS E_GRP\n");
         return;
     }
-    else if (!validate_GName(GName)) {
+    else if (!validate_GName(GName) || strcmp(GName, GName_aux)) {
         strcpy(reply, "RGS E_GNAME\n");
         return;
     }
@@ -799,7 +801,6 @@ void process_subscribe_message(char *message, char *reply) {
         create_new_group(GID, GName); // GID gets changed to ID of new group
         if (subscribe_user(UID, GID)) {
             sprintf(reply, "RGS NEW %s\n", GID);
-            /* strcpy(reply, "RGS NEW %s\n", GID); */
         }
         else {
             strcpy(reply, "RGS NOK\n");
@@ -828,9 +829,6 @@ void process_unsubscribe_message(char *message, char *reply) {
     
     number_of_tokens = get_number_of_tokens(message);
 
-    /* DEBUG */
-    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
-
     // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
@@ -849,16 +847,10 @@ void process_unsubscribe_message(char *message, char *reply) {
     }
 
     if(unsubscribe_user(UID, GID)) {
-        /* DEBUG */
-        /* printf(">>> case 1\n"); */
 
         strcpy(reply, "RGU OK\n");
     }
     else {
-        /* DEBUG */
-        /* printf(">>> case 2\n");
-        printf(">>> UID = %s|\n", UID);
-        printf(">>> pass = %s|\n", pass); */
 
         strcpy(reply, "RGU NOK\n");
     }
@@ -2163,8 +2155,6 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
             printf("=== Fsize = %s|\n", Fsize);
         }
         else {
-            /* DEBUG */
-            printf("=== NO FILE\n");
 
             d = opendir(group_message_path);
             while ((dir = readdir(d)) != NULL) {
