@@ -89,7 +89,7 @@ void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 // void send_reply_TCP(char *reply, int fd); // !!!
 void send_TCP(char *string, int fd); // ccc
 void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd); // ccc
-void send_data_TCP(char *FName, char *Fsize, int fd); // ccc
+void send_data_TCP(char *FName, char *Fsize, int fd); // ccc Fsize not needed!
 
 // file related functions
 void make_file(char *file_path);

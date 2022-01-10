@@ -1284,18 +1284,21 @@ void send_TCP(char *string) {
 void send_data_TCP(FILE *fp, int Fsize) {
 
     int ret;
-    int bytes_to_write = Fsize;
-    char *buffer = (char *)malloc(Fsize + 1);
+    int bytes_to_write;
+    char *buffer = (char *)malloc(512);
 
-    fread(buffer, Fsize, 1, fp);
-    buffer[Fsize] = '\0';
-    while (bytes_to_write > 0) {
+    while (!feof(fp)) {
 
-        ret = write(fd_TCP, buffer, bytes_to_write);
-        validate_write(ret);
+        bytes_to_write = fread(buffer, 1, 512, fp);
 
-        bytes_to_write -= ret;
-        buffer += ret;
+        while (bytes_to_write > 0) {
+
+            ret = write(fd_TCP, buffer, bytes_to_write);
+            validate_write(ret);
+
+            bytes_to_write -= ret;
+            buffer += ret;
+        }
     }
 
     /* free(buffer); */
