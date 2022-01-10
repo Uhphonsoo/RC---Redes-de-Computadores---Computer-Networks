@@ -3,24 +3,27 @@
 
 /* #define max(A,B) ((A)>=(B)?(A):(B)) */
 
-// misc
-void  validate_sendto(int n);
-void  validate_recvfrom(int n);
-void  validate_connect(int n);
-void  validate_write(int n);
-void  validate_read(int n);
-void  validate_accept(int fd);
-void  validate_bind(int n);
-void  validate_getaddrinfo(int errcode);
-void  validate_select(int n);
-void  validate_fopen(FILE *fp);
-void  validate_fclose(int n);
-void  validate_fprintf(int n);
-int   validate_UID(char *UID);
-int   validate_pass(char *pass);
-int   validate_GID(char *GID);
-int   validate_GName(char *GName);
-int   validate_MID(char *MID);
+// system call validations
+void validate_sendto(int ret);
+void validate_recvfrom(int ret);
+void validate_connect(int ret);
+void validate_write(int ret);
+void validate_read(int ret);
+void validate_accept(int fd);
+void validate_bind(int ret);
+void validate_getaddrinfo(int errcode);
+void validate_select(int ret);
+void validate_fopen(FILE *fp);
+void validate_fclose(int ret);
+void validate_fprintf(int ret);
+void validate_mkdir(int ret);
+
+// other validations
+int validate_UID(char *UID);
+int validate_pass(char *pass);
+int validate_GID(char *GID);
+int validate_GName(char *GName);
+int validate_MID(char *MID);
 
 void  get_first_token(char *string, char *first_token);
 int   get_nth_token(char *string, int n, char *token);

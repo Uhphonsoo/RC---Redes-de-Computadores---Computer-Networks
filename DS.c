@@ -4,11 +4,12 @@
  * frees for all mallocs
  * validate_post_message
  * cut quotes "" from text in retrieve
+ * read data 1024
+ * timer
 **/
 
 // ISSUES
 /**
- * reply in ulist_command is sometimes read incorrectly (???)
  * not sure if get_client_ip_and_port is working as intended
  * post_command not working for pictures
 **/
