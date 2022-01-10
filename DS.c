@@ -1,17 +1,17 @@
 // TODO
 /**
+ * ERR
  * check allocated sizes for all strings
  * frees for all mallocs
  * validate_post_message
- * cut quotes "" from text in retrieve
- * read data 1024
  * timer
+ * quando terminar o prorgama?
 **/
 
 // ISSUES
 /**
  * not sure if get_client_ip_and_port is working as intended
- * post_command not working for pictures
+ * como testar verbose mode?
 **/
 
 #include <stdio.h>
