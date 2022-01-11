@@ -42,9 +42,10 @@ int main(int argc, char *argv[]) {
     validate_program_input(argc, argv);
 
     while (1) {
+        
         fgets(command, MAX_SIZE, stdin);
         get_first_token(command, keyword);
-        
+
         if (strcmp(keyword, "reg") == 0)
             register_command(command);
         

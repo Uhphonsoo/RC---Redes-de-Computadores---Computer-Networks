@@ -137,6 +137,7 @@ void login_command(char* command) {
         return;
     }
 
+    // VALIDATE command
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_login_command(command, UID, pass)) {
         return;
@@ -225,14 +226,13 @@ void groups_command(char* command) {
 
     char aux[MAX_SIZE];
     char N[MAX_SIZE];
-    char *message;
-    char *reply;
+    char * message;
+    char * reply;
 
     // VALIDATE command
     sscanf(command, "%s", aux);
-    if(!validate_groups_command(command)) {
+    if(!validate_groups_command(command))
         return;
-    }
 
     message = (char*)malloc(MAX_SIZE);
     reply = (char*)malloc(MAX_REPLY_SIZE);
@@ -494,6 +494,7 @@ void post_command(char* command) {
         create_socket_TCP();
         get_address_info_TCP();
 
+        // CONNECT with server
         n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
         validate_connect(n);
 
