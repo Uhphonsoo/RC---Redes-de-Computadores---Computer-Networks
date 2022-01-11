@@ -783,11 +783,11 @@ void process_subscribe_message(char *message, char *reply) {
         strcpy(reply, "RGS E_USR\n");
         return;
     }
-    else if (!validate_GID(GID) || !group_exists(GID)) {
+    else if (!validate_GID(GID) || (!group_exists(GID) && strcmp(GID, "00"))) {
         strcpy(reply, "RGS E_GRP\n");
         return;
     }
-    else if (!validate_GName(GName) || strcmp(GName, GName_aux)) {
+    else if (!validate_GName(GName) || (strcmp(GName, GName_aux) && strcmp(GID, "00"))) {
         strcpy(reply, "RGS E_GNAME\n");
         return;
     }
@@ -2204,7 +2204,7 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
 
     int ret;
     int bytes_to_write;
-    char *buffer = (char *)malloc(512);
+    char *buffer;
     FILE *fp;
 
     fp = fopen(file_path, "r");
@@ -2212,6 +2212,7 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
 
     while (!feof(fp)) {
 
+        buffer = (char *)malloc(512);
         bytes_to_write = fread(buffer, 1, 512, fp);
 
         while (bytes_to_write > 0) {
