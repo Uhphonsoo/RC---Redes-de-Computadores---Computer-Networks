@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #include "constants.h"
 #include "functions.h"
 #include "DS_functions.h"
@@ -1726,25 +1727,12 @@ void get_UID_from_file_name(char *UID, char *file_name) {
 
 void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr) {
 
-    int n;
-    // struct sockaddr_in addr;
-    socklen_t addrlen;
-    addrlen = sizeof((*addr));
+    struct in_addr ip_addr = addr->sin_addr;
+    uint16_t port = 0;
 
-    /* n = getpeername(fd, (struct sockaddr *)&addr_, &addr_size_);
-    if (n == -1) {
-        perror("ERROR: getpeername: get_client_ip\n");
-        exit(EXIT_FAILURE);
-    } */
-
-    getsockname(fd, (struct sockaddr *) &(*addr), &addrlen);
-    // TODO: validate_getsockname();
-
-    strcpy(client_ip, inet_ntoa((*addr).sin_addr));
-    sprintf(client_port, "%d", (*addr).sin_port);
-
-    /* strcpy(client_ip, inet_ntoa((*addr).sin_addr));
-    sprintf(client_port, "%d", (*addr).sin_port); */
+    inet_ntop(AF_INET, &ip_addr, client_ip, INET_ADDRSTRLEN);
+    port = htons(addr->sin_port);
+    sprintf(client_port, "%d", port);
 }
 
 
