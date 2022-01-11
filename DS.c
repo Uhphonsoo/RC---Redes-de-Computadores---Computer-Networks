@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     char DSport[MAX_SIZE];
     char *message;
     struct sockaddr_in addr;
-    struct timeval timeout = {20, 0};
+    struct timeval timeout = {5, 0};
 
     validate_program_input(argc, argv, DSport);
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     n = bind(fd_UDP, res_UDP->ai_addr, res_UDP->ai_addrlen);
     validate_bind(n);
 
-    /* initialize current sets of file descriptors */
+    /* initialize sets of file descriptors */
     FD_ZERO(&current_sockets);
     FD_SET(fd_TCP, &current_sockets);
     FD_SET(fd_UDP, &current_sockets);
@@ -85,7 +85,6 @@ int main(int argc, char *argv[]) {
         // make a copy of the file descriptor set
         ready_sockets = current_sockets;
 
-        /* Block server until timeout */
         n = select(FD_SETSIZE, &ready_sockets, NULL, NULL, &timeout);
         validate_select(n);
 

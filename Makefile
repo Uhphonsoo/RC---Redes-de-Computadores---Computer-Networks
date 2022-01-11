@@ -19,4 +19,4 @@ user_functions.o: user_functions.c
 	gcc -c user_functions.c
 
 clean:
-	rm *.o user
+	rm *.o user DS

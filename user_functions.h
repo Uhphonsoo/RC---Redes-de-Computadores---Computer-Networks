@@ -52,9 +52,9 @@ void  validate_post_reply(char*, char*, char*);
 int   validate_retrieve_reply(char*, char*, char*, char*);
 
 // socket related functions
-void create_UDP_socket();
+void create_socket_UDP();
 void get_address_info_UDP();
-void create_TCP_socket();
+void create_socket_TCP();
 void get_address_info_TCP();
 void send_and_receive_UDP(char*, char*);
 void send_and_receive_TCP(char *message, char *reply, int); // ccc

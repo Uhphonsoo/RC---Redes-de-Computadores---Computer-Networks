@@ -490,8 +490,8 @@ void post_command(char* command) {
         send_and_receive_TCP(message, reply, strlen(message));
     }
     else {
-        // CREATE tcp connection
-        create_TCP_socket();
+
+        create_socket_TCP();
         get_address_info_TCP();
 
         // CONNECT with server
@@ -600,7 +600,7 @@ void retrieve_command(char* command) {
 
     /* vvv */
 
-    create_TCP_socket();
+    create_socket_TCP();
     get_address_info_TCP();
 
     n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
@@ -1235,11 +1235,11 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
 }
 
 
-void create_UDP_socket() {
+void create_socket_UDP() {
 
     fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
     if(fd_UDP == -1) {
-        perror("ERROR: create_UDP_socket: can't open socket.\n");
+        perror("ERROR: create_socket_UDP: can't open socket.\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -1261,11 +1261,11 @@ void get_address_info_UDP() {
 }
 
 
-void create_TCP_socket() {
+void create_socket_TCP() {
 
     fd_TCP = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
     if(fd_TCP == -1) {
-        perror("ERROR: create_TCP_socket: can't open socket.\n");
+        perror("ERROR: create_socket_TCP: can't open socket.\n");
         exit(EXIT_FAILURE);
     }
 }
@@ -1289,21 +1289,38 @@ void get_address_info_TCP() {
 void send_and_receive_UDP(char* message, char* reply){
 
     int ret;
+    fd_set current_sockets;
+    struct timeval timeout = {5, 0};
 
     // SOCKET creation
-    create_UDP_socket();
+    create_socket_UDP();
     get_address_info_UDP();
 
     // SEND message and validate return value
     ret = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
     validate_sendto(ret);
 
-    // RECEIVE reply and validate return value
-    addrlen_UDP = sizeof(addr_UDP);
-    ret = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
-    validate_recvfrom(ret);
+    /* initialize set of file descriptors */
+    FD_ZERO(&current_sockets);
+    FD_SET(fd_UDP, &current_sockets);
 
-    reply[ret] = '\0';
+    ret = select(FD_SETSIZE, &current_sockets, NULL, NULL, &timeout);
+    validate_select(ret);
+
+    /* Check for requests */
+    for (int i = 0; i < FD_SETSIZE; i++) {
+        if (FD_ISSET(i, &current_sockets)) {
+            if (i == fd_UDP) {
+                
+                // RECEIVE reply and validate return value
+                addrlen_UDP = sizeof(addr_UDP);
+                ret = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
+                validate_recvfrom(ret);
+
+                reply[ret] = '\0';
+            }
+        }
+    }
 
     // CLOSE socket
     close(fd_UDP);
@@ -1316,7 +1333,7 @@ void send_and_receive_TCP(char* message, char* reply, int write_n) {
     int bytes_to_write = strlen(message) * sizeof(char);
     char *ptr;
 
-    create_TCP_socket();
+    create_socket_TCP();
     get_address_info_TCP();
 
     int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
