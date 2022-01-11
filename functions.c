@@ -360,8 +360,14 @@ long  get_file_size_char(char *file_path) {
     FILE *fp;
     long Fsize = 0;
 
+    /* DEBUG */
+    printf("--- file_path = %s|\n", file_path);
+
     fp = fopen(file_path, "r");
     validate_fopen(fp);
+
+    /* DEBUG */
+    printf("ECHOOOooOOOOoOoOOooO\n");
 
     if (fp) {
         if (fseek(fp, 0, SEEK_END)) {

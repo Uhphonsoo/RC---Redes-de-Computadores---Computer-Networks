@@ -441,7 +441,7 @@ void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
     char text[241];
     char MID[10];
     char buffer[MAX_SIZE];
-    char message_dir_path[30];
+    char message_dir_path[64];
     char *reply = (char *)malloc(MAX_REPLY_SIZE);
  
     /* vvv */
@@ -783,11 +783,11 @@ void process_subscribe_message(char *message, char *reply) {
         strcpy(reply, "RGS E_USR\n");
         return;
     }
-    else if (!validate_GID(GID) || !group_exists(GID)) {
+    else if (!validate_GID(GID) || (!group_exists(GID) && strcmp(GID, "00"))) {
         strcpy(reply, "RGS E_GRP\n");
         return;
     }
-    else if (!validate_GName(GName) || strcmp(GName, GName_aux)) {
+    else if (!validate_GName(GName) || (strcmp(GName, GName_aux) && strcmp(GID, "00"))) {
         strcpy(reply, "RGS E_GNAME\n");
         return;
     }
@@ -1237,7 +1237,7 @@ int group_exists(char *GID) {
 
 int group_has_messages(char *GID, char *MID) {
 
-    char message_path[30];
+    char message_path[40];
     FILE *fp;
 
     sprintf(message_path, "GROUPS/%s/MSG/%s", GID, MID);
@@ -1285,7 +1285,7 @@ int get_groups(GROUPLIST *list) {
     struct dirent *dir;
     int i = 0;
     FILE *fp;
-    char GIDname[30];
+    char GIDname[MAX_SIZE];
     
     list->no_groups=0;
     d = opendir("GROUPS");
@@ -1335,8 +1335,8 @@ int get_my_groups(GROUPLIST *list, char *UID) {
     struct dirent *dir;
     int i=0;
     FILE *fp;
-    char GIDname[30];
-    char group_user_path[30];
+    char GIDname[MAX_SIZE];
+    char group_user_path[MAX_SIZE];
     
     list->no_groups=0;
     d = opendir("GROUPS");
@@ -1394,7 +1394,7 @@ int get_my_groups(GROUPLIST *list, char *UID) {
 int get_users_of_group(char *user_list, char *GID, char *GName) {
 
     int number_of_subscribed_users = 0;
-    char group_path[30];
+    char group_path[40];
     char UID[20];
     DIR *d;
     struct dirent *dir;
@@ -1484,7 +1484,7 @@ void swap_groups(int g1, int g2, GROUPLIST *list) {
 
     int number_of_messages_aux;
     char group_no_aux[20];
-    char group_name_aux[30];
+    char group_name_aux[40];
     char last_message_available_aux[5];
 
     // save first group's values
@@ -1647,7 +1647,7 @@ void update_last_available_message(GROUPLIST *list, char *GID, int i) {
     int current_MID_int;
     DIR *d;
     struct dirent *dir;
-    char group_messages_path[30];
+    char group_messages_path[40];
     char largest_MID[10];
     // int i = 0;
     // FILE *fp;
@@ -2067,8 +2067,8 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
     int  Fsize_int;
     int  number_of_files = 0;
     int read_messages = 0;
-    char group_message_path[30];
-    char group_messages_path[30];
+    char group_message_path[40];
+    char group_messages_path[40];
     char *reply_aux = (char *)malloc(MAX_REPLY_SIZE);
     char buffer[MAX_SIZE];
     char reply[MAX_SIZE];
@@ -2204,7 +2204,7 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
 
     int ret;
     int bytes_to_write;
-    char *buffer = (char *)malloc(512);
+    char *buffer;
     FILE *fp;
 
     fp = fopen(file_path, "r");
@@ -2212,6 +2212,7 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
 
     while (!feof(fp)) {
 
+        buffer = (char *)malloc(512);
         bytes_to_write = fread(buffer, 1, 512, fp);
 
         while (bytes_to_write > 0) {

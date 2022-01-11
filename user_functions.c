@@ -570,8 +570,8 @@ void retrieve_command(char* command) {
     FILE *fp; 
 
     /* DEBUG */
-    /* login_command("login 44444 password\n");
-    select_command("select 07\n"); */
+    /* login_command("login 77777 password\n");
+    select_command("select 08\n"); */
     /* login_command("login 77777 password\n");
     select_command("select 01\n"); */
 
@@ -1368,10 +1368,11 @@ void send_data_TCP(FILE *fp, int Fsize) {
 
     int ret;
     int bytes_to_write;
-    char *buffer = (char *)malloc(512);
+    char *buffer;
 
     while (!feof(fp)) {
 
+        buffer = (char *)malloc(512);
         bytes_to_write = fread(buffer, 1, 512, fp);
 
         while (bytes_to_write > 0) {
@@ -1382,9 +1383,8 @@ void send_data_TCP(FILE *fp, int Fsize) {
             bytes_to_write -= ret;
             buffer += ret;
         }
+        /* free(buffer); */
     }
-
-    /* free(buffer); */
 }
 
 
