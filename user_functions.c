@@ -1395,6 +1395,8 @@ void send_data_TCP(FILE *fp, int Fsize) {
         buffer = (char *)malloc(512);
         bytes_to_write = fread(buffer, 1, 512, fp);
 
+        buffer[bytes_to_write] = '\0';
+
         while (bytes_to_write > 0) {
 
             ret = write(fd_TCP, buffer, bytes_to_write);

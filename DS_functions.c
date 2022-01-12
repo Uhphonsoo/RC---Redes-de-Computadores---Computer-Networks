@@ -281,6 +281,9 @@ void groups_command(char *message, int fd, struct sockaddr_in *addr) {
     char client_ip[MAX_SIZE];
     char client_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
+
+    /* DEBUG */
+    printf("--- groups_command called\n");
     
     process_groups_message(message, reply);
 
@@ -738,6 +741,7 @@ void process_groups_message(char *message, char *reply) {
 
     // int n;
     int number_of_tokens;
+    int number_of_groups;
     // char aux[MAX_SIZE];
     // char UID[MAX_SIZE];
     // char pass[MAX_SIZE];
@@ -754,6 +758,18 @@ void process_groups_message(char *message, char *reply) {
 
     get_groups(Group_list);
     aux_string = GROUPLIST_to_string(Group_list/* , reply */);
+
+    number_of_groups = get_groups(Group_list);
+    if (number_of_groups == 0) {
+        /* DEBUG */
+        printf("--- ECHO\n");
+
+        strcpy(reply, "RGL 0\n");
+
+        /* DEBUG */
+        printf("--- reply = %s|\n", reply);
+        return;
+    }
 
     sprintf(reply, "RGL %d ", Group_list->no_groups);
     strcat(reply, aux_string);
@@ -890,6 +906,9 @@ void process_my_groups_message(char *message, char *reply) {
 
     number_of_groups = get_my_groups(my_groups_list, UID);
     if (number_of_groups == 0) {
+        /* DEBUG */
+        printf("--- ECHO\n");
+
         strcpy(reply, "RGM 0\n");
         return;
     }
@@ -1342,6 +1361,9 @@ int get_my_groups(GROUPLIST *list, char *UID) {
     list->no_groups=0;
     d = opendir("GROUPS");
 
+    /* DEBUG */
+    printf("ECHO1\n");
+
     if (d) {
         while ((dir = readdir(d)) != NULL) {
             if (dir->d_name[0] == '.') {
@@ -1381,12 +1403,18 @@ int get_my_groups(GROUPLIST *list, char *UID) {
         closedir(d);
     }
     else {
+        /* DEBUG */
+        printf("ECHO2\n");
+
         return(-1);
     }
 
     if(list->no_groups>1) {
         SortGList(list);
     }
+
+    /* DEBUG */
+    printf("--- no_groups = %d\n", list->no_groups);
 
     return(list->no_groups);
 }
