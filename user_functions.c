@@ -215,6 +215,9 @@ void exit_command(char* command) {
     if (!validate_exit_command(command))
         return;
 
+    sprintf(command, "logout");
+    logout_command(command);
+
     // CLOSE & CLEAN
     freeaddrinfo(res_UDP);
     freeaddrinfo(res_TCP);
