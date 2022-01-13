@@ -24,17 +24,16 @@ GROUPLIST *Group_list;
 
 int main(int argc, char *argv[]) {
 
-    int ret;
-    int fd_TCP = 0, fd_UDP = 0, client_fd;
-    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP, *res_client, hints_client;
+    int ret, fd_TCP, fd_UDP, client_fd;
+    char *message;
+    char  keyword[10];
+    char  DSport[MAX_SIZE];
+    struct sockaddr_in addr;
     struct sockaddr_in clientaddr;
+    struct timeval timeout = {5, 0};
+    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP, *res_client, hints_client;
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
-    char DSport[MAX_SIZE];
-    char *message;
-    char keyword[10];
-    struct sockaddr_in addr;
-    struct timeval timeout = {5, 0};
 
     validate_program_input(argc, argv, DSport);
 

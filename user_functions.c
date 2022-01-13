@@ -651,7 +651,7 @@ void retrieve_command(char* command) {
     sscanf(reply, "%s", N);
 
     /* DEBUG */
-    /* printf(">>> N = %s|\n", N); */
+    printf("--- N = %s|\n", N);
 
     N_int = atoi(N);
     printf("> There are %s messages:\n", N);

@@ -1670,6 +1670,31 @@ void increment_MID(char *MID) {
 }
 
 
+int   get_number_of_messages(char *GID, char *MID) {
+
+    int number_of_messages = 0;
+    int MID_int = atoi(MID), current_MID = 0;
+    char dir_path[MAX_SIZE];
+    DIR *d;
+    struct dirent *dir;
+
+    sprintf(dir_path, "GROUPS/%s/MSG", GID);
+    d = opendir(dir_path);
+    while ((dir = readdir(d)) != NULL) {
+
+        if (dir->d_name[0] == '.') {
+            continue;
+        }
+
+        current_MID = atoi(dir->d_name);
+        if (current_MID >= MID_int) {
+            number_of_messages++;
+        }
+    }
+    return number_of_messages;
+}
+
+
 void update_last_available_message(GROUPLIST *list, char *GID, int i) {
 
     int largest_MID_int = 0;
@@ -2105,8 +2130,14 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
         return;
     }
 
+    /* DEBUG */
+    printf("--- ECHOOOoo\n");
+
     sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
-    N = get_number_of_files(group_messages_path);
+    N = get_number_of_messages(GID, MID);
+
+    /* DEBUG */
+    printf("--- NUMBER_OF_MESSAGES = %d|\n", N);
 
     sprintf(reply_aux, "RRT OK %d", N);
     send_TCP(reply_aux, fd);
@@ -2212,7 +2243,7 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
         fp = fopen(group_message_path, "r");
     }
 
-    strcpy(buffer, "\n");
+    strcpy(buffer, " \n");
     send_TCP(buffer, fd);
     free(reply_aux);
 }
