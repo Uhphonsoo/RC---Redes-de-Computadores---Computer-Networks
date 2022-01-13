@@ -215,6 +215,9 @@ void exit_command(char* command) {
     if (!validate_exit_command(command))
         return;
 
+    sprintf(command, "logout");
+    logout_command(command);
+
     // CLOSE & CLEAN
     freeaddrinfo(res_UDP);
     freeaddrinfo(res_TCP);
@@ -1386,11 +1389,15 @@ void send_data_TCP(FILE *fp, int Fsize) {
     int ret;
     int bytes_to_write;
     char *buffer;
+    char *save_buffer;
 
     while (!feof(fp)) {
 
         buffer = (char *)malloc(512);
+        save_buffer = buffer;
         bytes_to_write = fread(buffer, 1, 512, fp);
+
+        /* buffer[bytes_to_write] = '\0'; */
 
         while (bytes_to_write > 0) {
 
@@ -1400,7 +1407,7 @@ void send_data_TCP(FILE *fp, int Fsize) {
             bytes_to_write -= ret;
             buffer += ret;
         }
-        /* free(buffer); */
+        free(save_buffer);
     }
 }
 
@@ -1546,9 +1553,9 @@ void receive_n_bytes_TCP(int n, char *string) {
 void receive_data_TCP(char *FName, char *Fsize) {
 
     int   ret;
-    int   bytes_to_read = atoi(Fsize);
-    char file_path[MAX_SIZE];
-    char  *buffer = (char *)malloc(bytes_to_read);
+    int  bytes_to_read = atoi(Fsize);
+    char  file_path[MAX_SIZE];
+    char *buffer = (char *)malloc(bytes_to_read);
     FILE *fp;
 
     sprintf(file_path, "RECEIVED");
