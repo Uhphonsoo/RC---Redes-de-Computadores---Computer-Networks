@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in addr;
     struct sockaddr_in clientaddr;
     struct timeval timeout = {5, 0};
-    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP, *res_client, hints_client;
+    struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP;
     socklen_t clientlen;
     fd_set current_sockets, ready_sockets;
 

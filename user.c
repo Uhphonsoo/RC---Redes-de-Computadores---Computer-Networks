@@ -6,11 +6,6 @@
  * check allocated sizes for all string
 **/
 
-// ISSUES
-/**
- * s 06 g6 funciona mesmo que 06 nao exista
-**/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,17 +17,17 @@
 #include "user_functions.h"
 #include "constants.h"
 
-int  fd_UDP, fd_TCP;
 int  logged_in;
+int  fd_UDP, fd_TCP;
 int  has_active_group;
 char DSIP[MAX_SIZE];
 char DSport[MAX_SIZE];
+char active_GID[MAX_SIZE];
 char logged_in_UID[MAX_SIZE];
 char logged_in_pass[MAX_SIZE];
-char active_GID[MAX_SIZE];
 socklen_t addrlen_UDP, addrlen_TCP;
-struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
+struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 
 int main(int argc, char *argv[]) {
 

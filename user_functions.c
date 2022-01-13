@@ -1,35 +1,35 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/socket.h>
 #include <netdb.h> 
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
+#include "constants.h"
 #include "functions.h"
 #include "user_functions.h"
-#include "constants.h"
 
-extern int  fd_UDP, fd_TCP;
 extern int  logged_in;
+extern int  fd_UDP, fd_TCP;
 extern int  has_active_group;
 extern char DSIP[MAX_SIZE];
 extern char DSport[MAX_SIZE];
+extern char active_GID[MAX_SIZE];
 extern char logged_in_UID[MAX_SIZE];
 extern char logged_in_pass[MAX_SIZE];
-extern char active_GID[MAX_SIZE];
 extern socklen_t addrlen_UDP, addrlen_TCP;
-extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 extern struct sockaddr_in addr_UDP, addr_TCP;
+extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 
 void validate_program_input(int argc, char** argv) {
 
-    // ONE argument provided
+    // one argument provided
     if (argc == 1) {
         gethostname(DSIP, MAX_SIZE);
         sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
     }
-    // THREE arguments provided
+    // three arguments provided
     else if (argc == 3){
         if (strcmp(argv[1], "-n") == 0){
             strcpy(DSIP, argv[2]);
@@ -42,35 +42,34 @@ void validate_program_input(int argc, char** argv) {
         }
 
         else 
-            input_error();
+            print_program_input_error();
     }
-    // FIVE arguments provided
+    // five arguments provided
     else if (argc == 5) {
         if (strcmp(argv[1], "-n"))
-            input_error();
+            print_program_input_error();
 
         if (strcmp(argv[3], "-p"))
-            input_error();
+            print_program_input_error();
 
         strcpy(DSIP, argv[2]);
         strcpy(DSport, argv[4]);
     }
-
     else 
-        input_error();
+        print_program_input_error();
 }
 
 
 void register_command(char* command) {
 
+    char *reply;
+    char *message;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
-    char *message;
-    char *reply;
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s %s", aux, UID, pass);
     if(!validate_registration_command(command, UID, pass)) {
         return;
@@ -81,10 +80,10 @@ void register_command(char* command) {
 
     sprintf(message, "REG %s %s\n", UID, pass);
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_register_reply(reply, aux, status);
 
@@ -94,14 +93,14 @@ void register_command(char* command) {
 
 void unregister_command(char* command) {
 
+    char *reply;
+    char *message;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
-    char *message;
-    char *reply;
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_registration_command(command, UID, pass)) {
         return;
@@ -112,10 +111,10 @@ void unregister_command(char* command) {
 
     sprintf(message, "UNR %s %s\n", UID, pass);
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_unregister_reply(reply, aux, status);
 
@@ -125,19 +124,19 @@ void unregister_command(char* command) {
 
 void login_command(char* command) {
 
+    char *reply;
+    char *message;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     char status[MAX_SIZE];
-    char *message;
-    char *reply;
 
     if (logged_in) {
         printf("> Failed to login. A user is already logged in.\n");
         return;
     }
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s %s", aux, UID, pass);
     if (!validate_login_command(command, UID, pass)) {
         return;
@@ -151,10 +150,10 @@ void login_command(char* command) {
 
     sprintf(message, "LOG %s %s\n", UID, pass);
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_login_reply(reply, aux, status);
 
@@ -164,17 +163,17 @@ void login_command(char* command) {
 
 void logout_command(char* command) {
 
+    char *reply;
+    char *message;
     char aux[MAX_SIZE];
     char status[MAX_SIZE];
-    char *message;
-    char *reply;
 
     if (is_empty_string(logged_in_UID) && is_empty_string(logged_in_pass)) {
         printf("> No user is currently logged in.\n");
         return;
     }
     
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s", aux);
     if (!validate_logout_command(command)) {
         return;
@@ -185,10 +184,10 @@ void logout_command(char* command) {
 
     sprintf(message, "OUT %s %s\n", logged_in_UID, logged_in_pass);
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_logout_reply(reply, aux, status);
 
@@ -211,7 +210,7 @@ void exit_command(char* command) {
 
     sscanf(command, "%s", aux);
 
-    // VALIDATE command
+    // validate command
     if (!validate_exit_command(command))
         return;
 
@@ -229,12 +228,12 @@ void exit_command(char* command) {
 
 void groups_command(char* command) {
 
-    char aux[MAX_SIZE];
+    char *reply;
+    char *message;
     char N[MAX_SIZE];
-    char * message;
-    char * reply;
+    char aux[MAX_SIZE];
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s", aux);
     if(!validate_groups_command(command))
         return;
@@ -244,10 +243,10 @@ void groups_command(char* command) {
 
     sprintf(message, "GLS\n");
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, N);
     validate_groups_reply(reply, aux, N);
 
@@ -263,19 +262,19 @@ void groups_command(char* command) {
 
 void subscribe_command(char* command) {
 
+    char *reply;
+    char *message;
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
     char status[MAX_SIZE];
-    char *message;
-    char *reply;
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s %s", aux, GID, GName);
     if(!validate_subscribe_command(command, GID, GName)) {
         return;
@@ -286,10 +285,10 @@ void subscribe_command(char* command) {
 
     sprintf(message, "GSR %s %s %s\n", logged_in_UID, GID, GName);
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE reply from server
+    // validate reply from server
     sscanf(reply, "%s %s", aux, status);
     validate_subscribe_reply(reply, aux, status);
 
@@ -300,18 +299,18 @@ void subscribe_command(char* command) {
 
 void unsubscribe_command(char* command) {
 
+    char *reply;
+    char *message;
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char status[MAX_SIZE];
-    char *message;
-    char *reply;
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s", aux, GID);
     if(!validate_unsubscribe_command(command, GID)) {
         return;
@@ -322,10 +321,10 @@ void unsubscribe_command(char* command) {
 
     sprintf(message, "GUR %s %s\n", logged_in_UID, GID);
 
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_usubscribe_reply(reply, aux, status);
 
@@ -336,17 +335,17 @@ void unsubscribe_command(char* command) {
 
 void my_groups_command(char* command) {
 
-    char aux[MAX_SIZE];
-    char N[MAX_SIZE];
-    char *message;
     char *reply;
+    char *message;
+    char N[MAX_SIZE];
+    char aux[MAX_SIZE];
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
         return;
     }
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s", aux);
     if(!validate_my_groups_command(command)) {
         return;
@@ -357,16 +356,10 @@ void my_groups_command(char* command) {
 
     sprintf(message, "GLM %s\n", logged_in_UID);
 
-    /* DEBUG */
-    printf(">>> message = %s|\n", message);
-
-    // COMMUNICATION with server
+    // communication with server
     send_and_receive_UDP(message, reply);
 
-    /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
-
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, N);
     validate_my_groups_reply(reply, aux, N);
 
@@ -385,7 +378,7 @@ void select_command(char* command) {
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s", aux, GID);
     if(!validate_select_command(command, GID)) {
         return;
@@ -410,11 +403,10 @@ void showgid_command() {
 
 void ulist_command() {
 
-    char aux[MAX_SIZE];
-    char N[MAX_SIZE];
-    char status[MAX_SIZE];
-    char *message;
     char *reply;
+    char *message;
+    char aux[MAX_SIZE];
+    char status[MAX_SIZE];
 
     if (!has_active_group) {
         printf("> There is no active group.\n");
@@ -426,16 +418,10 @@ void ulist_command() {
 
     sprintf(message, "ULS %s\n", active_GID);
 
-    /* DEBUG */
-    printf(">>> ulist: message = %s|\n", message);
+    // communication with server
+    send_and_receive_TCP(message, reply);
 
-    // COMMUNICATION with server
-    send_and_receive_TCP(message, reply, strlen(message));
-
-    /* DEBUG */
-    /* printf(">>> ulist: reply = %s|\n", reply); */
-
-    // VALIDATE server reply
+    // validate server reply
     sscanf(reply, "%s %s", aux, status);
     if (validate_ulist_reply(reply, aux, status)) {
         strcat(reply, "\n");
@@ -449,24 +435,14 @@ void ulist_command() {
 
 void post_command(char* command) {
 
-    int n, ret, read_bytes = 0;
-    int file_is_being_sent = 0;
-    int Tsize = 0;
-    int Fsize = 0;
-    char aux[MAX_SIZE];
-    char text[MAX_TEXT_SIZE];
-    char Fname[MAX_SIZE];
-    char *ptr;
-    char status[MAX_SIZE];
-    char *message;
+    int  ret, file_is_being_sent = 0, Tsize = 0, Fsize = 0;
     char *reply;
+    char *message;
+    char aux[MAX_SIZE];
+    char Fname[MAX_SIZE];
+    char status[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
     FILE *fp;
-
-    /* DEBUG */
-    /* login_command("login 72182 hhhhhhhh\n");
-    select_command("select 72\n"); */
-    /* login_command("login 77777 password\n");
-    select_command("select 01\n"); */
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -477,7 +453,7 @@ void post_command(char* command) {
         return;
     }
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s", aux);
     if(!validate_post_command(command, aux, text, Fname, &file_is_being_sent))
         return;
@@ -492,7 +468,7 @@ void post_command(char* command) {
     if (!file_is_being_sent) {
         sprintf(message, "PST %s %s %d %s\n", logged_in_UID, active_GID, Tsize, text);
 
-        send_and_receive_TCP(message, reply, strlen(message));
+        send_and_receive_TCP(message, reply);
     }
     else {
 
@@ -500,8 +476,8 @@ void post_command(char* command) {
         get_address_info_TCP();
 
         // CONNECT with server
-        n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
-        validate_connect(n);
+        ret = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+        validate_connect(ret);
 
         fp = fopen(Fname, "r");
         validate_fopen(fp);
@@ -511,31 +487,11 @@ void post_command(char* command) {
         sprintf(message, "PST %s %s %d %s %s %d ", logged_in_UID, active_GID, Tsize, text, Fname, Fsize);
 
         send_TCP(message);
-        send_data_TCP(fp, Fsize);
+        send_data_TCP(fp);
         fclose(fp);
 
         sprintf(message, "\n");
         send_TCP(message);
-
-        /* DEBUG vvvvvv */
-        /* reply = (char*)malloc(MAX_REPLY_SIZE);
-
-        ptr = reply;
-        while (1) {
-
-            int ret = read(fd_TCP, ptr, 1);
-            validate_read(ret);
-
-            if (*ptr == '\n') {
-                break;
-            }
-
-            ptr++;
-        }
-        *ptr = '\0';
-
-        return; */
-        /* DEBUG ^^^^^^ */
 
         receive_TCP(reply);
         close(fd_TCP);
@@ -551,34 +507,17 @@ void post_command(char* command) {
 
 void retrieve_command(char* command) {
 
-    int n;
-    int write_bytes_left;
-    int file_is_being_sent = 0;
-    int read_bytes = 0;
-    int N_int;
-    int Tsize_int;
-    char buffer[MAX_SIZE];
-    char aux[10];
-    char MID[10];
-    char UID[10];
+    int  n, N_int, Tsize_int, file_came_before = 0;
+    char *reply;
+    char *message;
     char Tsize[MAX_SIZE];
-    char text[MAX_TEXT_SIZE];
     char Fsize[MAX_SIZE];
     char Fname[MAX_SIZE];
-    char MID_aux[MAX_SIZE];
-    char *data;
-    char status[10];
+    char buffer[MAX_SIZE];
     char N[MAX_FILE_SIZE];
-    char *message;
-    char *reply;
-    char *ptr;
-    FILE *fp; 
-
-    /* DEBUG */
-    /* login_command("login 77777 password\n");
-    select_command("select 08\n"); */
-    /* login_command("login 77777 password\n");
-    select_command("select 01\n"); */
+    char MID_aux[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
+    char aux[10], MID[10], UID[10], status[10];
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
@@ -589,7 +528,7 @@ void retrieve_command(char* command) {
         return;
     }
 
-    // VALIDATE command
+    // validate command
     sscanf(command, "%s %s", aux, MID);
     if(!validate_retrieve_command(command, MID)) {
         return;
@@ -600,11 +539,6 @@ void retrieve_command(char* command) {
 
     sprintf(message, "RTV %s %s %s\n", logged_in_UID, active_GID, MID);
 
-    /* DEBUG */
-    /* printf("message = %s|\n", message); */
-
-    /* vvv */
-
     create_socket_TCP();
     get_address_info_TCP();
 
@@ -612,26 +546,6 @@ void retrieve_command(char* command) {
     validate_connect(n);
 
     send_TCP(message);
-
-    /* DEBUV vvvvvv */
-    /* reply = (char*)malloc(MAX_REPLY_SIZE);
-
-    ptr = reply;
-    while (1) {
-
-        int ret = read(fd_TCP, ptr, 1);
-        validate_read(ret);
-
-        if (*ptr == '\n') {
-            break;
-        }
-
-        ptr++;
-    }
-    *ptr = '\0';
-
-    return; */
-    /* DEBUG ^^^^^^ */
 
     // receive keyword and status
     receive_n_tokens_TCP(2, reply);
@@ -650,9 +564,6 @@ void retrieve_command(char* command) {
     receive_n_tokens_TCP(1, reply);
     sscanf(reply, "%s", N);
 
-    /* DEBUG */
-    printf("--- N = %s|\n", N);
-
     N_int = atoi(N);
     printf("> There are %s messages:\n", N);
 
@@ -660,30 +571,17 @@ void retrieve_command(char* command) {
     receive_n_chars_TCP(1, buffer);
     buffer[1] = buffer[0]; // this is done in preparation for the string manipulation
 
-    int file_came_before = 0;
     for (int i = 0; i < N_int; i++) {
-        
-        if (!file_came_before) {
 
-            /* DEBUG */
-            /* printf("@@@ NO file came before\n"); */
+        if (!file_came_before) {
 
             // receive MID and UID
             receive_n_chars_TCP(10, reply);
             sscanf(reply, "%s %s", MID_aux, UID);
-
-            /* DEBUG */
-            /* printf("??? MID_aux = %s|\n", MID_aux); */
             
             sprintf(MID, "%c%s", buffer[1], MID_aux);
-
-            /* DEBUG */
-            /* printf("!!! %s\n", MID); */
         }
         else {
-
-            /* DEBUG */
-            /* printf("@@@ A file came before\n"); */
 
             // receive MID and UID
             receive_n_chars_TCP(12, reply);
@@ -694,9 +592,6 @@ void retrieve_command(char* command) {
 
         // receive Tsize
         receive_n_tokens_TCP(1, Tsize);
-
-        /* DEBUG */
-        /* printf("!!! Tsize = %s|\n", Tsize); */
         
         // receive text
         Tsize_int = atoi(Tsize);
@@ -727,78 +622,23 @@ void retrieve_command(char* command) {
             file_came_before = 0;
         }
     }
-
-    /* for (int i = 0; i < N_int; i++) {
-
-        // receive MID and UID
-        receive_n_chars_TCP(11, reply);
-        sscanf(reply, "%s %s", MID, UID);
-
-        printf("> MID: %s | by UID: %s\n", MID, UID);
-
-        printf(">>> UID = %s|\n", UID);
-
-        // receive Tsize
-        receive_n_tokens_TCP(1, Tsize);
-        
-        // receive text
-        Tsize_int = atoi(Tsize);
-        receive_n_bytes_TCP(Tsize_int, text);
-
-        printf(">   Message: %s\n", text);
-
-        // read next two chars to test for file
-        receive_n_chars_TCP(2, buffer);
-
-        // if there is a file
-        if (buffer[1] == '/') {
-
-            // receive space
-            receive_n_chars_TCP(1, buffer);
-            
-            // receive Fname and Fsize
-            receive_n_tokens_TCP(2, buffer);
-            sscanf(buffer, "%s %s", Fname, Fsize);
-
-            printf(">   Associated file: %s\n", Fname);
-
-            // receive data
-            receive_data_TCP(Fname, Fsize);
-        }
-        else {
-
-        } 
-
-    } */
-
-    /* ^^^ */
-
-    // COMMUNICATION with server
-    /* send_and_receive_TCP(message, reply, strlen(message)); */
-
-    // VALIDATE server reply
-    /* sscanf(reply, "%s %s, %s", aux, status, N);
-    if (validate_retrieve_reply(reply, aux, status, N))
-        show_messages(reply); */
-
     free(message);
     free(reply);
 }
 
-// Validation functions
 
 int validate_registration_command(char* command, char* UID, char* pass) {
 
     if (get_number_of_tokens(command) != 3) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     if (!validate_UID(UID)) {
-        invalid_UID();
+        print_invalid_UID_message();
         return 0;
     }
     if (!validate_pass(pass)) {
-        invalid_Upass();
+        print_invalid_pass_message();
         return 0;
     }
     return 1;
@@ -808,15 +648,15 @@ int validate_registration_command(char* command, char* UID, char* pass) {
 int validate_login_command(char* command, char* UID, char* pass) {
 
     if (get_number_of_tokens(command) != 3) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     if (!validate_UID(UID)) {
-        invalid_UID();
+        print_invalid_UID_message();
         return 0;
     }
     if (!validate_pass(pass)) {
-        invalid_Upass();
+        print_invalid_pass_message();
         return 0;
     }
     return 1;
@@ -826,7 +666,7 @@ int validate_login_command(char* command, char* UID, char* pass) {
 int validate_logout_command(char* command) {
     
     if (get_number_of_tokens(command) != 1) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     return 1;
@@ -836,7 +676,7 @@ int validate_logout_command(char* command) {
 int validate_exit_command(char* command) {
 
     if (get_number_of_tokens(command) != 1) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     return 1;
@@ -846,25 +686,25 @@ int validate_exit_command(char* command) {
 int validate_groups_command(char* command) {
 
     if (get_number_of_tokens(command) != 1) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     return 1;
 }
 
 
-int validate_subscribe_command(char* command, char* GID, char* GName) {
+int validate_subscribe_command(char *command, char *GID, char *GName) {
 
     if (get_number_of_tokens(command) != 3) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     if (!validate_GID(GID)) {
-        invalid_GID();
+        print_invalid_GID_message();
         return 0;
     }
     if (!validate_GName(GName)) {
-        invalid_GName();
+        print_invalid_GName_message();
         return 0;
     }
     return 1;
@@ -874,11 +714,11 @@ int validate_subscribe_command(char* command, char* GID, char* GName) {
 int  validate_unsubscribe_command(char* command, char* GID) {
 
     if (get_number_of_tokens(command) != 2) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     if (!validate_GID(GID)) {
-        invalid_GID();
+        print_invalid_GID_message();
         return 0;
     }
     return 1;
@@ -888,7 +728,7 @@ int  validate_unsubscribe_command(char* command, char* GID) {
 int validate_my_groups_command(char* command) {
 
     if (get_number_of_tokens(command) != 1) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     return 1;
@@ -898,21 +738,21 @@ int validate_my_groups_command(char* command) {
 int validate_select_command(char* command, char* GID) {
 
     if (get_number_of_tokens(command) != 2) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     if (!validate_GID(GID)) {
-        invalid_GID();
+        print_invalid_GID_message();
         return 0;
     }
     return 1;
 }
 
 
-int validate_post_command(char* command, char* aux, char* text, char* Fname, int* file_is_being_sent) {
+int validate_post_command(char *command, char *aux, char *text, char *Fname, int *file_is_being_sent) {
 
-    int i = strlen(aux) + 1;
     int j = 0, k = 0;
+    int i = strlen(aux) + 1;
     int length = strlen(command) - 1;
 
     if (command[i] != '"') {
@@ -956,11 +796,11 @@ int validate_post_command(char* command, char* aux, char* text, char* Fname, int
 int validate_retrieve_command(char *command, char *MID) {
 
     if (get_number_of_tokens(command) != 2) {
-        invalid_NArgs();
+        print_invalid_number_of_arguments_message();
         return 0;
     }
     if (!validate_MID(MID)) {
-        invalid_MID();
+        print_invalid_MID_message();
         return 0;
     }
     return 1;
@@ -1040,6 +880,7 @@ void validate_login_reply(char* reply, char* aux, char* status) {
 void validate_logout_reply(char* reply, char* aux, char* status) {
     
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (number_of_tokens_reply != 2 || strcmp("ROU", aux)) {
         fprintf(stderr, "ERROR: logout_command(): Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1064,6 +905,7 @@ void validate_logout_reply(char* reply, char* aux, char* status) {
 void validate_groups_reply(char* reply, char* aux, char* N) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (number_of_tokens_reply < 2) {
         fprintf(stderr, "> validate_groups_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1084,16 +926,19 @@ void validate_groups_reply(char* reply, char* aux, char* N) {
 void validate_subscribe_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
-    /* if (number_of_tokens_reply > 3 || strcmp(aux, "RGS")) {
+    char new_GID[10];
+    
+    if (strcmp(aux, "RGS")) {
         fprintf(stderr, "> validate_subscribe_reply: ERROR: Invalid reply from server. REPLY:%s|\n", reply);
         exit(EXIT_FAILURE);
-    } */
+    }
 
     if (strcmp(status, "OK")  == 0 /* && number_of_tokens_reply == 2 */) {
         printf("> Successfully subscribed to group.\n");
     }
     else if (strcmp(status, "NEW") == 0 && number_of_tokens_reply == 3) {
-        printf("> Successfully created new group and subscribed to it.\n");
+        sscanf(reply, "%s %s %s", aux, status, new_GID);
+        printf("> Successfully created group %s and subscribed to it.\n", new_GID);
     }
     else if (strcmp(status, "E_USR") == 0 && number_of_tokens_reply == 2) {
         printf("> Failed to subscribe to group. Invalid user ID.\n");
@@ -1120,6 +965,7 @@ void validate_subscribe_reply(char* reply, char* aux, char* status) {
 void validate_usubscribe_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (number_of_tokens_reply != 2 || strcmp(aux, "RGU")) {
         fprintf(stderr, "> validate_unsubscribe_reply: ERROR: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1147,6 +993,7 @@ void validate_usubscribe_reply(char* reply, char* aux, char* status) {
 void validate_my_groups_reply(char* reply, char* aux, char* N) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (strcmp(aux, "RGM")) {
         fprintf(stderr, "> validate_my_groups_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1169,6 +1016,7 @@ void validate_my_groups_reply(char* reply, char* aux, char* N) {
 int validate_ulist_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (strcmp(aux, "RUL")) {
         fprintf(stderr, "> validate_ulist_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1192,6 +1040,7 @@ int validate_ulist_reply(char* reply, char* aux, char* status) {
 void validate_post_reply(char* reply, char* aux, char* status) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (number_of_tokens_reply != 2 || strcmp(aux, "RPT")) {
         fprintf(stderr, "> validate_post_reply: ERROR: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1213,6 +1062,7 @@ void validate_post_reply(char* reply, char* aux, char* status) {
 int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
 
     int number_of_tokens_reply = get_number_of_tokens(reply);
+
     if (strcmp(aux, "RRT")) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1225,10 +1075,6 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
     }
-    /* if (number_of_tokens_reply == 3 && strcmp(N, "0")) {
-        fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
-        exit(EXIT_FAILURE);
-    } */
     if (number_of_tokens_reply > 3 && strcmp(N, "0") == 0) {
         fprintf(stderr, "> validate_retrieve_reply: Invalid reply from server.\n");
         exit(EXIT_FAILURE);
@@ -1244,59 +1090,47 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
 void create_socket_UDP() {
 
     fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
-    if(fd_UDP == -1) {
-        perror("ERROR: create_socket_UDP: can't open socket.\n");
-        exit(EXIT_FAILURE);
-    }
+    validate_socket(fd_UDP);
 }
 
 
 void get_address_info_UDP() {
 
-    int errcode;
+    int ret;
 
     memset(&hints_UDP, 0, sizeof(hints_UDP)); 
     hints_UDP.ai_family = AF_INET;        // IPv4
     hints_UDP.ai_socktype = SOCK_DGRAM;   // UDP socket
 
-    errcode = getaddrinfo(DSIP, DSport, &hints_UDP, &res_UDP);
-    if(errcode != 0) {
-        perror("ERROR: get_address_info_UDP\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = getaddrinfo(DSIP, DSport, &hints_UDP, &res_UDP);
+    validate_getaddrinfo(ret);
 }
 
 
 void create_socket_TCP() {
 
     fd_TCP = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
-    if(fd_TCP == -1) {
-        perror("ERROR: create_socket_TCP: can't open socket.\n");
-        exit(EXIT_FAILURE);
-    }
+    validate_socket(fd_TCP);
 }
 
 
 void get_address_info_TCP() {
 
-    int errcode;
+    int ret;
 
     memset(&hints_TCP, 0, sizeof(hints_TCP)); 
     hints_TCP.ai_family = AF_INET;        // IPv4
     hints_TCP.ai_socktype = SOCK_STREAM;  // TCP socket
 
-    errcode = getaddrinfo(DSIP, DSport, &hints_TCP, &res_TCP);
-    if(errcode != 0) {
-        perror("ERROR: get_address_info_TCP\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = getaddrinfo(DSIP, DSport, &hints_TCP, &res_TCP);
+    validate_getaddrinfo(ret);
 }
 
 void send_and_receive_UDP(char* message, char* reply){
 
     int ret;
-    fd_set current_sockets;
     struct timeval timeout = {5, 0};
+    fd_set current_sockets;
 
     // SOCKET creation
     create_socket_UDP();
@@ -1333,17 +1167,17 @@ void send_and_receive_UDP(char* message, char* reply){
 }
 
 
-void send_and_receive_TCP(char* message, char* reply, int write_n) {
+void send_and_receive_TCP(char* message, char* reply) {
 
-    int ret;
-    int bytes_to_write = strlen(message) * sizeof(char);
+    int  ret;
+    int  bytes_to_write = strlen(message) * sizeof(char);
     char *ptr;
 
     create_socket_TCP();
     get_address_info_TCP();
 
-    int n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
-    validate_connect(n);
+    ret = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_connect(ret);
 
     while (bytes_to_write > 0) {
         
@@ -1387,10 +1221,10 @@ void send_TCP(char *string) {
 }
 
 
-void send_data_TCP(FILE *fp, int Fsize) {
+void send_data_TCP(FILE *fp) {
 
-    int ret;
-    int bytes_to_write;
+    int  ret;
+    int  bytes_to_write;
     char *buffer;
     char *save_buffer;
 
@@ -1417,7 +1251,7 @@ void send_data_TCP(FILE *fp, int Fsize) {
 
 void receive_TCP(char *string) {
 
-    int ret;
+    int  ret;
     char *ptr;
 
     string[0] = '\0';
@@ -1438,32 +1272,11 @@ void receive_TCP(char *string) {
 }
 
 
-/* void receive_first_tokens_retrieve_TCP(char *string) {
-
-    int ret;
-    int spaces_to_read = 2;
-    char *ptr;
-
-    string[0] = '\0';
-
-    ptr = string;
-    while (spaces_to_read > 0) {
-        ret = read(fd_TCP, ptr, 1);
-        validate_read(ret);
-
-        if (isspace(*ptr)) {
-            spaces_to_read--;
-        }
-        ptr++;
-    }
-    *ptr = '\0';
-} */
-
-// reads and "kills" last space
+// reads n tokens and "kills" the last space with '\0'
 void receive_n_tokens_TCP(int n, char *string) {
 
-    int ret;
-    int spaces_to_read = n;
+    int  ret;
+    int  spaces_to_read = n;
     char *ptr;
     
     string[0] = '\0';
@@ -1481,23 +1294,14 @@ void receive_n_tokens_TCP(int n, char *string) {
         ptr++;
     }
     ptr--;
-
-    /* DEBUG */
-    /* printf("=1= primeiro lido: %c\n", string[0]);
-    printf("=2= penultimo lido: %c\n", *(ptr-1));
-    printf("=3= ultimo lido: %c\n", *ptr); */
-    
     *ptr = '\0';
-
-    /* DEBUG */
-    /* printf("=LIDO= |%s|\n", string); */
 }
 
 
 void receive_n_chars_TCP(int n, char *string) {
 
-    int ret;
-    int bytes_to_read = n * sizeof(char);
+    int  ret;
+    int  bytes_to_read = n * sizeof(char);
     char *ptr;
 
     string[0] = '\0';
@@ -1511,22 +1315,13 @@ void receive_n_chars_TCP(int n, char *string) {
         bytes_to_read--;
         ptr++;
     }
-
-    /* DEBUG */
-    /* printf("=1= primeiro lido: %c\n", string[0]);
-    printf("=2= penultimo lido: %c\n", *(ptr-2));
-    printf("=3= ultimo lido: %c\n", *(ptr-1)); */
-
     *ptr = '\0';
-
-    /* DEBUG */
-    /* printf("-LIDO- |%s|\n", string); */
 }
 
 void receive_n_bytes_TCP(int n, char *string) {
 
-    int ret;
-    int bytes_to_read = n;
+    int  ret;
+    int  bytes_to_read = n;
     char *ptr;
 
     string[0] = '\0';
@@ -1540,24 +1335,15 @@ void receive_n_bytes_TCP(int n, char *string) {
         bytes_to_read--;
         ptr++;
     }
-
-    /* DEBUG */
-    /* printf("@1@ primeiro lido: %c\n", string[0]);
-    printf("@2@ penultimo lido: %c\n", *(ptr-2));
-    printf("@3@ ultimo lido: %c\n", *(ptr-1)); */
-
     *ptr = '\0';
-
-    /* DEBUG */
-    /* printf("-LIDO- |%s|\n", string); */
 }
 
 
 void receive_data_TCP(char *FName, char *Fsize) {
 
-    int   ret;
+    int  ret;
     int  bytes_to_read = atoi(Fsize);
-    char  file_path[MAX_SIZE];
+    char file_path[MAX_SIZE];
     char *buffer = (char *)malloc(bytes_to_read);
     FILE *fp;
 
@@ -1589,31 +1375,31 @@ void receive_data_TCP(char *FName, char *Fsize) {
 }
 
 
-void input_error(){
+void print_program_input_error(){
     fprintf(stderr, "ERROR: Invalid input. Input has the format ./user -n [DSIP] -p [DSport].\n");
     exit(EXIT_FAILURE);
 }
 
-void invalid_UID(){
+void print_invalid_UID_message(){
     fprintf(stderr, "> Invalid user ID.\n");
 }
 
-void invalid_Upass(){
+void print_invalid_pass_message(){
     fprintf(stderr, "> Invalid user password.\n");
 }
 
-void invalid_NArgs(){
+void print_invalid_number_of_arguments_message(){
     fprintf(stderr, "> Invalid number of arguments in input.\n");
 }
 
-void invalid_GID(){
+void print_invalid_GID_message(){
     fprintf(stderr, "Invalid group ID.\n");
 }
 
-void invalid_GName(){
+void print_invalid_GName_message(){
     fprintf(stderr, "Invalid group name.\n");
 }
 
-void invalid_MID(){
+void print_invalid_MID_message(){
     fprintf(stderr, "Invalid message ID.\n");
 }
