@@ -1393,13 +1393,13 @@ void print_invalid_number_of_arguments_message(){
 }
 
 void print_invalid_GID_message(){
-    fprintf(stderr, "Invalid group ID.\n");
+    fprintf(stderr, "> Invalid group ID.\n");
 }
 
 void print_invalid_GName_message(){
-    fprintf(stderr, "Invalid group name.\n");
+    fprintf(stderr, "> Invalid group name.\n");
 }
 
 void print_invalid_MID_message(){
-    fprintf(stderr, "Invalid message ID.\n");
+    fprintf(stderr, "> Invalid message ID.\n");
 }
