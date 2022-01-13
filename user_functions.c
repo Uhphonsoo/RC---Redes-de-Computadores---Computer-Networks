@@ -662,6 +662,7 @@ void retrieve_command(char* command) {
 
     int file_came_before = 0;
     for (int i = 0; i < N_int; i++) {
+        
         if (!file_came_before) {
 
             /* DEBUG */
