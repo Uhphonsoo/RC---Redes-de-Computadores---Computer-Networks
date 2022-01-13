@@ -17,6 +17,7 @@ void validate_fopen(FILE *fp);
 void validate_fclose(int ret);
 void validate_fprintf(int ret);
 void validate_mkdir(int ret);
+void validate_listen(int ret);
 
 // other validations
 int validate_UID(char *UID);

@@ -73,10 +73,10 @@ void  update_last_available_message(GROUPLIST *list, char *GID, int i);
 void convert_GID_int_to_string(int MID_int, char *MID);
 
 // socket related functions
-int  create_socket_datagram();
-void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port);
-int  create_socket_stream();
-void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port);
+int  create_socket_UDP();
+void get_address_info_UDP(struct addrinfo *hints, struct addrinfo **res, char *port);
+int  create_socket_TCP();
+void get_address_info_TCP(struct addrinfo *hints, struct addrinfo **res, char *port);
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr);
 // void receive_message_TCP(int fd, char *message); // !!!
 // void receive_keyword_TCP(char *keyword, int fd); // !!!

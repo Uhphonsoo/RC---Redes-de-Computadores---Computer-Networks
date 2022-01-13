@@ -1764,18 +1764,18 @@ void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct s
 }
 
 
-int create_socket_datagram() {
+int create_socket_UDP() {
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
     if(fd == -1) {
-        perror("ERROR: socket: create_socket_datagram\n");
+        perror("ERROR: socket: create_socket_UDP\n");
         exit(EXIT_FAILURE);
     }
     return fd;
 }
 
 
-void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port) {
+void get_address_info_UDP(struct addrinfo *hints, struct addrinfo **res, char *port) {
 
     memset(&(*hints), 0, sizeof((*hints))); 
     (*hints).ai_family = AF_INET;        
@@ -1784,35 +1784,34 @@ void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, ch
 
     int errcode = getaddrinfo(NULL, port, &(*hints), &(*res));
     if(errcode != 0) {
-        perror("ERROR: getaddrinfo: get_address_info_datagram\n");
+        perror("ERROR: getaddrinfo: get_address_info_UDP\n");
         exit(EXIT_FAILURE);
     }
 }
 
 
-int create_socket_stream() {
+int create_socket_TCP() {
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1) {
-        perror("ERROR: socket: create_socket_stream\n");
+        perror("ERROR: socket: create_socket_TCP\n");
         exit(EXIT_FAILURE);
     }
     return fd;
 }
 
 
-void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port) {
+void get_address_info_TCP(struct addrinfo *hints, struct addrinfo **res, char *port) {
+
+    int ret;
 
     memset(&(*hints), 0, sizeof((*hints))); 
     (*hints).ai_family = AF_INET;        
     (*hints).ai_socktype = SOCK_STREAM;  
     (*hints).ai_flags = AI_PASSIVE;
 
-    int errcode = getaddrinfo(NULL, port, &(*hints), &(*res));
-    if(errcode != 0) {
-        perror("ERROR: getaddrinfo: get_address_info_stream\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = getaddrinfo(NULL, port, &(*hints), &(*res));
+    validate_getaddrinfo(ret);
 }
 
 
