@@ -3,7 +3,7 @@
  * ERR
  * check allocated sizes for all strings
  * frees for all mallocs
- * fopens - fcloses
+ * fcloses for all fopens
 **/
 
 #include <stdio.h>
@@ -24,15 +24,15 @@ GROUPLIST *Group_list;
 
 int main(int argc, char *argv[]) {
 
-    int ret, fd_TCP, fd_UDP, client_fd;
+    int ret, fd_TCP, fd_UDP, user_fd;
     char *message;
     char  keyword[10];
     char  DSport[MAX_SIZE];
     struct sockaddr_in addr;
-    struct sockaddr_in clientaddr;
+    struct sockaddr_in useraddr;
     struct timeval timeout = {5, 0};
     struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP;
-    socklen_t clientlen;
+    socklen_t userlen;
     fd_set current_sockets, ready_sockets;
 
     validate_program_input(argc, argv, DSport);
@@ -81,14 +81,14 @@ int main(int argc, char *argv[]) {
 
             if (FD_ISSET(i, &ready_sockets)) {
 
-                if (i == fd_TCP) {
+                if (i == fd_TCP) { // if i == serving socket
 
-                    /* accept client and associate it with client_fd */
-                    clientlen = sizeof(clientaddr);
-                    client_fd = accept(fd_TCP, (struct sockaddr *) &clientaddr, &clientlen);
-                    FD_SET(client_fd, &current_sockets);
+                    /* accept user and associate it with user_fd */
+                    userlen = sizeof(useraddr);
+                    user_fd = accept(fd_TCP, (struct sockaddr *) &useraddr, &userlen);
+                    FD_SET(user_fd, &current_sockets);
                 }
-                else if (i == fd_UDP) {
+                else if (i == fd_UDP) { // if i == UDP socket
 
                     message = (char *)malloc(MAX_SIZE);
                     message[0] = '\0';
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }
-                else { // if i == client_fd
+                else { // if i == connection socket
                     
                     message = (char *)malloc(MAX_SIZE);
 
@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // close sockets
     freeaddrinfo(res_UDP);
     close(fd_UDP);
     freeaddrinfo(res_TCP);
