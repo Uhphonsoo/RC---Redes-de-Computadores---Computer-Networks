@@ -3,19 +3,19 @@
  * ERR
  * check allocated sizes for all strings
  * frees for all mallocs
- * validate_post_message
+ * fopens - fcloses
 **/
 
 #include <stdio.h>
+#include <netdb.h> 
+#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <netdb.h> 
-#include <ctype.h>
+#include "constants.h"
 #include "functions.h"
 #include "DS_functions.h"
-#include "constants.h"
 
 int verbose_mode;
 int Number_of_groups;

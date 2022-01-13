@@ -153,6 +153,14 @@ void validate_listen(int ret) {
     }
 }
 
+void validate_socket(int ret) {
+
+    if (ret == -1) {
+        perror("ERROR: socket\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 int validate_UID(char* UID) {
 
