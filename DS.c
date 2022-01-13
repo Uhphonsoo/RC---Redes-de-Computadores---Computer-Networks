@@ -4,14 +4,6 @@
  * check allocated sizes for all strings
  * frees for all mallocs
  * validate_post_message
- * timer
- * quando terminar o prorgama?
-**/
-
-// ISSUES
-/**
- * not sure if get_client_ip_and_port is working as intended
- * como testar verbose mode?
 **/
 
 #include <stdio.h>
@@ -32,7 +24,7 @@ GROUPLIST *Group_list;
 
 int main(int argc, char *argv[]) {
 
-    int n;
+    int ret;
     int fd_TCP = 0, fd_UDP = 0, client_fd;
     struct addrinfo hints_TCP, *res_TCP, hints_UDP, *res_UDP, *res_client, hints_client;
     struct sockaddr_in clientaddr;
@@ -40,6 +32,7 @@ int main(int argc, char *argv[]) {
     fd_set current_sockets, ready_sockets;
     char DSport[MAX_SIZE];
     char *message;
+    char keyword[10];
     struct sockaddr_in addr;
     struct timeval timeout = {5, 0};
 
@@ -51,22 +44,22 @@ int main(int argc, char *argv[]) {
     initialize_group_list(Group_list);
     Number_of_groups = get_groups(Group_list);
 
-    fd_TCP = create_socket_stream();
-    get_address_info_stream(&hints_TCP, &res_TCP, DSport);
+    // create TCP socket
+    fd_TCP = create_socket_TCP();
+    get_address_info_TCP(&hints_TCP, &res_TCP, DSport);
 
-    n = bind(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
-    validate_bind(n);
+    ret = bind(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
+    validate_bind(ret);
 
-    if (listen(fd_TCP, 5) == -1) {
-        perror("ERROR: listen\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = listen(fd_TCP, 5);
+    validate_listen(ret);
 
-    fd_UDP = create_socket_datagram();
-    get_address_info_datagram(&hints_UDP, &res_UDP, DSport);
+    // create UDP socket
+    fd_UDP = create_socket_UDP();
+    get_address_info_UDP(&hints_UDP, &res_UDP, DSport);
 
-    n = bind(fd_UDP, res_UDP->ai_addr, res_UDP->ai_addrlen);
-    validate_bind(n);
+    ret = bind(fd_UDP, res_UDP->ai_addr, res_UDP->ai_addrlen);
+    validate_bind(ret);
 
     /* initialize sets of file descriptors */
     FD_ZERO(&current_sockets);
@@ -75,85 +68,47 @@ int main(int argc, char *argv[]) {
 
     while (1) {
 
-        /* FD_ZERO(&current_sockets); */
-        /* FD_SET(fd_TCP, &current_sockets); */
+        // add UDP socket to file descriptor set
         FD_SET(fd_UDP, &current_sockets);
-
-        /* DEBUG */
-        /* printf(">>> ECHO while\n"); */
 
         // make a copy of the file descriptor set
         ready_sockets = current_sockets;
 
-        n = select(FD_SETSIZE, &ready_sockets, NULL, NULL, &timeout);
-        validate_select(n);
+        ret = select(FD_SETSIZE, &ready_sockets, NULL, NULL, &timeout);
+        validate_select(ret);
 
         /* Check for requests */
         for (int i = 0; i < FD_SETSIZE; i++) {
 
             if (FD_ISSET(i, &ready_sockets)) {
 
-                /* DEBUG */
-                /* printf(">>> ECHO 1\n"); */
-
                 if (i == fd_TCP) {
 
-                    /* DEBUG */
-                    /* printf(">>> ECHO 2\n"); */
-
-                    /* Accept client and associate it with client_fd */
+                    /* accept client and associate it with client_fd */
                     clientlen = sizeof(clientaddr);
                     client_fd = accept(fd_TCP, (struct sockaddr *) &clientaddr, &clientlen);
                     FD_SET(client_fd, &current_sockets);
                 }
                 else if (i == fd_UDP) {
 
-                    /* DEBUG */
-                    /* printf(">>> ECHO 3\n"); */
-
                     message = (char *)malloc(MAX_SIZE);
                     message[0] = '\0';
 
                     receive_message_UDP(fd_UDP, message, &addr);
-
-                    /* DEBUG */
-                    /* printf(">>> UDP: message = %s|\n", message); */
-
                     process_message(message, fd_UDP, &addr);
 
-                    /* close(fd_UDP); */ // ???
+                    // remove UDP socket from file descriptor set
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }
-                // if i == client_fd
-                else {
+                else { // if i == client_fd
                     
-                    char keyword[10];
-                    /* DEBUG */
-                    /* printf(">>> ECHO 4\n"); */
-
                     message = (char *)malloc(MAX_SIZE);
 
-                    /* DEBUG */
-                    /* n = read(i, message, 10); */
-
-                    // receive_message_TCP(i, message);
-
-                    /* DEBUG */
-                    /* printf(">>> TCP: message = %s|\n", message); */
-                    
-                    // process_message(message, i, &addr);
-
-                    /* receive_keyword_TCP(keyword, i); */
+                    // receive keyword
                     receive_n_chars_TCP(3, keyword, i);
-
-                    /* DEBUG */
-                    /* printf(">>> >>> keyword = %s|\n", keyword); */
-                    printf(">>> TCP: keyword = %s|\n", keyword);
-                    
                     process_keyword(keyword, i, &addr);
                     
-                    /* close(i); */ // ???
                     FD_CLR(i, &current_sockets);
                     free(message);
                 }

@@ -145,6 +145,15 @@ void validate_mkdir(int ret) {
 }
 
 
+void validate_listen(int ret) {
+
+    if (ret == -1) {
+        perror("ERROR: listen\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
 int validate_UID(char* UID) {
 
     int length = strlen(UID);

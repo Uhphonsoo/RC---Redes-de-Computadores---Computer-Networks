@@ -215,8 +215,10 @@ void exit_command(char* command) {
     if (!validate_exit_command(command))
         return;
 
-    sprintf(command, "logout");
-    logout_command(command);
+    if (logged_in) {
+        sprintf(command, "logout");
+        logout_command(command);
+    }
 
     // CLOSE & CLEAN
     freeaddrinfo(res_UDP);
@@ -1043,9 +1045,9 @@ void validate_logout_reply(char* reply, char* aux, char* status) {
     }
 
     if (strcmp(status, "OK") == 0) {
+        logged_in = 0;
         clear_string(logged_in_UID);
         clear_string(logged_in_pass);
-        logged_in = 0;
         printf("> User successfully logged out.\n");
     }
     else if (strcmp(status, "NOK") == 0) {
