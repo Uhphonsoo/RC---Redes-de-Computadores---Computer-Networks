@@ -330,7 +330,7 @@ int get_next_token(char* string, int i, char* ret) {
 
     int j = 0;
 
-    if (i > strlen(string) - 1 || i < 0 || string == NULL) {
+    if (i > (int)strlen(string) - 1 || i < 0 || string == NULL) {
         fprintf(stderr, "ERROR: get_next_token: invalid input.\n");
         return -1;
     }
@@ -347,9 +347,9 @@ int get_next_token(char* string, int i, char* ret) {
 }
 
 
-long get_file_size(FILE *fp) {
+int get_file_size(FILE *fp) {
 
-    long Fsize;
+    int Fsize = -1;
 
     if (fp) {
         if (fseek(fp, 0, SEEK_END)) {
@@ -372,10 +372,10 @@ long get_file_size(FILE *fp) {
 }
 
 
-long  get_file_size_char(char *file_path) {
+int get_file_size_char(char *file_path) {
 
     FILE *fp;
-    long Fsize = 0;
+    int Fsize = 0;
 
     /* DEBUG */
     printf("--- file_path = %s|\n", file_path);
