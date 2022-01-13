@@ -1,33 +1,17 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <sys/socket.h>
 #include <netdb.h> 
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
 #include "functions.h"
 #include "constants.h"
 
-extern int  fd_UDP, fd_TCP;
-extern int  errcode;
-extern int  logged_in;
-extern int  has_active_group;
-extern char message[MAX_SIZE];
-extern char reply[MAX_REPLY_SIZE];
-extern char message_buffer[MAX_SIZE];
-extern char reply_buffer[MAX_REPLY_SIZE];
-extern char DSIP[MAX_SIZE];
-extern char DSport[MAX_SIZE];
-extern char logged_in_UID[MAX_SIZE];
-extern char logged_in_pass[MAX_SIZE];
-extern char active_GID[MAX_SIZE];
-extern socklen_t addrlen_UDP, addrlen_TCP;
-extern struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
-extern struct sockaddr_in addr_UDP, addr_TCP;
 
-void validate_sendto(int n) {
+void validate_sendto(int ret) {
 
-    if(n == -1) {
+    if(ret == -1) {
         perror("ERROR: sendto: Unable to send message.\n");
         exit(EXIT_FAILURE);
     }
@@ -35,18 +19,18 @@ void validate_sendto(int n) {
 }
 
 
-void validate_recvfrom(int n) {
+void validate_recvfrom(int ret) {
 
-    if(n == -1) {
+    if(ret == -1) {
         perror("ERROR: recvfrom: Unable to receive message from server.\n");
         exit(EXIT_FAILURE);
     }
     return;
 }
 
-void validate_connect(int n) {
+void validate_connect(int ret) {
 
-    if(n == -1) {
+    if(ret == -1) {
         perror("ERROR: connect: Unable to connect to server.\n");
         exit(EXIT_FAILURE);
     }
@@ -54,9 +38,9 @@ void validate_connect(int n) {
 }
 
 
-void validate_write(int n) {
+void validate_write(int ret) {
 
-    if(n == -1) {
+    if(ret == -1) {
         perror("ERROR: write: Unable to write message to server.\n");
         exit(EXIT_FAILURE);
     }
@@ -64,9 +48,9 @@ void validate_write(int n) {
 }
 
 
-void validate_read(int n) {
+void validate_read(int ret) {
 
-    if(n == -1) {
+    if(ret == -1) {
         perror("ERROR: read\n");
         exit(EXIT_FAILURE);
     }
@@ -74,35 +58,35 @@ void validate_read(int n) {
 }
 
 
-void  validate_accept(int fd) {
+void  validate_accept(int ret) {
 
-    if (fd == -1) {
+    if (ret == -1) {
         perror("ERROR: accept\n");
         exit(EXIT_FAILURE);
     }
 }
 
 
-void  validate_bind(int n) {
+void  validate_bind(int ret) {
 
-    if (n == -1) {
+    if (ret == -1) {
         perror("ERROR: bind\n");
         exit(EXIT_FAILURE);
     }
 }
 
-void validate_getaddrinfo(int errcode) {
+void validate_getaddrinfo(int ret) {
 
-    if (errcode != 0) {
+    if (ret != 0) {
         perror("ERROR: getaddrinfo\n");
         exit(EXIT_FAILURE);
     }
 }
 
 
-void  validate_select(int n) {
+void  validate_select(int ret) {
 
-    if (n == -1) {
+    if (ret == -1) {
         perror("ERROR: select\n");
         exit(EXIT_FAILURE);
     }
@@ -118,18 +102,18 @@ void  validate_fopen(FILE *fp) {
 }
 
 
-void  validate_fclose(int n) {
+void  validate_fclose(int ret) {
 
-    if (n == EOF) {
+    if (ret == EOF) {
         perror("ERROR: fclose\n");
         exit(EXIT_FAILURE);
     }
 }
 
 
-void  validate_fprintf(int n) {
+void  validate_fprintf(int ret) {
 
-    if (n < 0) {
+    if (ret < 0) {
         perror("ERROR: fprintf\n");
         exit(EXIT_FAILURE);
     }
@@ -167,7 +151,6 @@ int validate_UID(char* UID) {
     int length = strlen(UID);
 
     if (length != 5) {
-        /* fprintf(stderr, "Invalid user ID.\n"); */
         return 0;
     }
 
@@ -216,7 +199,6 @@ int validate_GName(char* GName) {
     int length = strlen(GName);
 
     if (strlen(GName) == 0 || strlen(GName) > 24) {
-        /* fprintf(stderr, "> Invalid group name."); */
         return 0;
     }
     for (int i = 0; i < length; i++) {
@@ -233,12 +215,10 @@ int  validate_MID(char* MID) {
     int length = strlen(MID);
 
     if (length != 4) {
-        /* fprintf(stderr, "> Invalid message ID.\n"); */
         return 0;
     }
 
     if (!(isdigit(MID[0]) && isdigit(MID[1]) && isdigit(MID[2]) && isdigit(MID[3]))) {
-        /* fprintf(stderr, "> Invalid message ID.\n"); */
         return 0;
     }
     return 1;
@@ -298,9 +278,8 @@ int get_nth_token(char* string, int n, char* token) {
 
 int get_number_of_tokens(char* string) {
 
-    int ret = 0;
+    int i = 0, ret = 0;
     int length = strlen(string);
-    int i = 0;
     int last_read_character_was_space = 0;
 
     for (i = 0; i < length; i++) {
@@ -374,17 +353,11 @@ int get_file_size(FILE *fp) {
 
 int get_file_size_char(char *file_path) {
 
-    FILE *fp;
     int Fsize = 0;
-
-    /* DEBUG */
-    printf("--- file_path = %s|\n", file_path);
+    FILE *fp;
 
     fp = fopen(file_path, "r");
     validate_fopen(fp);
-
-    /* DEBUG */
-    printf("ECHOOOooOOOOoOoOOooO\n");
 
     if (fp) {
         if (fseek(fp, 0, SEEK_END)) {
@@ -409,11 +382,10 @@ int get_file_size_char(char *file_path) {
 
 void show_groups(char* reply, char* N_string) {
 
-    int N = atoi(N_string);
-    int i = 0;
+    int i = 0, N = atoi(N_string);
     char GID[MAX_SIZE];
-    char GName[MAX_SIZE];
     char MID[MAX_SIZE];
+    char GName[MAX_SIZE];
 
     for (i = 3; i < 3*N + 1; i++) {
         get_nth_token(reply, i++, GID);
@@ -428,8 +400,7 @@ void show_groups(char* reply, char* N_string) {
 
 void show_users(char* reply) {
 
-    int i = 3;
-    int number_of_tokens = get_number_of_tokens(reply);
+    int i = 3, number_of_tokens = get_number_of_tokens(reply);
     char GName[MAX_SIZE];
     char UID[MAX_SIZE];
 
@@ -456,22 +427,18 @@ void show_users(char* reply) {
 }
 
 
-// !!! "data" isn't being used
 void  show_messages(char* reply) {
 
-    int N = 0;
-    int i = 4, j = 0, k = 0;
-    int length = strlen(reply);
-    int Tsize = 0;
-    int Fsize = 0;
-    char N_string[MAX_SIZE];
+    int N = 0, i = 4, j = 0, k = 0, length = strlen(reply);
+    int Tsize = 0, Fsize = 0;
+    char *data;
     char MID[MAX_SIZE];
     char UID[MAX_SIZE];
-    char Tsize_string[MAX_SIZE];
-    char text[MAX_TEXT_SIZE];
     char Fname[MAX_SIZE];
+    char N_string[MAX_SIZE];
+    char text[MAX_TEXT_SIZE];
+    char Tsize_string[MAX_SIZE];
     char Fsize_string[MAX_SIZE];
-    char *data;
 
     i = get_nth_token(reply, 3, N_string);
     N = atoi(N_string);
@@ -482,9 +449,9 @@ void  show_messages(char* reply) {
 
     i++;
     for (k = 0; k < N; k++) {
-        i = get_next_token(reply, i, MID); /* get_nth_token(reply, i++, MID); */
-        i = get_next_token(reply, i, UID); /* get_nth_token(reply, i++, UID); */
-        i = get_next_token(reply, i, Tsize_string); /* get_nth_token(reply, i, Tsize_string); */
+        i = get_next_token(reply, i, MID);
+        i = get_next_token(reply, i, UID);
+        i = get_next_token(reply, i, Tsize_string);
         Tsize = atoi(Tsize_string);
 
         // position i on top of text
@@ -509,7 +476,7 @@ void  show_messages(char* reply) {
                 data[j] = reply[i++];
             }
 
-            // strip \n from ending of text
+            // strip '\n' from ending of text
             if (text[Tsize-1] == '\n') {
                 text[Tsize-1] = '\0';
             }
@@ -517,12 +484,11 @@ void  show_messages(char* reply) {
             printf("> Message ID: %s | From user: %s | Message: %s\n", MID, UID, text);
             printf(">> Associated file: %s | File size: %s\n", Fname, Fsize_string);
 
-            // !!! "data isn't being used"
             free(data);
         }
         else {
 
-            // strip \n from ending of text
+            // strip '\n' from ending of text
             if (text[Tsize-1] == '\n') {
                 text[Tsize-1] = '\0';
             }
@@ -542,9 +508,8 @@ void clear_string(char* string) {
 
 void terminate_string_after_n_tokens(char* string, int n) {
 
-    int ret = 0;
+    int ret = 0, i = 0;
     int length = strlen(string);
-    int i = 0;
     int last_read_character_was_space = 0;
     int number_of_tokens = get_number_of_tokens(string);
 
@@ -579,11 +544,6 @@ void terminate_string_after_n_tokens(char* string, int n) {
         }
     }
     string[i-1] = '\0';
-}
-
-void clear_message_and_reply(char *message, char *reply) {
-    clear_string(message);
-    clear_string(reply);
 }
 
 
