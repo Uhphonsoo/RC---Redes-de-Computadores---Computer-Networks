@@ -1273,7 +1273,7 @@ int group_has_messages(char *GID, char *MID) {
 
 int check_password(char *pass, char *user_pass_path) {
 
-    long Fsize;
+    int Fsize;
     FILE *fp;
     char *read_pass;
 
@@ -2015,6 +2015,9 @@ void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd) {
     char *buffer[1024];
     FILE *fp;
 
+    /* DEBUG */
+    /* printf("---> file size = %d\n", bytes_to_read); */
+
     sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
 
     fp = fopen(file_path, "w");
@@ -2220,16 +2223,21 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
 
     int ret;
     int bytes_to_write;
+    /* int Fsize_to_write; */
     char *buffer;
+    char *save_buffer;
     FILE *fp;
 
     fp = fopen(file_path, "r");
     validate_fopen(fp);
 
     while (!feof(fp)) {
+    /* while (Fsize_to_write > 0) { */
 
         buffer = (char *)malloc(512);
+        save_buffer = buffer;
         bytes_to_write = fread(buffer, 1, 512, fp);
+        /* Fsize_to_write -= bytes_to_write; */
 
         while (bytes_to_write > 0) {
 
@@ -2239,10 +2247,10 @@ void send_data_TCP(char *file_path, char *Fsize, int fd) {
             bytes_to_write -= ret;
             buffer += ret;
         }
+        free(save_buffer);
     }
 
     fclose(fp);
-    /* free(buffer); */
 }
 
 
