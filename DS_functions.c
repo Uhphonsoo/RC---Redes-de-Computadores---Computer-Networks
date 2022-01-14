@@ -106,6 +106,8 @@ void process_keyword(char *keyword, int fd, struct sockaddr_in *addr) {
     else {
         // ERROR
         fprintf(stderr, "ERROR: Invalid input from user.\n");
+        char reply[10] = "ERR\n";
+        send_TCP(reply, fd);
         exit(EXIT_FAILURE);
     }
 }
@@ -1743,7 +1745,7 @@ void send_n_chars_TCP(int n, char *string, int fd) {
 }
 
 
-// sends a message into a TCP socket
+// sends a message into a UDP socket
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr) {
 
     int n;
@@ -1848,7 +1850,7 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
             
             // send associeted file's data
             sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
-            send_data_TCP(file_path, fd);
+            send_data_TCP(file_path, Fsize, fd);
         }
         else { // if message has no associated file
 
@@ -1886,30 +1888,42 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
 
 
 // opens file and sends its contents into a TCP socket
-void send_data_TCP(char *file_path, int fd) {
+void send_data_TCP(char *file_path, char *Fsize, int fd) {
 
-    int ret, bytes_to_write;
-    char *buffer;
-    char *save_buffer;
+    int ret, bytes_to_write, Fsize_int = atoi(Fsize);
+    int file_bytes_to_read = Fsize_int;
+    /* char *buffer; */
+    char buffer[512];
+    char *buffer_aux;
+    /* char *save_buffer; */
     FILE *fp;
 
     fp = fopen(file_path, "r");
     validate_fopen(fp);
 
-    while (!feof(fp)) { // while end of file is not reached
+    while (file_bytes_to_read > 0) { // while end of file is not reached
 
-        buffer = (char *)malloc(512);
-        save_buffer = buffer;
-        bytes_to_write = fread(buffer, 1, 512, fp);
+        /* buffer = (char *)malloc(512); */
+        /* save_buffer = buffer; */
+        if (file_bytes_to_read > 512) {
+            bytes_to_write = 512;
+        }
+        else {
+            bytes_to_write = file_bytes_to_read;
+        }
+
+        buffer_aux = buffer;
+        fread(buffer_aux, 1, bytes_to_write, fp);
 
         while (bytes_to_write > 0) {
-            ret = write(fd, buffer, bytes_to_write);
+            ret = write(fd, buffer_aux, bytes_to_write);
             validate_write(ret);
 
             bytes_to_write -= ret;
-            buffer += ret;
+            buffer_aux += ret;
         }
-        free(save_buffer);
+        file_bytes_to_read -= bytes_to_write;
+        /* free(save_buffer); */
     }
     fclose(fp);
 }

@@ -29,6 +29,7 @@ socklen_t addrlen_UDP, addrlen_TCP;
 struct sockaddr_in addr_UDP, addr_TCP;
 struct addrinfo hints_UDP, *res_UDP, hints_TCP, *res_TCP;
 
+
 int main(int argc, char *argv[]) {
 
     char command[MAX_SIZE];

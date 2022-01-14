@@ -88,7 +88,7 @@ void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd);
 void send_n_chars_TCP(int n, char *string, int fd); 
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr);
 void send_TCP(char *string, int fd); 
-void send_data_TCP(char *FName, int fd); 
+void send_data_TCP(char *FName, char *Fsize, int fd); 
 void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd); 
 void get_user_ip_and_port(int fd, char *user_ip, char *user_port, struct sockaddr_in *addr);
 
