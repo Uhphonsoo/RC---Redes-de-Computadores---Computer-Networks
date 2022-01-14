@@ -957,6 +957,7 @@ int unregister_user(char *UID, char *pass) {
         return 0;
     }
 
+    // unsubscribe user from its subscribed groups
     unsubscribe_from_groups(UID);
 
     delete_file(user_pass_path);
@@ -1196,6 +1197,7 @@ void unsubscribe_from_groups(char *UID) {
 
     sprintf(user_file, "%s.txt", UID);
     
+    // for each directory in GROUPS/
     d_i = opendir(groups_path);
     while ((dir_i = readdir(d_i)) != NULL) {
         if (dir_i->d_name[0] == '.') {
@@ -1203,11 +1205,14 @@ void unsubscribe_from_groups(char *UID) {
         }
         
         sprintf(group_path, "GROUPS/%s", dir_i->d_name);
+
+        // for each file in subdirectory GROUPS/GID/
         d_j = opendir(group_path);
         while ((dir_j = readdir(d_j)) != NULL) {
             if (dir_j->d_name[0] == '.') {
                 continue;
             }
+            // if user file is found delete it
             if (strcmp(dir_j->d_name, user_file) == 0) {
                 sprintf(user_file_path, "GROUPS/%s/%s", dir_i->d_name, user_file);
                 delete_file(user_file_path);
