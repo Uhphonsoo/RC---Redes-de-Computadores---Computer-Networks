@@ -1,11 +1,3 @@
-// TODO
-/**
- * ERR
- * check allocated sizes for all strings
- * frees for all mallocs
- * fcloses for all fopens
-**/
-
 #include <stdio.h>
 #include <netdb.h> 
 #include <ctype.h>

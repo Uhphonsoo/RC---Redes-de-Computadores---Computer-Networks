@@ -1,11 +1,3 @@
-// TODO
-/**
- * validate file name FName
- * improve invalid input error messages with input format
- * handle ERR messages from server
- * check allocated sizes for all string
-**/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -37,6 +29,7 @@ int main(int argc, char *argv[]) {
 
     validate_program_input(argc, argv);
 
+    // read user input
     while (1) {
         
         fgets(command, MAX_SIZE, stdin);

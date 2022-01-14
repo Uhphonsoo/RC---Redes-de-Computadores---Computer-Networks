@@ -83,6 +83,13 @@ void register_command(char* command) {
     // communication with server
     send_and_receive_UDP(message, reply);
 
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
+
     // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_register_reply(reply, aux, status);
@@ -113,6 +120,13 @@ void unregister_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
+
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
 
     // validate server reply
     sscanf(reply, "%s %s", aux, status);
@@ -153,6 +167,13 @@ void login_command(char* command) {
     // communication with server
     send_and_receive_UDP(message, reply);
 
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
+
     // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_login_reply(reply, aux, status);
@@ -187,6 +208,13 @@ void logout_command(char* command) {
     // communication with server
     send_and_receive_UDP(message, reply);
 
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
+
     // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_logout_reply(reply, aux, status);
@@ -199,7 +227,6 @@ void showuid_command() {
 
     if (logged_in)
         printf("> User %s is logged in.\n", logged_in_UID);
-
     else
         printf("> No user is logged in.\n");
 }
@@ -219,7 +246,7 @@ void exit_command(char* command) {
         logout_command(command);
     }
 
-    // CLOSE & CLEAN
+    // free adress info
     freeaddrinfo(res_UDP);
     freeaddrinfo(res_TCP);
 
@@ -245,6 +272,13 @@ void groups_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
+
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
 
     // validate server reply
     sscanf(reply, "%s %s", aux, N);
@@ -288,6 +322,13 @@ void subscribe_command(char* command) {
     // communication with server
     send_and_receive_UDP(message, reply);
 
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
+
     // validate reply from server
     sscanf(reply, "%s %s", aux, status);
     validate_subscribe_reply(reply, aux, status);
@@ -324,6 +365,13 @@ void unsubscribe_command(char* command) {
     // communication with server
     send_and_receive_UDP(message, reply);
 
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
+
     // validate server reply
     sscanf(reply, "%s %s", aux, status);
     validate_usubscribe_reply(reply, aux, status);
@@ -358,6 +406,13 @@ void my_groups_command(char* command) {
 
     // communication with server
     send_and_receive_UDP(message, reply);
+
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
 
     // validate server reply
     sscanf(reply, "%s %s", aux, N);
@@ -420,6 +475,13 @@ void ulist_command() {
 
     // communication with server
     send_and_receive_TCP(message, reply);
+
+    // check for ERR reply
+    if (is_ERR_reply(reply)) {
+        free(message);
+        free(reply);
+        return;
+    }
 
     // validate server reply
     sscanf(reply, "%s %s", aux, status);
@@ -1084,6 +1146,16 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
         return 0;
     }
     return 1;
+}
+
+
+int is_ERR_reply(char *reply) {
+
+    if (strcmp(reply, "ERR\n") == 0) {
+        printf("> ERR\n");
+        return 1;
+    }
+    return 0;
 }
 
 
