@@ -604,6 +604,7 @@ void retrieve_command(char* command) {
     create_socket_TCP();
     get_address_info_TCP();
 
+    // conect to server
     n = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_connect(n);
 
@@ -817,8 +818,9 @@ int validate_post_command(char *command, char *aux, char *text, char *Fname, int
     int i = strlen(aux) + 1;
     int length = strlen(command) - 1;
 
+    // check for presence of quotes
     if (command[i] != '"') {
-        fprintf(stderr, "> validate_post_command: Invalid input 1.\n");
+        fprintf(stderr, "> validate_post_command: Invalid input.\n");
         return 0;
     }
     i++;
@@ -826,7 +828,7 @@ int validate_post_command(char *command, char *aux, char *text, char *Fname, int
     text[j++] = '"';
     while (command[i] != '"') {
         if (i == length - 1) {
-            fprintf(stderr, "> validate_post_command: Invalid input 2.\n");
+            fprintf(stderr, "> validate_post_command: Invalid input.\n");
             return 0;
         }
         text[j++] = command[i++];
@@ -995,7 +997,7 @@ void validate_subscribe_reply(char* reply, char* aux, char* status) {
         exit(EXIT_FAILURE);
     }
 
-    if (strcmp(status, "OK")  == 0 /* && number_of_tokens_reply == 2 */) {
+    if (strcmp(status, "OK")  == 0) {
         printf("> Successfully subscribed to group.\n");
     }
     else if (strcmp(status, "NEW") == 0 && number_of_tokens_reply == 3) {
@@ -1149,6 +1151,7 @@ int validate_retrieve_reply(char* reply, char* aux, char* status, char* N) {
 }
 
 
+// check whether the reply from server was "ERR\n"
 int is_ERR_reply(char *reply) {
 
     if (strcmp(reply, "ERR\n") == 0) {
@@ -1159,6 +1162,7 @@ int is_ERR_reply(char *reply) {
 }
 
 
+// create UDP socket
 void create_socket_UDP() {
 
     fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
@@ -1166,49 +1170,54 @@ void create_socket_UDP() {
 }
 
 
+// initialize UDP socket
 void get_address_info_UDP() {
 
     int ret;
 
     memset(&hints_UDP, 0, sizeof(hints_UDP)); 
-    hints_UDP.ai_family = AF_INET;        // IPv4
-    hints_UDP.ai_socktype = SOCK_DGRAM;   // UDP socket
+    hints_UDP.ai_family = AF_INET;      
+    hints_UDP.ai_socktype = SOCK_DGRAM; 
 
     ret = getaddrinfo(DSIP, DSport, &hints_UDP, &res_UDP);
     validate_getaddrinfo(ret);
 }
 
 
+// create TCP socket
 void create_socket_TCP() {
 
-    fd_TCP = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
+    fd_TCP = socket(AF_INET, SOCK_STREAM, 0);
     validate_socket(fd_TCP);
 }
 
 
+// initialize TCP socket
 void get_address_info_TCP() {
 
     int ret;
 
     memset(&hints_TCP, 0, sizeof(hints_TCP)); 
-    hints_TCP.ai_family = AF_INET;        // IPv4
-    hints_TCP.ai_socktype = SOCK_STREAM;  // TCP socket
+    hints_TCP.ai_family = AF_INET;       
+    hints_TCP.ai_socktype = SOCK_STREAM; 
 
     ret = getaddrinfo(DSIP, DSport, &hints_TCP, &res_TCP);
     validate_getaddrinfo(ret);
 }
 
+
+// send UDP message to server and receive its UDP reply
 void send_and_receive_UDP(char* message, char* reply){
 
     int ret;
     struct timeval timeout = {5, 0};
     fd_set current_sockets;
 
-    // SOCKET creation
+    // socket creation
     create_socket_UDP();
     get_address_info_UDP();
 
-    // SEND message and validate return value
+    // send message and validate return value
     ret = sendto(fd_UDP, message, strlen(message), 0, res_UDP->ai_addr, res_UDP->ai_addrlen);
     validate_sendto(ret);
 
@@ -1224,7 +1233,7 @@ void send_and_receive_UDP(char* message, char* reply){
         if (FD_ISSET(i, &current_sockets)) {
             if (i == fd_UDP) {
                 
-                // RECEIVE reply and validate return value
+                // receive reply and validate return value
                 addrlen_UDP = sizeof(addr_UDP);
                 ret = recvfrom(fd_UDP, reply, MAX_REPLY_SIZE, 0, (struct sockaddr*)&addr_UDP, &addrlen_UDP);
                 validate_recvfrom(ret);
@@ -1233,25 +1242,27 @@ void send_and_receive_UDP(char* message, char* reply){
             }
         }
     }
-
-    // CLOSE socket
+    // close socket
     close(fd_UDP);
 }
 
 
+// send TCP message to server and receive its TCP reply
 void send_and_receive_TCP(char* message, char* reply) {
 
     int  ret;
     int  bytes_to_write = strlen(message) * sizeof(char);
     char *ptr;
 
+    // socket creation
     create_socket_TCP();
     get_address_info_TCP();
 
+    // connect to server
     ret = connect(fd_TCP, res_TCP->ai_addr, res_TCP->ai_addrlen);
     validate_connect(ret);
 
-    while (bytes_to_write > 0) {
+    while (bytes_to_write > 0) { // while bytes have not all been sent
         
         ret = write(fd_TCP, message, bytes_to_write);
         validate_write(ret);
@@ -1260,6 +1271,7 @@ void send_and_receive_TCP(char* message, char* reply) {
         message += ret;
     }
 
+    // read bytes until '\n' is found
     ptr = reply;
     while (1) {
 
@@ -1277,12 +1289,13 @@ void send_and_receive_TCP(char* message, char* reply) {
 }
 
 
+// send a TCP message through TCP socket
 void send_TCP(char *string) {
 
     int ret;
     int bytes_to_write = strlen(string) * sizeof(char);
 
-    while (bytes_to_write > 0) {
+    while (bytes_to_write > 0) { // while bytes have not all been sent
 
         ret = write(fd_TCP, string, bytes_to_write);
         validate_write(ret);
@@ -1293,6 +1306,7 @@ void send_TCP(char *string) {
 }
 
 
+// send file's data through TCP socket
 void send_data_TCP(FILE *fp) {
 
     int  ret;
@@ -1321,6 +1335,7 @@ void send_data_TCP(FILE *fp) {
 }
 
 
+// receive server's message
 void receive_TCP(char *string) {
 
     int  ret;
@@ -1329,7 +1344,7 @@ void receive_TCP(char *string) {
     string[0] = '\0';
 
     ptr = string;
-    while (1) {
+    while (1) { // read until '\n' is found
 
         ret = read(fd_TCP, ptr, 1);
         validate_read(ret);
@@ -1370,6 +1385,7 @@ void receive_n_tokens_TCP(int n, char *string) {
 }
 
 
+// receives n chars through TCP
 void receive_n_chars_TCP(int n, char *string) {
 
     int  ret;
@@ -1390,6 +1406,8 @@ void receive_n_chars_TCP(int n, char *string) {
     *ptr = '\0';
 }
 
+
+// receives n bytes through TCP
 void receive_n_bytes_TCP(int n, char *string) {
 
     int  ret;
@@ -1411,6 +1429,7 @@ void receive_n_bytes_TCP(int n, char *string) {
 }
 
 
+// receives data and writes it into a file through TCP
 void receive_data_TCP(char *FName, char *Fsize) {
 
     int  ret;

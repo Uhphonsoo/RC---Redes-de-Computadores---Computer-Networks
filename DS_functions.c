@@ -1928,7 +1928,7 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
 // opens file and sends its contents into a TCP socket
 void send_data_TCP(char *file_path, int fd) {
 
-    int ret, bytes_to_write;
+    int  ret, bytes_to_write;
     char *buffer;
     char *save_buffer;
     FILE *fp;
