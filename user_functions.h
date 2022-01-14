@@ -26,6 +26,7 @@ void ulist_command();
 void post_command(char *command);
 void retrieve_command(char *command);
 
+// validation commands
 void validate_program_input(int argc, char **argv);
 int  validate_registration_command(char *command, char *UID, char *pass);
 int  validate_login_command(char *command, char *UID, char *pass);
@@ -49,6 +50,7 @@ void validate_my_groups_reply(char *reply, char *aux, char *N);
 int  validate_ulist_reply(char *reply, char *aux, char *status);
 void validate_post_reply(char *reply, char *aux, char *status);
 int  validate_retrieve_reply(char *reply, char *aux, char *status, char *N);
+int  is_ERR_reply(char *reply);
 
 // socket related functions
 void create_socket_UDP();

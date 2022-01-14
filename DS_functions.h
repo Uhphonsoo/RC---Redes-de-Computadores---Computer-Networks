@@ -16,7 +16,7 @@ void validate_program_input(int argc, char **argv, char *DSport);
 void process_message(char *message, int fd, struct sockaddr_in *addr);
 void process_keyword(char *keyword, int fd, struct sockaddr_in *addr);
 
-// core commands functions
+// core command functions
 void register_command(char *message, int fd, struct sockaddr_in *addr);
 void unregister_command(char *message, int fd, struct sockaddr_in *addr);
 void login_command(char *message, int fd, struct sockaddr_in *addr);
@@ -29,7 +29,7 @@ void ulist_command(int fd, struct sockaddr_in *addr);
 void post_command(int fd, struct sockaddr_in *addr);
 void retrieve_command(int fd, struct sockaddr_in *addr);
 
-// commands message processing functions 
+// command message processing functions 
 void process_register_message(char *message, char *reply);
 void process_unregister_message(char *message, char *reply);
 void process_login_message(char *message, char *reply);
@@ -93,7 +93,7 @@ void receive_n_tokens_TCP(int n, char *string, int fd);
 void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd);
 void send_n_chars_TCP(int n, char *string, int fd); 
 void send_TCP(char *string, int fd); 
-void send_data_TCP(char *FName, char *Fsize, int fd); 
+void send_data_TCP(char *FName, int fd); 
 void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd); 
 
 // socket UDP and TCP related functions

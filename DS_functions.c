@@ -823,6 +823,7 @@ int validate_retrieve_message(char *UID, char *GID, char *MID) {
 
 int user_is_registered(char *UID) {
 
+    int ret;
     char file_path[MAX_SIZE];
     FILE *fp;
 
@@ -832,14 +833,16 @@ int user_is_registered(char *UID) {
     if (fp == NULL) {
         return 0;
     }
-    else {
-        return 1;
-    }
+
+    ret = fclose(fp);
+    validate_fclose(ret);
+    return 1;
 }
 
 
 int user_is_logged_in(char *UID) {
 
+    int ret;
     char user_login_path[MAX_SIZE];
     FILE *fp;
 
@@ -849,14 +852,16 @@ int user_is_logged_in(char *UID) {
     if (fp == NULL) {
         return 0;
     }
-    else {
-        return 1;
-    }
+
+    ret = fclose(fp);
+    validate_fclose(ret);
+    return 1;
 }
 
 
 int user_is_subscribed_to_group(char *UID, char *GID) {
 
+    int ret;
     char file_path[MAX_SIZE];
     FILE *fp;
 
@@ -866,6 +871,9 @@ int user_is_subscribed_to_group(char *UID, char *GID) {
     if (fp == NULL) {
         return 0;
     }
+
+    ret = fclose(fp);
+    validate_fclose(ret);
     return 1;
 }
 
@@ -990,6 +998,7 @@ int subscribe_user(char *UID, char *GID) {
 
 int unsubscribe_user(char *UID, char *GID) {
 
+    int ret;
     char user_group_path[MAX_SIZE];
     FILE *fp;
 
@@ -1002,6 +1011,11 @@ int unsubscribe_user(char *UID, char *GID) {
 
     // delete user file from specified group directory
     delete_file(user_group_path);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
+
     return 1;
 }
 
@@ -1046,9 +1060,11 @@ int create_new_group(char *GID, char *GName) {
     fp = fopen(group_name_path ,"a");
     validate_fopen(fp);
 
+    // print group name into file
     ret = fprintf(fp, "%s", GName);
     validate_fprintf(ret);
 
+    // close file
     ret = fclose(fp);
     validate_fclose(ret);
 
@@ -1066,6 +1082,7 @@ int create_new_group(char *GID, char *GName) {
 
 int group_exists(char *GID) {
 
+    int ret;
     char group_path[MAX_SIZE];
     FILE *fp;
 
@@ -1075,15 +1092,16 @@ int group_exists(char *GID) {
     if (fp == NULL) {
         return 0;
     }
-    else {
-        fclose(fp);
-        return 1;
-    }
+
+    ret = fclose(fp);
+    validate_fclose(ret);
+    return 1;
 }
 
 
 int group_has_messages(char *GID, char *MID) {
 
+    int ret;
     char message_path[40];
     FILE *fp;
 
@@ -1094,13 +1112,15 @@ int group_has_messages(char *GID, char *MID) {
         return 0;
     }
 
+    ret = fclose(fp);
+    validate_fclose(ret);
     return 1;
 }
 
 
 int check_password(char *pass, char *user_pass_path) {
 
-    int Fsize;
+    int ret, Fsize;
     char *read_pass;
     FILE *fp;
 
@@ -1113,7 +1133,10 @@ int check_password(char *pass, char *user_pass_path) {
 
     read_pass = (char*)malloc(Fsize + 1);
     fread(read_pass, Fsize, 1, fp);
-    fclose(fp);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 
     read_pass[Fsize] = '\0';
 
@@ -1129,7 +1152,7 @@ int check_password(char *pass, char *user_pass_path) {
 // checks state of file system to get groups' info
 int get_groups(GROUPLIST *list) {
 
-    int i = 0;
+    int  ret, i = 0;
     char GIDname[MAX_SIZE];
     struct dirent *dir;
     FILE *fp;
@@ -1155,7 +1178,10 @@ int get_groups(GROUPLIST *list) {
 
             if(fp) {
                 fscanf(fp, "%24s", list->group_name[i]);
-                fclose(fp);
+
+                // close file
+                ret = fclose(fp);
+                validate_fclose(ret);
             }
             ++i;
             if(i==99) {
@@ -1264,9 +1290,10 @@ int get_users_of_group(char *user_list, char *GID, char *GName) {
 }
 
 
+// gets specified group's name
 int get_group_name(char *GID, char *GName) {
 
-    int Fsize;
+    int ret, Fsize;
     char group_name_path[MAX_SIZE];
     FILE *fp;
 
@@ -1280,6 +1307,10 @@ int get_group_name(char *GID, char *GName) {
     Fsize = get_file_size(fp);
 
     fread(GName, Fsize, 1, fp);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 
     GName[Fsize] = '\0';
 
@@ -1731,7 +1762,9 @@ void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd) {
         fwrite(buffer, ret, 1, fp);
         bytes_to_read -= ret;
     }
-    fclose(fp);
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 }
 
 // writes n chars into a TCP socket
@@ -1855,7 +1888,7 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
             
             // send associeted file's data
             sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
-            send_data_TCP(file_path, Fsize, fd);
+            send_data_TCP(file_path, fd);
         }
         else { // if message has no associated file
 
@@ -1893,89 +1926,92 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
 
 
 // opens file and sends its contents into a TCP socket
-void send_data_TCP(char *file_path, char *Fsize, int fd) {
+void send_data_TCP(char *file_path, int fd) {
 
-    int ret, bytes_to_write, Fsize_int = atoi(Fsize);
-    int file_bytes_to_read = Fsize_int;
-    /* char *buffer; */
-    char buffer[512];
-    char *buffer_aux;
-    /* char *save_buffer; */
+    int ret, bytes_to_write;
+    char *buffer;
+    char *save_buffer;
     FILE *fp;
 
     fp = fopen(file_path, "r");
     validate_fopen(fp);
 
-    while (file_bytes_to_read > 0) { // while end of file is not reached
+    while (!feof(fp)) { // while end of file is not reached
 
-        /* buffer = (char *)malloc(512); */
-        /* save_buffer = buffer; */
-        if (file_bytes_to_read > 512) {
-            bytes_to_write = 512;
-        }
-        else {
-            bytes_to_write = file_bytes_to_read;
-        }
-
-        buffer_aux = buffer;
-        fread(buffer_aux, 1, bytes_to_write, fp);
+        buffer = (char *)malloc(512);
+        save_buffer = buffer;
+        bytes_to_write = fread(buffer, 1, 512, fp);
 
         while (bytes_to_write > 0) {
-            ret = write(fd, buffer_aux, bytes_to_write);
+            ret = write(fd, buffer, bytes_to_write);
             validate_write(ret);
 
             bytes_to_write -= ret;
-            buffer_aux += ret;
+            buffer += ret;
         }
-        file_bytes_to_read -= bytes_to_write;
-        /* free(save_buffer); */
+        free(save_buffer);
     }
-    fclose(fp);
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 }
 
 
 // creates a file at specified location
 void make_file(char *file_path) {
 
+    int ret;
     FILE *fp;
 
+    // open file to create it
     fp = fopen(file_path ,"a");
     validate_fopen(fp);
-    fclose(fp);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 }
 
 
 // creates an author file and writes author's name into it
 void make_author_file(char *UID, char *GID, char *MID) {
 
-    int size = 5 * sizeof(char);
+    int ret, size = 5 * sizeof(char);
     char author_file_path[MAX_SIZE];
     FILE *fp;
 
     sprintf(author_file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
 
+    // open file to create it
     fp = fopen(author_file_path, "w");
     validate_fopen(fp);
 
     fwrite(UID, size, 1, fp);
-    fclose(fp);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 }
 
 
 // creates an author file and writes message's text into it
 void make_text_file(char *text, char *GID, char *MID) {
 
-    int Tsize = strlen(text) * sizeof(char);
+    int ret, Tsize = strlen(text) * sizeof(char);
     char text_file_path[MAX_SIZE];
     FILE *fp;
 
     sprintf(text_file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
 
+    // open file to create it
     fp = fopen(text_file_path, "w");
     validate_fopen(fp);
 
     fwrite(text, Tsize, 1, fp);
-    fclose(fp);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 }
 
 
@@ -2007,11 +2043,15 @@ int get_number_of_files(char *dir_path) {
 // reads size chars of text from specified file into string
 void read_text_from_file(char *text, char *file_path, int size) {
 
+    int ret;
     FILE *fp;
 
     fp = fopen(file_path, "r");
     fread(text, size, 1, fp);
 
     text[size] = '\0';
-    fclose(fp);
+
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
 }
