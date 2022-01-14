@@ -606,6 +606,8 @@ void process_groups_message(char *message, char *reply) {
     // get existing information from file system
     get_groups(Group_list);
     aux_string = GROUPLIST_to_string(Group_list);
+    // replace last space of aux_string with '\n'
+    aux_string[strlen(aux_string) - 1] = '\n';
 
     number_of_groups = get_groups(Group_list);
     if (number_of_groups == 0) {
@@ -754,6 +756,8 @@ void process_my_groups_message(char *message, char *reply) {
 
     // convert GROUPLIST into a string
     aux_string = GROUPLIST_to_string(my_groups_list);
+    // replace last space of aux_string with '\n'
+    aux_string[strlen(aux_string) - 1] = '\n';
 
     sprintf(reply, "RGM %d ", my_groups_list->no_groups);
     strcat(reply, aux_string);
