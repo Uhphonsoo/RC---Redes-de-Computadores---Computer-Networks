@@ -517,7 +517,7 @@ void retrieve_command(char* command) {
     char N[MAX_FILE_SIZE];
     char MID_aux[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
-    char aux[10], MID[10], UID[10], status[10];
+    char aux[10], MID[MAX_SIZE+1], UID[10], status[10];
 
     if (!logged_in) {
         printf("> No user is currently logged in.\n");
