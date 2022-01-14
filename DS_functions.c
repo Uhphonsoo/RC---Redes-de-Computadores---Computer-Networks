@@ -12,16 +12,16 @@
 #include "functions.h"
 #include "DS_functions.h"
 
-extern int  verbose_mode;
+extern int verbose_mode;
 extern int Number_of_groups;
 extern GROUPLIST *Group_list;
 
 void validate_program_input(int argc, char **argv, char *DSport) {
 
-    if (argc == 1) {
+    if (argc == 1) { // ./DS 
         sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
     }
-    else if (argc == 2) {
+    else if (argc == 2) { // ./DS -v
         sprintf(DSport, "%d", PORT_CONST + FENIX_GROUP_NUMBER);
         verbose_mode = 1;
     }
@@ -41,6 +41,8 @@ void validate_program_input(int argc, char **argv, char *DSport) {
             fprintf(stderr, "ERROR: Invalid input. Input has the format ./server [-p DSport] [-v].\n");
             exit(EXIT_FAILURE);
         }
+
+        // ./DS [-p DSport] [-v]
         strcpy(DSport, argv[2]);
         verbose_mode = 1;
     }
@@ -57,63 +59,35 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
 
     get_first_token(message, keyword);
     if (strcmp(keyword, "REG") == 0) {
-
         register_command(message, fd, addr);
-        clear_string(message);
-    }
+    }    
     else if (strcmp(keyword, "UNR") == 0) {
-
         unregister_command(message, fd, addr);
-        clear_string(message);
     }
     else if (strcmp(keyword, "LOG") == 0) {
-
         login_command(message, fd, addr);
-        clear_string(message);
     }
     else if (strcmp(keyword, "OUT") == 0) {
-
         logout_command(message, fd, addr);
-        clear_string(message);
     }
     else if (strcmp(keyword, "GLS") == 0) {
-
         groups_command(message, fd, addr);
-        clear_string(message);
     }
     else if (strcmp(keyword, "GSR") == 0) {
-
         subscribe_command(message, fd, addr);
-        clear_string(message);
     }
     else if (strcmp(keyword, "GUR") == 0) {
-
         unsubscribe_command(message, fd, addr);
-        clear_string(message);
     }
     else if (strcmp(keyword, "GLM") == 0) {
-
         my_groups_command(message, fd, addr);
-        clear_string(message);
-    }
-    else if (strcmp(keyword, "ULS") == 0) {
-
-        ulist_command(message, fd, addr);
-        clear_string(message);
-    }
-    else if (strcmp(keyword, "PST") == 0) {
-
-        post_command(message, fd, addr);
-        clear_string(message);
-    }
-    else if (strcmp(keyword, "RTV") == 0) {
-
-        retrieve_command(message, fd, addr);
-        clear_string(message);
     }
     else {
-        // ERR
-        fprintf(stderr, "ERROR: process_message\n");
+        // ERROR
+        fprintf(stderr, "ERROR: Invalid input from user.\n");
+        char reply[10] = "ERR\n";
+        send_reply_UDP(reply, fd, addr);
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -121,23 +95,18 @@ void process_message(char *message, int fd, struct sockaddr_in *addr) {
 void process_keyword(char *keyword, int fd, struct sockaddr_in *addr) {
 
     if (strcmp(keyword, "ULS") == 0) {
-
-        ulist_command(keyword, fd, addr);
-        clear_string(keyword);
+        ulist_command(fd, addr);
     }
     else if (strcmp(keyword, "PST") == 0) {
-
-        post_command(keyword, fd, addr);
-        clear_string(keyword);
+        post_command(fd, addr);
     }
     else if (strcmp(keyword, "RTV") == 0) {
-
-        retrieve_command(keyword, fd, addr);
-        clear_string(keyword);
+        retrieve_command(fd, addr);
     }
     else {
-        // ERR
-        fprintf(stderr, "ERROR: process_keyword\n");
+        // ERROR
+        fprintf(stderr, "ERROR: Invalid input from user.\n");
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -146,28 +115,23 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_register_message(message, reply);
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
         sscanf(message, "%s %s", aux, UID);
-        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+        printf("Request by user %s with IP %s on port %s.\n", UID, user_ip, user_port);
     }
 
     clear_string(message);
@@ -178,27 +142,23 @@ void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_unregister_message(message, reply);
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
         sscanf(message, "%s %s", aux, UID);
-        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+        printf("Request by user %s with IP %s on port %s.\n", UID, user_ip, user_port);
     }
 
     clear_string(message);
@@ -210,28 +170,23 @@ void login_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_login_message(message, reply);
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
         sscanf(message, "%s %s", aux, UID);
-        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+        printf("Request by user %s with IP %s on port %s.\n", UID, user_ip, user_port);
     }
 
     clear_string(message);
@@ -243,28 +198,24 @@ void logout_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_logout_message(message, reply);
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user 
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
         
         sscanf(message, "%s %s", aux, UID);
-        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+        printf("Request by user %s with IP %s on port %s.\n", UID, user_ip, user_port);
     }
 
     clear_string(message);
@@ -274,11 +225,8 @@ void logout_command(char *message, int fd, struct sockaddr_in *addr) {
 
 void groups_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // char aux[MAX_SIZE];
-    // char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_groups_message(message, reply);
@@ -286,17 +234,13 @@ void groups_command(char *message, int fd, struct sockaddr_in *addr) {
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s\n", reply);
-
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
-        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
+        printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
     clear_string(message);
@@ -309,29 +253,23 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char GID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
-    terminate_string_after_n_tokens(message, 4);
     process_subscribe_message(message, reply);
 
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s\n", reply);
-
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
         sscanf(message, "%s %s %s", aux, UID, GID);
-        printf("Request by user %s for group %s with IP %s on port %s.\n", UID, GID, client_ip, client_port);
+        printf("Request by user %s for group %s with IP %s on port %s.\n", UID, GID, user_ip, user_port);
     }
 
     clear_string(message);
@@ -343,27 +281,23 @@ void unsubscribe_command(char *message, int fd, struct sockaddr_in *addr) {
 
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_unsubscribe_message(message, reply);
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
         sscanf(message, "%s %s", aux, UID);
-        printf("Request by user %s with IP %s on port %s.\n", UID, client_ip, client_port);
+        printf("Request by user %s with IP %s on port %s.\n", UID, user_ip, user_port);
     }
 
     clear_string(message);
@@ -373,11 +307,8 @@ void unsubscribe_command(char *message, int fd, struct sockaddr_in *addr) {
 
 void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
 
-    // char aux[MAX_SIZE];
-    // char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
     
     process_my_groups_message(message, reply);
@@ -385,17 +316,13 @@ void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
     // communication with server
     send_reply_UDP(reply, fd, addr);
 
-    /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
-
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
-        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
+        printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
     clear_string(message);
@@ -403,210 +330,153 @@ void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
 }
 
 
-void ulist_command(char *keyword, int fd, struct sockaddr_in *addr) {
+void ulist_command(int fd, struct sockaddr_in *addr) {
 
-    // char aux[MAX_SIZE];
-    // char UID[MAX_SIZE];
-    // char status[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
+    char buffer[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
-    char message_remainder[MAX_SIZE];
 
-    receive_n_chars_TCP(4, message_remainder, fd);
-    process_ulist_message(message_remainder, reply);
+    receive_n_chars_TCP(4, buffer, fd);
+    process_ulist_message(buffer, reply);
 
     // communication with server
-    send_reply_TCP(reply, fd);
+    send_TCP(reply, fd);
 
-    /* DEBUG */
-    printf(">>> reply = %s|\n", reply);
-
-    if (strcmp(reply, "ERR\n") == 0) {
+    if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
         return;
     }
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
-        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
+        printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
-    clear_string(message_remainder);
     free(reply);
 }
 
 
-void post_command(char *keyword, int fd, struct sockaddr_in *addr) {
+void post_command(int fd, struct sockaddr_in *addr) {
 
-    int i;
-    int number_of_tokens;
-    int file_is_being_sent = 0;
-    int Tsize_int;
+    int  index, Tsize_int, file_is_being_sent = 0;
     char UID[10];
     char GID[10];
+    char MID[10];
+    char text[241];
     char Tsize[MAX_SIZE];
     char FName[MAX_SIZE];
     char Fsize[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
-    char text[241];
-    char MID[10];
     char buffer[MAX_SIZE];
-    char message_dir_path[30];
+    char message_dir_path[64];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char *)malloc(MAX_REPLY_SIZE);
- 
-    /* vvv */
-    receive_n_chars_TCP(13, buffer, fd);
+    
+    // receive UID and GID
+    receive_n_chars_TCP(10, buffer, fd);
+    sscanf(buffer, "%s %s", UID, GID);
 
-    sscanf(buffer, "%s %s %s", UID, GID, Tsize);
+    // receive text size
+    receive_n_tokens_TCP(1, Tsize, fd);
+
     Tsize_int = atoi(Tsize);
+    // test for presence of file in user message
     file_is_being_sent = receive_n_plus_1_chars_TCP(Tsize_int, text, fd);
 
-    if (!validate_post_message(UID, GID)) {
+    if (!validate_post_message(UID, GID, Tsize, text)) {
         strcpy(reply, "RPT NOK\n");
         send_TCP(reply, fd);
         return;
     }
 
-    /* DEBUG */
-    // printf(">>> UID = %s|\n", UID);
-    // printf(">>> GID = %s|\n", GID);
-    // printf(">>> Tsize = %s|\n", Tsize);
-    /* printf(">>> text = %s|\n", text);
-    printf(">>> file_is_being_sent = %d\n", file_is_being_sent); */
-
-    int index = get_index(Group_list, GID);
+    // get MID of message to be posted
+    index = get_index(Group_list, GID);
     strcpy(MID, Group_list->last_message_available[index]);
-
-    /* DEBUG */
-    /* printf(">>> Group_list->last_message_available[index] = %s|\n", Group_list->last_message_available[index]); */
-
     get_next_MID(MID, Group_list, GID);
-
-    /* DEBUG */
-    /* printf(">>> next MID = %s|\n", MID); */
 
     // make message directory
     sprintf(message_dir_path, "GROUPS/%s/MSG/%s", GID, MID);
     mkdir(message_dir_path, 0700);
 
     if (file_is_being_sent) {
-
+        // receive file name, size and data
         receive_n_tokens_TCP(2, buffer, fd);        
         sscanf(buffer, "%s %s", FName, Fsize);
-
-        /* DEBUG */
-        /* printf(">>> buffer = %s|\n", buffer);
-        printf(">>> FName = %s|\n", FName);
-        printf(">>> Fsize = %s|\n", Fsize); */
-
-        receive_to_file_TCP(FName, Fsize, GID, MID, fd);
+        receive_data_TCP(FName, Fsize, GID, MID, fd);
     }
 
-    /* ^^^ */
+    make_author_file(UID, GID, MID); // make file for message author
+    make_text_file(text, GID, MID);  // make file for message text
 
-    /* DEBUG */
-    /* printf("-------\n");
-    printf(">>> UID = %s|\n", UID);
-    printf(">>> GID = %s|\n", GID);
-    printf(">>> MID = %s|\n", MID);
-    printf(">>> text = %s|\n", text); */
-
-    make_author_file(UID, GID, MID);
-    make_text_file(text, GID, MID);
-
-    // TODO
     increment_last_message_available(Group_list, GID);
 
     sprintf(reply, "RPT %s\n", MID);
     send_TCP(reply, fd);
 
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
-        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
+        printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
     free(reply);
 }
 
 
-void retrieve_command(char *message, int fd, struct sockaddr_in *addr) {
+void retrieve_command(int fd, struct sockaddr_in *addr) {
 
     char UID[MAX_SIZE];
     char GID[MAX_SIZE];
     char MID[MAX_SIZE];
-    char client_ip[MAX_SIZE];
-    char client_port[MAX_SIZE];
+    char buffer[MAX_SIZE];
+    char user_ip[MAX_SIZE];
+    char user_port[MAX_SIZE];
     char *reply = (char*)malloc(MAX_REPLY_SIZE);
-    char message_remainder[MAX_SIZE];
 
-    /* process_retrieve_message(message_remainder, reply); */
-
-    receive_n_chars_TCP(14, message_remainder, fd);
-    sscanf(message_remainder, "%s %s %s", UID, GID, MID);
-
-    /* DEBUG */
-    /* printf(">>> message_remainder = %s|\n", message_remainder);
-    printf(">>> UID = %s| GID = %s| MID = %s|\n", UID, GID, MID); */
+    // receive UID, GID and MID
+    receive_n_chars_TCP(14, buffer, fd);
+    sscanf(buffer, "%s %s %s", UID, GID, MID);
 
     if (!validate_retrieve_message(UID, GID, MID)) {
         strcpy(reply, "RRT NOK\n");
-        send_reply_TCP(reply, fd);
+        send_TCP(reply, fd);
         return;
     }
     if (!group_has_messages(GID, MID)) {
         strcpy(reply, "RRT EOF\n");
-        send_reply_TCP(reply, fd);
+        send_TCP(reply, fd);
         return;
     }
 
     retrieve_and_send_messages_TCP(UID, GID, MID, fd);
 
-    /* DEBUG */
-    /* printf(">>> reply = %s|\n", reply); */
-
-    /* if (strcmp(reply, "ERR\n") == 0) {
-        return;
-    } */
-
     if (verbose_mode) {
-        get_client_ip_and_port(fd, client_ip, client_port, addr);
-        
-        printf("Request with IP %s on port %s.\n", client_ip, client_port);
+        get_user_ip_and_port(fd, user_ip, user_port, addr);
+        printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
-    clear_string(message_remainder);
     free(reply);
 }
 
 
 void process_register_message(char *message, char *reply) {
 
-    int n;
-    int number_of_tokens;
+    int  n, number_of_tokens;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
-    /* DEBUG */
-    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
-
-    // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword, UID and pass from message
     sscanf(message, "%s %s %s", aux, UID, pass);
 
+    // validate user input
     if (validate_UID(UID) && validate_pass(pass) && !user_is_registered(UID)) {
-        /* DEBUG */
-        /* printf(">>> case 1"); */
-
         if(register_user(UID, pass)) {
             strcpy(reply, "RRG OK\n");
         }
@@ -615,15 +485,9 @@ void process_register_message(char *message, char *reply) {
         }
     }
     else if (validate_UID(UID) && validate_pass(pass) && user_is_registered(UID)) {
-        /* DEBUG */
-        /* printf(">>> case 2"); */
-
         strcpy(reply, "RRG DUP\n");
     }
     else {
-        /* DEBUG */
-        /* printf(">>> case 3"); */
-
         strcpy(reply, "RRG NOK\n");
     }
 }
@@ -631,46 +495,31 @@ void process_register_message(char *message, char *reply) {
 
 void process_unregister_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
-    /* DEBUG */
-    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
-
-    // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword, UID and pass from message
     sscanf(message, "%s %s %s", aux, UID, pass);
 
+    // validate user input
     if (validate_UID(UID) && validate_pass(pass)) {
-
         if(unregister_user(UID, pass)) {
-            /* DEBUG */
-            printf(">>> case 1\n");
-
             strcpy(reply, "RUN OK\n");
         }
         else {
-            /* DEBUG */
-            /* printf(">>> case 2\n");
-            printf(">>> UID = %s|\n", UID);
-            printf(">>> pass = %s|\n", pass); */
-
             strcpy(reply, "RUN NOK\n");
         }
     }
     else {
-        /* DEBUG */
-        printf(">>> case 3\n");
-
         strcpy(reply, "RUN NOK\n");
     }
 }
@@ -678,26 +527,23 @@ void process_unregister_message(char *message, char *reply) {
 
 void process_login_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
-    
+
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
-    /* DEBUG */
-    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
-
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword, UID and pass from message
     sscanf(message, "%s %s %s", aux, UID, pass);
 
+    // validate user input
     if (validate_UID(UID) && validate_pass(pass)) {
-
         if (login_user(UID, pass)) {
             strcpy(reply, "RLO OK\n");
         }
@@ -713,23 +559,23 @@ void process_login_message(char *message, char *reply) {
 
 void process_logout_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char pass[MAX_SIZE];
     
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword, UID and pass from message
     sscanf(message, "%s %s %s", aux, UID, pass);
 
+    // validate user input
     if (validate_UID(UID) && validate_pass(pass)) {
-
         if (logout_user(UID, pass)) {
             strcpy(reply, "ROU OK\n");
         }
@@ -740,32 +586,30 @@ void process_logout_message(char *message, char *reply) {
     else {
         strcpy(reply, "ROU NOK\n");
     }
-
-    /* DEBUG */
-    printf(">>> logout reply = %s|\n", reply);
 }
 
 
 void process_groups_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
-    // char aux[MAX_SIZE];
-    // char UID[MAX_SIZE];
-    // char pass[MAX_SIZE];
-    /* GROUPLIST *list; */
-    // int number_of_groups;
+    int  number_of_tokens, number_of_groups;
     char *aux_string;
     
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
     if (number_of_tokens != 1) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // get existing information from file system
     get_groups(Group_list);
-    aux_string = GROUPLIST_to_string(Group_list/* , reply */);
+    aux_string = GROUPLIST_to_string(Group_list);
+
+    number_of_groups = get_groups(Group_list);
+    if (number_of_groups == 0) {
+        strcpy(reply, "RGL 0\n");
+        return;
+    }
 
     sprintf(reply, "RGL %d ", Group_list->no_groups);
     strcat(reply, aux_string);
@@ -775,30 +619,34 @@ void process_groups_message(char *message, char *reply) {
 
 void process_subscribe_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
+    char GName_aux[MAX_SIZE];
     
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
     if (number_of_tokens != 4) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword, UID, GID and group name from message
     sscanf(message, "%s %s %s %s", aux, UID, GID, GName);
+    get_group_name(GID, GName_aux);
 
-    if (!validate_UID(UID)) {
+    // validate user input
+    if (!validate_UID(UID) || !user_is_registered(UID)) {
         strcpy(reply, "RGS E_USR\n");
         return;
     }
-    else if (!validate_GID(GID)) {
+    else if (!validate_GID(GID) || (!group_exists(GID) && strcmp(GID, "00"))) {
         strcpy(reply, "RGS E_GRP\n");
         return;
     }
-    else if (!validate_GName(GName)) {
+    else if (!validate_GName(GName) || (strcmp(GName, GName_aux) && strcmp(GID, "00"))) {
         strcpy(reply, "RGS E_GNAME\n");
         return;
     }
@@ -807,25 +655,18 @@ void process_subscribe_message(char *message, char *reply) {
         return;
     }
 
-    /* DEBUG */
-    printf(">>> echo 1\n");
-
-    if (strcmp(GID, "00") == 0) {
-
-        /* DEBUG */
-        printf(">>> echo 2\n");
+    if (strcmp(GID, "00") == 0) { // if user is creating new group
 
         create_new_group(GID, GName); // GID gets changed to ID of new group
         if (subscribe_user(UID, GID)) {
-            sprintf(reply, "RGS NEW %s", GID);
-            /* strcpy(reply, "RGS NEW %s\n", GID); */
+            sprintf(reply, "RGS NEW %s\n", GID);
         }
         else {
             strcpy(reply, "RGS NOK\n");
         }
         return;
     }
-    else {
+    else { // else try subscribe user to group
         if (subscribe_user(UID, GID)) {
             strcpy(reply, "RGS OK\n");
         }
@@ -839,25 +680,22 @@ void process_subscribe_message(char *message, char *reply) {
 
 void process_unsubscribe_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char GID[MAX_SIZE];
     
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
-    /* DEBUG */
-    /* printf(">>> number_of_tokens = %d\n", number_of_tokens); */
-
-    // terminate_string_after_n_tokens(message, 3);
     if (number_of_tokens != 3) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword, UID and GID
     sscanf(message, "%s %s %s", aux, UID, GID);
 
+    // validate user input
     if (!validate_UID(UID)) {
         strcpy(reply, "RGU E_USR\n");
         return;
@@ -867,18 +705,11 @@ void process_unsubscribe_message(char *message, char *reply) {
         return;
     }
 
+    // try unsubscribe user to group
     if(unsubscribe_user(UID, GID)) {
-        /* DEBUG */
-        /* printf(">>> case 1\n"); */
-
         strcpy(reply, "RGU OK\n");
     }
     else {
-        /* DEBUG */
-        /* printf(">>> case 2\n");
-        printf(">>> UID = %s|\n", UID);
-        printf(">>> pass = %s|\n", pass); */
-
         strcpy(reply, "RGU NOK\n");
     }
 }
@@ -886,41 +717,41 @@ void process_unsubscribe_message(char *message, char *reply) {
 
 void process_my_groups_message(char *message, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens, number_of_groups;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char *aux_string;
-    // char pass[MAX_SIZE];
-    /* GROUPLIST *list; */
-    int number_of_groups;
     GROUPLIST *my_groups_list;
     
-    terminate_string_after_n_tokens(message, 2);
+    // validate user input
     number_of_tokens = get_number_of_tokens(message);
-
     if (number_of_tokens != 2) {
         strcpy(reply, "ERR\n");
         return;
     }
 
+    // extract keyword and UID from message
     sscanf(message, "%s %s", aux, UID);
 
+    // validate user input
     if (!validate_UID(UID) || !user_is_logged_in(UID)) {
         strcpy(reply, "RGM E_USR\n");
         return;
     }
 
+    // create GROUPLIST structure for user's groups
     my_groups_list = malloc(sizeof(*my_groups_list));
     initialize_group_list(my_groups_list);
 
+    // get number of groups to which user is subscribed
     number_of_groups = get_my_groups(my_groups_list, UID);
     if (number_of_groups == 0) {
         strcpy(reply, "RGM 0\n");
         return;
     }
 
-    aux_string = GROUPLIST_to_string(my_groups_list/* , reply */);
+    // convert GROUPLIST into a string
+    aux_string = GROUPLIST_to_string(my_groups_list);
 
     sprintf(reply, "RGM %d ", my_groups_list->no_groups);
     strcat(reply, aux_string);
@@ -928,30 +759,24 @@ void process_my_groups_message(char *message, char *reply) {
 }
 
 
-void process_ulist_message(char *message_remainder, char *reply) {
+void process_ulist_message(char *buffer, char *reply) {
 
-    // int n;
-    int number_of_tokens;
+    int  number_of_tokens;
     char aux[MAX_SIZE];
     char GID[MAX_SIZE];
     char GName[MAX_SIZE];
     char *user_list;
-    // char *aux_string;
-    // char pass[MAX_SIZE];
-    /* GROUPLIST *list; */
-    // int number_of_groups;
     
-    terminate_string_after_n_tokens(message_remainder, 1);
-    number_of_tokens = get_number_of_tokens(message_remainder);
-
+    // validate user input
+    number_of_tokens = get_number_of_tokens(buffer);
     if (number_of_tokens != 1) {
         strcpy(reply, "ERR\n");
         return;
     }
 
-    /* sscanf(message, "%s %s", aux, GID); */
-    sscanf(message_remainder, "%s", GID);
+    sscanf(buffer, "%s", GID);
 
+    // validate user input
     if (!group_exists(GID)) {
         strcpy(reply, "RUL NOK\n");
         return;
@@ -964,25 +789,28 @@ void process_ulist_message(char *message_remainder, char *reply) {
 }
 
 
-int validate_post_message(char *UID, char *GID) {
+int validate_post_message(char *UID, char *GID, char *Tsize, char *text) {
 
-    if (!validate_UID(UID) || !user_is_registered(UID)) {
+    int Tsize_int = atoi(Tsize);
+
+    if (!validate_UID(UID) || !user_is_registered(UID) || !user_is_subscribed_to_group(UID, GID)) {
         return 0;
     }
     if (!validate_GID(GID) || !group_exists(GID)) {
         return 0;
     }
-
+    if (Tsize_int > 240 || strlen(text) > 240) {
+        return 0;
+    }
     return 1;
 }
 
 
 int validate_retrieve_message(char *UID, char *GID, char *MID) {
 
-    if (!validate_UID(UID) || !validate_GID(GID) || !validate_MID(MID)) {
+    if (!validate_UID(UID) || !validate_GID(GID) || !validate_MID(MID) || !user_is_subscribed_to_group(UID, GID)) {
         return 0;
     }
-
     return 1;
 }
 
@@ -1012,9 +840,6 @@ int user_is_logged_in(char *UID) {
     sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
     fp = fopen(user_login_path, "r");
 
-    /* DEBUG */
-    /* printf(">>> file_paht = %s|\n", file_path); */
-
     if (fp == NULL) {
         return 0;
     }
@@ -1024,9 +849,24 @@ int user_is_logged_in(char *UID) {
 }
 
 
+int user_is_subscribed_to_group(char *UID, char *GID) {
+
+    char file_path[MAX_SIZE];
+    FILE *fp;
+
+    sprintf(file_path, "GROUPS/%s/%s.txt", GID, UID);
+
+    fp = fopen(file_path, "r");
+    if (fp == NULL) {
+        return 0;
+    }
+    return 1;
+}
+
+
 int register_user(char *UID, char *pass) {
 
-    int n;
+    int ret;
     char user_dir_path[MAX_SIZE];
     char user_pass_path[MAX_SIZE];
     FILE* fp;
@@ -1034,24 +874,23 @@ int register_user(char *UID, char *pass) {
     sprintf(user_dir_path, "USERS/%s", UID);
 
     // create directory for user UID
-    n = mkdir(user_dir_path, 0700);
-    if(n == -1) {
+    ret = mkdir(user_dir_path, 0700);
+    if(ret == -1) {
         return 0;
     }
 
+    // create file for user's password
     sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
     fp = fopen(user_pass_path, "a");
     validate_fopen(fp);
 
-    /* DEBUG */
-    printf(">>> user_pass_path = %s|\n", user_pass_path);
-    printf(">>> pass = %s|\n", pass);
+    // write user's password to file
+    ret = fprintf(fp, "%s", pass);
+    validate_fprintf(ret);
 
-    n = fprintf(fp, "%s", pass);
-    validate_fprintf(n);
-
-    n = fclose(fp);
-    validate_fclose(n);
+    // close file
+    ret = fclose(fp);
+    validate_fclose(ret);
     
     return 1;
 }
@@ -1059,7 +898,7 @@ int register_user(char *UID, char *pass) {
 
 int unregister_user(char *UID, char *pass) {
     
-    int n;
+    int  ret;
     char user_dir_path[MAX_SIZE];
     char user_pass_path[MAX_SIZE];
     char user_login_path[MAX_SIZE];
@@ -1068,6 +907,7 @@ int unregister_user(char *UID, char *pass) {
     sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
     sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
 
+    // check for correct password
     if (!check_password(pass, user_pass_path)) {
         return 0;
     }
@@ -1075,8 +915,9 @@ int unregister_user(char *UID, char *pass) {
     delete_file(user_pass_path);
     delete_file(user_login_path);
 
-    n = rmdir(user_dir_path);
-    if(n == -1) {
+    // delete user's directory
+    ret = rmdir(user_dir_path);
+    if(ret == -1) {
         return 0;
     }
     return 1;
@@ -1085,7 +926,6 @@ int unregister_user(char *UID, char *pass) {
 
 int login_user(char *UID, char *pass) {
 
-    int n;
     char user_dir_path[MAX_SIZE];
     char user_pass_path[MAX_SIZE];
     char user_login_path[MAX_SIZE];
@@ -1094,11 +934,14 @@ int login_user(char *UID, char *pass) {
     sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
     sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
 
+    // check for correct password
     if (!check_password(pass, user_pass_path)) {
         return 0;
     }
+    if (!user_is_registered(UID)) {
+        return 0;
+    }
 
-    mkdir(user_dir_path, 0700);
     make_file(user_login_path);
 
     return 1;
@@ -1116,6 +959,7 @@ int logout_user(char *UID, char *pass) {
     sprintf(user_pass_path, "USERS/%s/%s_pass.txt", UID, UID);
     sprintf(user_login_path, "USERS/%s/%s_login.txt", UID, UID);
 
+    // check for correct password
     if (!check_password(pass, user_pass_path)) {
         return 0;
     }
@@ -1128,12 +972,9 @@ int logout_user(char *UID, char *pass) {
 
 int subscribe_user(char *UID, char *GID) {
 
-    // int n;
     char group_user_path[MAX_SIZE];
 
-    /* DEBUG */
-    printf(">>> subscribe_user: ECHO\n");
-
+    // create a new user file under specified group directory
     sprintf(group_user_path, "GROUPS/%s/%s.txt", GID, UID);
     make_file(group_user_path);
 
@@ -1143,10 +984,7 @@ int subscribe_user(char *UID, char *GID) {
 
 int unsubscribe_user(char *UID, char *GID) {
 
-    // int n;
     char user_group_path[MAX_SIZE];
-    // char user_pass_path[MAX_SIZE];
-    // char user_login_path[MAX_SIZE];
     FILE *fp;
 
     sprintf(user_group_path, "GROUPS/%s/%s.txt", GID, UID);
@@ -1156,6 +994,7 @@ int unsubscribe_user(char *UID, char *GID) {
         return 0;
     }
 
+    // delete user file from specified group directory
     delete_file(user_group_path);
     return 1;
 }
@@ -1163,13 +1002,13 @@ int unsubscribe_user(char *UID, char *GID) {
 
 int create_new_group(char *GID, char *GName) {
 
-    int n;
-    int group_number;
+    int  ret, group_number;
     char group_dir_path[MAX_SIZE];
     char group_name_path[MAX_SIZE];
     char group_messages_path[MAX_SIZE];
-    FILE* fp;
+    FILE *fp;
 
+    // get number of existing groups in file system
     Number_of_groups = get_groups(Group_list);
 
     if (Number_of_groups < 0) {
@@ -1181,7 +1020,7 @@ int create_new_group(char *GID, char *GName) {
         return 0;
     }
 
-    group_number = Number_of_groups + 1;
+    group_number = Number_of_groups + 1; // new GID
     if (group_number < 10) {
         sprintf(GID, "0%d", group_number);
     }
@@ -1189,40 +1028,28 @@ int create_new_group(char *GID, char *GName) {
         sprintf(GID, "%d", group_number);
     }
 
-    /* DEBUG */
-    printf(">>> newGID = %s\n", GID);
-
     // create directory for user GID
     sprintf(group_dir_path, "GROUPS/%s", GID);
-    n = mkdir(group_dir_path, 0700);
-    if(n == -1) {
-        /* DEBUG */
-        printf(">>> echoo 1\n");
-
+    ret = mkdir(group_dir_path, 0700);
+    if(ret == -1) {
         return 0;
     }
 
+    // create group name file 
     sprintf(group_name_path, "GROUPS/%s/%s_name.txt", GID, GID);
     fp = fopen(group_name_path ,"a");
     validate_fopen(fp);
 
-    /* DEBUG */
-    /* printf(">>> group_name_path = %s|\n", group_name_path);
-    printf(">>> GName = %s|\n", GName); */
+    ret = fprintf(fp, "%s", GName);
+    validate_fprintf(ret);
 
-    n = fprintf(fp, "%s", GName);
-    validate_fprintf(n);
-
-    n = fclose(fp);
-    validate_fclose(n);
+    ret = fclose(fp);
+    validate_fclose(ret);
 
     // create subdirectory for user messages
     sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
-    n = mkdir(group_messages_path, 0700);
-    if(n == -1) {
-        /* DEBUG */
-        printf(">>> echoo 2\n");
-
+    ret = mkdir(group_messages_path, 0700);
+    if(ret == -1) {
         return 0;
     }
 
@@ -1240,7 +1067,6 @@ int group_exists(char *GID) {
     fp = fopen(group_path, "r");
 
     if (fp == NULL) {
-        /* fclose(fp); */ // ???
         return 0;
     }
     else {
@@ -1252,7 +1078,7 @@ int group_exists(char *GID) {
 
 int group_has_messages(char *GID, char *MID) {
 
-    char message_path[30];
+    char message_path[40];
     FILE *fp;
 
     sprintf(message_path, "GROUPS/%s/MSG/%s", GID, MID);
@@ -1268,9 +1094,9 @@ int group_has_messages(char *GID, char *MID) {
 
 int check_password(char *pass, char *user_pass_path) {
 
-    long Fsize;
-    FILE *fp;
+    int Fsize;
     char *read_pass;
+    FILE *fp;
 
     fp = fopen(user_pass_path, "r");
     if (fp == NULL) {
@@ -1294,13 +1120,14 @@ int check_password(char *pass, char *user_pass_path) {
 }
 
 
+// checks state of file system to get groups' info
 int get_groups(GROUPLIST *list) {
 
-    DIR *d;
-    struct dirent *dir;
     int i = 0;
+    char GIDname[MAX_SIZE];
+    struct dirent *dir;
     FILE *fp;
-    char GIDname[30];
+    DIR *d;
     
     list->no_groups=0;
     d = opendir("GROUPS");
@@ -1344,14 +1171,15 @@ int get_groups(GROUPLIST *list) {
 }
 
 
+// checks state of file system to get specified user's groups' info
 int get_my_groups(GROUPLIST *list, char *UID) {
 
-    DIR *d;
+    int i = 0;
+    char GIDname[MAX_SIZE];
+    char group_user_path[MAX_SIZE];
     struct dirent *dir;
-    int i=0;
     FILE *fp;
-    char GIDname[30];
-    char group_user_path[30];
+    DIR *d;
     
     list->no_groups=0;
     d = opendir("GROUPS");
@@ -1366,17 +1194,10 @@ int get_my_groups(GROUPLIST *list, char *UID) {
             }
 
             sprintf(group_user_path, "GROUPS/%s/%s.txt", dir->d_name, UID);
-
-            /* DEBUG */
-            printf(">>> group_user_path = %s|\n", group_user_path);
-            
             fp = fopen(group_user_path, "r");
             if (fp == NULL) {
                 continue;
             }
-
-            /* DEBUG */
-            /* printf(">>> group no = %s|\n", list->group_no[i]); */
 
             strcpy(list->group_no[i], dir->d_name);
             sprintf(GIDname, "GROUPS/%s/%s_name.txt", dir->d_name, dir->d_name);
@@ -1401,30 +1222,23 @@ int get_my_groups(GROUPLIST *list, char *UID) {
     if(list->no_groups>1) {
         SortGList(list);
     }
-
     return(list->no_groups);
 }
 
 
+// gets all users of a specified group
 int get_users_of_group(char *user_list, char *GID, char *GName) {
 
     int number_of_subscribed_users = 0;
-    char group_path[30];
     char UID[20];
-    DIR *d;
+    char group_path[40];
     struct dirent *dir;
+    DIR *d;
 
     if (!group_exists(GID)) {
         return 0;
     }
     get_group_name(GID, GName);
-    /* DEBUG */
-    printf(">>> GName = %s\n", GName);
-
-    /* terminate_string_after_n_tokens(GName, 1); */
-
-    /* DEBUG */
-    printf(">>> GName = %s\n", GName);
 
     strcpy(user_list, "");
     sprintf(group_path, "GROUPS/%s", GID);
@@ -1435,7 +1249,6 @@ int get_users_of_group(char *user_list, char *GID, char *GName) {
 
             get_UID_from_file_name(UID, dir->d_name);
 
-            /* sscanf(dir->d_name, "%s.txt", UID); */
             strcat(user_list, UID);
             strcat(user_list, " ");
             number_of_subscribed_users++;
@@ -1447,9 +1260,9 @@ int get_users_of_group(char *user_list, char *GID, char *GName) {
 
 int get_group_name(char *GID, char *GName) {
 
-    FILE *fp;
-    char group_name_path[MAX_SIZE];
     int Fsize;
+    char group_name_path[MAX_SIZE];
+    FILE *fp;
 
     if (!group_exists(GID)) {
         return 0;
@@ -1459,10 +1272,9 @@ int get_group_name(char *GID, char *GName) {
 
     fp = fopen(group_name_path, "r");
     Fsize = get_file_size(fp);
-    /* DEBUG */
-    /* printf(">>> Fsize = %d\n", Fsize); */
 
     fread(GName, Fsize, 1, fp);
+    GName[2] = '\0';
 
     return 1;
 }
@@ -1477,10 +1289,10 @@ void initialize_group_list(GROUPLIST *list) {
 }
 
 
+// bubble sort for sorting groups in GROUPLIST
 void SortGList(GROUPLIST *list) {
 
-    int i, j;
-    int n;
+    int i, j, n;
 
     n = list->no_groups;
 
@@ -1498,7 +1310,7 @@ void swap_groups(int g1, int g2, GROUPLIST *list) {
 
     int number_of_messages_aux;
     char group_no_aux[20];
-    char group_name_aux[30];
+    char group_name_aux[40];
     char last_message_available_aux[5];
 
     // save first group's values
@@ -1522,6 +1334,7 @@ void swap_groups(int g1, int g2, GROUPLIST *list) {
 }
 
 
+// convert GROUPLIST to string
 char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */) {
 
     int i = 0;
@@ -1530,32 +1343,23 @@ char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */) {
     SortGList(list);
 
     strcpy(aux_string, "");
-
     for (i = 0; i < list->no_groups; i++) {
         strcat(aux_string, list->group_no[i]);
         strcat(aux_string, " ");
         strcat(aux_string, list->group_name[i]);
         strcat(aux_string, " ");
 
-
-
         strcat(aux_string, list->last_message_available[i]);
         strcat(aux_string, " ");
     }
-
     return aux_string;
-    
-    /* sprintf(reply, "RGL %d ", list->no_groups);
-    strcat(reply, aux_string); */
-    /* free(aux_string); */
 }
 
 
+// increments specified group's last MID
 void increment_last_message_available(GROUPLIST *list, char *GID) {
 
-    int i;
-    int last_message_available_int;
-    int new_last_message_available_int;
+    int  i, last_message_available_int, new_last_message_available_int;
     char last_message_available[10];
     char new_last_message_available[10];
 
@@ -1579,30 +1383,21 @@ void increment_last_message_available(GROUPLIST *list, char *GID) {
     else {
         fprintf(stderr, ">>> ERROR: increment_last_message_available\n");
     }
-
     strcpy(list->last_message_available[i], new_last_message_available);
 }
 
 
+// returns the MID that comes after the last MID of the provided GID
 void get_next_MID(char *MID, GROUPLIST *list, char *GID) {
 
-    int i;
-    int last_message_available_int;
-    int new_last_message_available_int;
+    int i, last_message_available_int, new_last_message_available_int;
     char last_message_available[10];
     char new_last_message_available[10];
 
     i = get_index(list, GID);
 
-    /* DEBUG */
-    /* printf("@@@ index = %d\n", i); */
-
     last_message_available_int = atoi(list->last_message_available[i]);
     new_last_message_available_int = last_message_available_int + 1;
-
-    /* DEBUG */
-    /* printf("@@@ last_message_available_int = %d\n", last_message_available_int);
-    printf("@@@ next_message_available_int = %d\n", new_last_message_available_int); */
 
     if (new_last_message_available_int > 0 && new_last_message_available_int < 10) {
         sprintf(new_last_message_available, "000%d", new_last_message_available_int);
@@ -1617,19 +1412,16 @@ void get_next_MID(char *MID, GROUPLIST *list, char *GID) {
         sprintf(new_last_message_available, "%d", new_last_message_available_int);
     }
     else {
-        fprintf(stderr, "@@@ ERROR: increment_last_message_available\n");
+        fprintf(stderr, "ERROR: increment_last_message_available\n");
     }
-
-    /* DEBUG */
-    /* printf("@@@ new_last_message_available = %s\n", new_last_message_available); */
-
     strcpy(MID, new_last_message_available);
 }
 
+
+// increments value of provided MID
 void increment_MID(char *MID) {
 
-    int MID_int;
-    int new_MID_int;
+    int MID_int, new_MID_int;
     char new_MID[10];
 
     MID_int = atoi(MID);
@@ -1650,22 +1442,43 @@ void increment_MID(char *MID) {
     else {
         fprintf(stderr, "ERROR: increment_MID\n");
     }
-
     strcpy(MID, new_MID);
 }
 
 
+// returns number of messages of provided GID
+int get_number_of_messages(char *GID, char *MID) {
+
+    int number_of_messages = 0, MID_int = atoi(MID), current_MID = 0;
+    char dir_path[MAX_SIZE];
+    struct dirent *dir;
+    DIR *d;
+
+    sprintf(dir_path, "GROUPS/%s/MSG", GID);
+    d = opendir(dir_path);
+    while ((dir = readdir(d)) != NULL) {
+
+        if (dir->d_name[0] == '.') {
+            continue;
+        }
+
+        current_MID = atoi(dir->d_name);
+        if (current_MID >= MID_int) {
+            number_of_messages++;
+        }
+    }
+    return number_of_messages;
+}
+
+
+// updates the value each group's of last message available based on file system's current state
 void update_last_available_message(GROUPLIST *list, char *GID, int i) {
 
-    int largest_MID_int = 0;
-    int current_MID_int;
-    DIR *d;
-    struct dirent *dir;
-    char group_messages_path[30];
+    int current_MID_int = 0, largest_MID_int = 0;
     char largest_MID[10];
-    // int i = 0;
-    // FILE *fp;
-    // char GIDname[30];
+    char group_messages_path[64];
+    struct dirent *dir;
+    DIR *d;
     
     sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
     d = opendir(group_messages_path);
@@ -1688,13 +1501,14 @@ void update_last_available_message(GROUPLIST *list, char *GID, int i) {
         }
         closedir(d);
 
-        convert_GID_int_to_string(largest_MID_int, largest_MID);
+        convert_MID_int_to_string(largest_MID_int, largest_MID);
         strcpy(list->last_message_available[i], largest_MID);
     }
 }
 
 
-void convert_GID_int_to_string(int MID_int, char *MID) {
+// converts MID integer to MID string
+void convert_MID_int_to_string(int MID_int, char *MID) {
 
     if (MID_int >= 0 && MID_int <= 9) {
         sprintf(MID, "000%d", MID_int);
@@ -1709,15 +1523,15 @@ void convert_GID_int_to_string(int MID_int, char *MID) {
         sprintf(MID, "%d", MID_int);
     }
     else {
-        fprintf(stderr, "ERROR: convert_GID_int_to_string\n");
+        fprintf(stderr, "ERROR: convert_MID_int_to_string\n");
     }
 }
 
 
+// returns index of specified GID in the specified GROUPLIST
 int  get_index(GROUPLIST *list, char *GID) {
 
-    int i;
-    int n = list->no_groups;
+    int i, n = list->no_groups;
 
     for (i = 0; i < n; i++) {
         if (strcmp(GID, list->group_no[i]) == 0) {
@@ -1728,202 +1542,94 @@ int  get_index(GROUPLIST *list, char *GID) {
 }
 
 
+// reads a UID from a file name
 void get_UID_from_file_name(char *UID, char *file_name) {
 
-    UID[0] = file_name[0];
-    UID[1] = file_name[1];
-    UID[2] = file_name[2];
-    UID[3] = file_name[3];
-    UID[4] = file_name[4];
+    int i = 0;
+    for (i = 0; i < 5; i++) {
+        UID[i] = file_name[i];
+    }
 }
 
 
-void get_client_ip_and_port(int fd, char *client_ip, char *client_port, struct sockaddr_in *addr) {
+// returns requesting user's IP and port
+void get_user_ip_and_port(int fd, char *user_ip, char *user_port, struct sockaddr_in *addr) {
 
-    int n;
-    // struct sockaddr_in addr;
-    socklen_t addrlen;
-    addrlen = sizeof((*addr));
+    uint16_t port = 0;
+    struct in_addr ip_addr = addr->sin_addr;
 
-    /* n = getpeername(fd, (struct sockaddr *)&addr_, &addr_size_);
-    if (n == -1) {
-        perror("ERROR: getpeername: get_client_ip\n");
-        exit(EXIT_FAILURE);
-    } */
-
-    getsockname(fd, (struct sockaddr *) &(*addr), &addrlen);
-    // TODO: validate_getsockname();
-
-    strcpy(client_ip, inet_ntoa((*addr).sin_addr));
-    sprintf(client_port, "%d", (*addr).sin_port);
-
-    /* strcpy(client_ip, inet_ntoa((*addr).sin_addr));
-    sprintf(client_port, "%d", (*addr).sin_port); */
+    inet_ntop(AF_INET, &ip_addr, user_ip, INET_ADDRSTRLEN);
+    port = htons(addr->sin_port);
+    sprintf(user_port, "%d", port);
 }
 
 
-int create_socket_datagram() {
+int create_socket_UDP() {
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if(fd == -1) {
-        perror("ERROR: socket: create_socket_datagram\n");
-        exit(EXIT_FAILURE);
-    }
+    validate_socket(fd);
+
     return fd;
 }
 
 
-void get_address_info_datagram(struct addrinfo *hints, struct addrinfo **res, char *port) {
+// initializes socket
+void get_address_info_UDP(struct addrinfo *hints, struct addrinfo **res, char *port) {
+
+    int ret;
 
     memset(&(*hints), 0, sizeof((*hints))); 
     (*hints).ai_family = AF_INET;        
     (*hints).ai_socktype = SOCK_DGRAM;   
     (*hints).ai_flags = AI_PASSIVE;
 
-    int errcode = getaddrinfo(NULL, port, &(*hints), &(*res));
-    if(errcode != 0) {
-        perror("ERROR: getaddrinfo: get_address_info_datagram\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = getaddrinfo(NULL, port, &(*hints), &(*res));
+    validate_getaddrinfo(ret);
 }
 
 
-int create_socket_stream() {
+int create_socket_TCP() {
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if(fd == -1) {
-        perror("ERROR: socket: create_socket_stream\n");
-        exit(EXIT_FAILURE);
-    }
+    validate_socket(fd);
+
     return fd;
 }
 
 
-void get_address_info_stream(struct addrinfo *hints, struct addrinfo **res, char *port) {
+// initializes socket
+void get_address_info_TCP(struct addrinfo *hints, struct addrinfo **res, char *port) {
+
+    int ret;
 
     memset(&(*hints), 0, sizeof((*hints))); 
     (*hints).ai_family = AF_INET;        
     (*hints).ai_socktype = SOCK_STREAM;  
     (*hints).ai_flags = AI_PASSIVE;
 
-    int errcode = getaddrinfo(NULL, port, &(*hints), &(*res));
-    if(errcode != 0) {
-        perror("ERROR: getaddrinfo: get_address_info_stream\n");
-        exit(EXIT_FAILURE);
-    }
+    ret = getaddrinfo(NULL, port, &(*hints), &(*res));
+    validate_getaddrinfo(ret);
 }
 
 
-/* void create_UDP_server_socket() {
-
-    fd_UDP = socket(AF_INET, SOCK_DGRAM, 0); // UDP Socket
-    if(fd_UDP == -1) {
-        perror("ERROR: socket: create_UDP_socket\n");
-        exit(EXIT_FAILURE);
-    }
-} */
-
-
-/* void get_address_info_server_UDP() {
-
-    memset(&hints_UDP, 0, sizeof(hints_UDP)); 
-    hints_UDP.ai_family = AF_INET;        // IPv4
-    hints_UDP.ai_socktype = SOCK_DGRAM;   // UDP socket
-
-    errcode = getaddrinfo(NULL, PORT, &hints_UDP, &res_UDP);
-    if(errcode != 0) {
-        perror("ERROR: get_address_info_UDP\n");
-        exit(EXIT_FAILURE);
-    }
-} */
-
-
-/* void create_TCP_server_socket() {
-
-    fd_TCP = socket(AF_INET, SOCK_STREAM, 0); // TCP Socket
-    if(fd_TCP == -1) {
-        perror("ERROR: create_TCP_socket: can't open socket.\n");
-        exit(EXIT_FAILURE);
-    }
-} */
-
-
-/* void get_address_info_server_TCP() {
-
-    memset(&hints_TCP, 0, sizeof(hints_TCP)); 
-    hints_TCP.ai_family = AF_INET;        // IPv4
-    hints_TCP.ai_socktype = SOCK_STREAM;  // TCP socket
-
-    errcode = getaddrinfo(NULL, PORT, &hints_TCP, &res_TCP);
-    if(errcode != 0) {
-        perror("ERROR: get_address_info_TCP\n");
-        exit(EXIT_FAILURE);
-    }
-} */
-
-
+// receives a message from a UDP socket
 void receive_message_UDP(int fd, char *message, struct sockaddr_in *addr) {
 
-    int n;
-    /* struct sockaddr_in addr; */
+    int ret;
     socklen_t addrlen ;
     
     addrlen = sizeof(*addr);
-    n = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
-    
-    validate_recvfrom(n);
+    ret = recvfrom(fd, message, MAX_SIZE, 0, (struct sockaddr*)&(*addr), &addrlen);
+    validate_recvfrom(ret);
+
+    message[ret] = '\0';
 }
 
 
-void receive_message_TCP(int fd, char *message) {
-
-    int n;
-    int read_bytes = 0;
-    char *ptr;
-    /* socklen_t addrlen  */;
-    /* struct sockaddr_in addr; */
-
-    message[0] = '\0';
-    /* addrlen = sizeof(*addr); */
-
-    /* DEBUG */
-    printf(">>> receive_message_TCP: ECHO\n");
-    
-    ptr = message;
-    while (message[read_bytes] != '\n') {
-        n = read(fd, ptr, 1);
-        validate_read(n);
-
-        if (message[read_bytes] == '\n') {
-            break;
-        }
-
-        ptr++;
-        read_bytes++;
-    }
-
-    /* DEBUG */
-    printf(">>> ECHOOoo message = %s|\n", message);
-}
-
-
-void receive_keyword_TCP(char *keyword, int fd) {
-
-    int n;
-    int bytes_to_read = 10*sizeof(char);
-    int read_bytes = 0;
-
-    keyword[0] = '\0';
-
-    n = read(fd, keyword, bytes_to_read);
-    validate_read(n);
-}
-
-
+// reads n chars from a TCP socket
 void receive_n_chars_TCP(int n, char *string, int fd) {
 
-    int ret;
-    int bytes_to_read = n * sizeof(char);
+    int ret, bytes_to_read = n * sizeof(char);
     char *ptr;
 
     string[0] = '\0';
@@ -1942,12 +1648,12 @@ void receive_n_chars_TCP(int n, char *string, int fd) {
 
 
 /**
- * Returns 1 if char after nth char is ' ' and 0 otherwise 
+ * reads n chars from a TCP socket
+ * returns 1 if char after nth char is ' ', 0 if it is '\n' and -1 otherwise 
  **/
 int receive_n_plus_1_chars_TCP(int n, char *string, int fd) {
 
-    int ret = -1;
-    int bytes_to_read = (n + 1) * sizeof(char);
+    int ret = 0, bytes_to_read = (n + 1) * sizeof(char);
     char *ptr;
 
     string[0] = '\0';
@@ -1975,33 +1681,11 @@ int receive_n_plus_1_chars_TCP(int n, char *string, int fd) {
 }
 
 
-void send_n_chars_TCP(int n, char *string, int fd) {
-    
-    // TODO!
-    int ret;
-    int bytes_to_read = n * sizeof(char);
-    int bytes_read = 0;
-
-    string[0] = '\0';
-
-    while (bytes_read < bytes_to_read) {
-        ret = read(fd, string, bytes_to_read);
-        validate_read(ret);
-
-        bytes_read += ret;
-    }
-
-    string[n] = '\0';
-}
-
-
+// reads n tokens from a TCP socket
 void receive_n_tokens_TCP(int n, char *string, int fd) {
 
-    int ret;
-    int spaces_to_read = n;
+    int ret, spaces_to_read = n;
     char *ptr;
-
-    string[0] = '\0';
 
     ptr = string;
     while (spaces_to_read > 0) {
@@ -2019,14 +1703,13 @@ void receive_n_tokens_TCP(int n, char *string, int fd) {
 }
 
 
-void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd) {
+// reads Fsize bytes of data from TCP socket
+void receive_data_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd) {
 
-    int ret;
-    int bytes_to_read = atoi(Fsize);
-    FILE *fp;
+    int  ret, bytes_to_read = atoi(Fsize);
     char file_path[MAX_SIZE];
-    char *buffer = (char *)malloc(bytes_to_read);
-    char *ptr;
+    char *buffer[1024];
+    FILE *fp;
 
     sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
 
@@ -2035,7 +1718,7 @@ void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd)
 
     while (bytes_to_read > 0) {
 
-        ret = read(fd, buffer, bytes_to_read);
+        ret = read(fd, buffer, 1024);
         validate_read(ret);
 
         fwrite(buffer, ret, 1, fp);
@@ -2044,7 +1727,23 @@ void receive_to_file_TCP(char *FName, char *Fsize, char *GID, char *MID, int fd)
     fclose(fp);
 }
 
+// writes n chars into a TCP socket
+void send_n_chars_TCP(int n, char *string, int fd) {
+    
+    int ret, bytes_to_write = n * sizeof(char);
 
+    while (bytes_to_write > 0) {
+
+        ret = write(fd, string, bytes_to_write);
+        validate_read(ret);
+
+        bytes_to_write -= ret;
+        string += ret;
+    }
+}
+
+
+// sends a message into a TCP socket
 void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr) {
 
     int n;
@@ -2056,43 +1755,10 @@ void send_reply_UDP(char *reply, int fd, struct sockaddr_in *addr) {
 }
 
 
-void send_reply_TCP(char *reply, int fd) {
-
-    int n;
-    int write_bytes_left = strlen(reply);
-
-    /* DEBUG */
-    /* printf(">>> REPLY = %s|\n", reply);
-    printf(">>> write_bytes_left = %d\n", write_bytes_left); */
-
-    while (write_bytes_left > 0) {
-        /* DEBUG */
-        /* printf(">>> wrote\n"); */
-        
-        n = write(fd, reply, strlen(reply));
-        validate_write(n);
-
-        /* if (write_bytes_left == 0) {
-            break;
-        } */
-
-        /* DEBUG */
-        /* printf(">>> write_bytes_left = %d\n", write_bytes_left);
-        printf(">>> n = %d\n", n); */
-
-        write_bytes_left -= n;
-        reply += n;
-    }
-
-    /* DEBUG */
-    /* printf(">>> OUT\n"); */
-}
-
-
+// writes a string into a TCP socket
 void send_TCP(char *string, int fd) {
 
-    int ret;
-    int bytes_to_write = strlen(string) * sizeof(char);
+    int ret, bytes_to_write = strlen(string) * sizeof(char);
     char *ptr;
 
     while (bytes_to_write > 0) {
@@ -2108,56 +1774,53 @@ void send_TCP(char *string, int fd) {
 
 void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
 
-    int  N;
-    int  Tsize_int;
-    int  Fsize_int;
-    int  number_of_files = 0;
-    int read_messages = 0;
-    char group_message_path[30];
-    char group_messages_path[30];
-    char *message_aux = (char *)malloc(MAX_REPLY_SIZE);
+    int  N, Tsize_int, Fsize_int, number_of_files = 0, read_messages = 0;
+    char reply[MAX_SIZE];
     char FName[MAX_SIZE];
     char Fsize[MAX_SIZE];
     char Tsize[MAX_SIZE];
+    char buffer[MAX_SIZE];
     char text[MAX_TEXT_SIZE];
     char file_path[MAX_SIZE];
-    char aux[10];
+    char group_message_path[40];
+    char group_messages_path[40];
+    char *reply_aux = (char *)malloc(MAX_REPLY_SIZE);
+    struct dirent *dir;
     DIR  *d;
     FILE *fp;
-    struct dirent *dir;
 
     if (!group_exists(GID)) {
+        strcpy(reply, "RRT NOK\n");
+        send_TCP(reply, fd);
         return;
     }
 
     sprintf(group_messages_path, "GROUPS/%s/MSG", GID);
-    N = get_number_of_files(group_messages_path);
+    N = get_number_of_messages(GID, MID);
 
-    /* DEBUG */
-    /* printf(">>> group_messages_path = %s|\n", group_messages_path);
-    printf(">>> N = %d\n", N); */
-
-    sprintf(message_aux, "RRT OK %d", N);
-    send_TCP(message_aux, fd);
-    /* send_n_chars_TCP(strlen(message_aux), message_aux, fd); */
+    sprintf(reply_aux, "RRT OK %d", N);
+    send_TCP(reply_aux, fd);
 
     sprintf(group_message_path, "GROUPS/%s/MSG/%s", GID, MID);
-
-    /* DEBUG */
-    printf(">>> group_message_path = %s|\n", group_message_path);
 
     fp = fopen(group_message_path, "r");
 
     // one iteration per message
     while (fp != NULL && read_messages <= 20) {
-        send_TCP(" ", fd);
 
-        // gets
+        strcpy(buffer, " ");
+        send_TCP(buffer, fd);
 
         number_of_files = get_number_of_files(group_message_path);
 
-        // if there is file associated with message
-        if (number_of_files == 3) {
+        sprintf(file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
+        Tsize_int = get_file_size_char(file_path);
+        sprintf(Tsize, "%d", Tsize_int);
+
+        // reads text from file
+        read_text_from_file(text, file_path, Tsize_int);
+
+        if (number_of_files == 3) { // if there is file associated with message
 
             d = opendir(group_message_path);
             while ((dir = readdir(d)) != NULL) {
@@ -2165,11 +1828,13 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
                 if (dir->d_name[0] == '.') {
                     continue;
                 }
+                if (strcmp(dir->d_name, "A U T H O R.txt") == 0) { // if file is author file
+                    sprintf(file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
+                    read_text_from_file(UID, file_path, 5);
+                }
+                // if file is the message's associated file
                 if (strcmp(dir->d_name, "A U T H O R.txt") && strcmp(dir->d_name, "T E X T.txt")) {
                     strcpy(FName, dir->d_name);
-
-                    /* DEBUG */
-                    printf(">>> FName = %s|\n", FName);
                 }
             }
 
@@ -2177,46 +1842,35 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
             Fsize_int = get_file_size_char(file_path);
             sprintf(Fsize, "%d", Fsize_int);
 
-            sprintf(file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
-            Tsize_int = get_file_size_char(file_path);
-            sprintf(Tsize, "%d", Tsize_int);
-
-            /* DEBUG */
-            printf(">>> file_path = %s|\n", file_path);
-            printf(">>> Fsize = %s|\n", Fsize);
-            printf(">>> Tsize = %s|\n", Tsize);
-
-            read_text_from_file(text, file_path, Tsize_int);
-
-            /* DEBUG */
-            printf(">>> text = %s|\n", text);
-
-            sprintf(message_aux, "%s %s %s %s %s %s ", MID, UID, Tsize, text, FName, Fsize);
-
-            /* DEBUG */
-            printf(">>> message_aux = %s|\n", message_aux);
+            sprintf(reply_aux, "%s %s %s %s / %s %s ", MID, UID, Tsize, text, FName, Fsize);
             
-            send_TCP(message_aux, fd);
+            send_TCP(reply_aux, fd);
             
+            // send associeted file's data
             sprintf(file_path, "GROUPS/%s/MSG/%s/%s", GID, MID, FName);
-            send_data_TCP(file_path, Fsize, fd);
-
-            /* DEBUG */
-            /* printf(">>> file_path2 = %s|\n", file_path); */
-
-            /* DEBUG */
-            printf("-----------------\n");
-
-            /* strcpy(aux, " ");
-            send_n_chars_TCP(1, aux, fd); */
+            send_data_TCP(file_path, fd);
         }
-        else {
-            sprintf(message_aux, "%s %s %s %s", MID, UID, Tsize, text);
-            send_TCP(message_aux, fd);
+        else { // if message has no associated file
+
+            d = opendir(group_message_path);
+            while ((dir = readdir(d)) != NULL) {
+
+                if (dir->d_name[0] == '.') {
+                    continue;
+                }
+                if (strcmp(dir->d_name, "A U T H O R.txt") == 0) {
+                    // read text from author file
+                    sprintf(file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
+                    read_text_from_file(UID, file_path, 5);
+                }
+            }
+
+            sprintf(reply_aux, "%s %s %s %s", MID, UID, Tsize, text);
+            send_TCP(reply_aux, fd);
         }
 
         read_messages++;
-        if (read_messages == 20) {
+        if (read_messages == 20) { // stop when 20 messages have been read
             break;
         }
 
@@ -2225,110 +1879,100 @@ void retrieve_and_send_messages_TCP(char *UID, char *GID, char *MID, int fd) {
         
         fp = fopen(group_message_path, "r");
     }
-
-    strcpy(aux, "\n");
-    send_n_chars_TCP(1, aux, fd);
+    strcpy(buffer, " \n");
+    send_TCP(buffer, fd);
+    free(reply_aux);
 }
 
 
-void send_data_TCP(char *file_path, char *Fsize, int fd) {
+// opens file and sends its contents into a TCP socket
+void send_data_TCP(char *file_path, int fd) {
 
-    int n;
-    int Fsize_int;
-    int bytes_to_write = 0;
-    char buffer[1024];
+    int ret, bytes_to_write;
+    char *buffer;
+    char *save_buffer;
     FILE *fp;
 
     fp = fopen(file_path, "r");
     validate_fopen(fp);
 
-    /* DEBUG */
-    printf(">>> file_path3 = %s\n", file_path);
+    while (!feof(fp)) { // while end of file is not reached
 
-    /* Fsize = get_file_size(fp); */
-    Fsize_int = atoi(Fsize);
+        buffer = (char *)malloc(512);
+        save_buffer = buffer;
+        bytes_to_write = fread(buffer, 1, 512, fp);
 
-    while(!feof(fp)) {
-        bytes_to_write = sizeof(buffer);
+        while (bytes_to_write > 0) {
+            ret = write(fd, buffer, bytes_to_write);
+            validate_write(ret);
 
-        while (bytes_to_write > 0) { /* (???) */
-
-            fread(buffer, 1, sizeof(buffer), fp);
-            n = write(fd, buffer, sizeof(buffer));
-            validate_write(n);
-
-            bytes_to_write -= n;
-
-            if (bytes_to_write == 0) {
-                break;
-            }
-
-            bzero(buffer, sizeof(buffer));
-        } /* (???) */
-        
+            bytes_to_write -= ret;
+            buffer += ret;
+        }
+        free(save_buffer);
     }
     fclose(fp);
 }
 
 
+// creates a file at specified location
 void make_file(char *file_path) {
 
     FILE *fp;
 
     fp = fopen(file_path ,"a");
-    /* validate_fopen(fp); */
-    /* fclose(fp); */ // ???
+    validate_fopen(fp);
+    fclose(fp);
 }
 
 
+// creates an author file and writes author's name into it
 void make_author_file(char *UID, char *GID, char *MID) {
 
+    int size = 5 * sizeof(char);
     char author_file_path[MAX_SIZE];
     FILE *fp;
-    int size = 5 * sizeof(char);
 
     sprintf(author_file_path, "GROUPS/%s/MSG/%s/A U T H O R.txt", GID, MID);
 
     fp = fopen(author_file_path, "w");
     validate_fopen(fp);
 
-    /* fprintf(fp, "%s", UID); */
     fwrite(UID, size, 1, fp);
-
     fclose(fp);
 }
 
 
+// creates an author file and writes message's text into it
 void make_text_file(char *text, char *GID, char *MID) {
 
+    int Tsize = strlen(text) * sizeof(char);
     char text_file_path[MAX_SIZE];
     FILE *fp;
-    int Tsize = strlen(text) * sizeof(char);
 
     sprintf(text_file_path, "GROUPS/%s/MSG/%s/T E X T.txt", GID, MID);
 
     fp = fopen(text_file_path, "w");
     validate_fopen(fp);
-    /* fprintf(fp, "%s", text); */
-    fwrite(text, Tsize, 1, fp);
 
+    fwrite(text, Tsize, 1, fp);
     fclose(fp);
 }
 
 
-
-
+// deletes a file
 void delete_file(char *file_path) {
 
     unlink(file_path);
 }
 
 
+// returns number of files in a directory
 int get_number_of_files(char *dir_path) {
 
     int number_of_files = 0;
-    DIR *d;
     struct dirent *dir;
+    DIR *d;
 
     d = opendir(dir_path);
     while ((dir = readdir(d)) != NULL) {
@@ -2341,6 +1985,7 @@ int get_number_of_files(char *dir_path) {
 }
 
 
+// reads size chars of text from specified file into string
 void read_text_from_file(char *text, char *file_path, int size) {
 
     FILE *fp;
@@ -2349,4 +1994,5 @@ void read_text_from_file(char *text, char *file_path, int size) {
     fread(text, size, 1, fp);
 
     text[size] = '\0';
+    fclose(fp);
 }
