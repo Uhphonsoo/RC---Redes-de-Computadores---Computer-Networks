@@ -94,6 +94,7 @@ void register_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_register_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -132,6 +133,7 @@ void unregister_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_unregister_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -178,6 +180,7 @@ void login_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_login_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -219,6 +222,7 @@ void logout_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_logout_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -289,6 +293,7 @@ void groups_command(char* command) {
     else
         show_groups(reply, N);
     
+    // free memory
     free(message);
     free(reply);
 }
@@ -333,6 +338,7 @@ void subscribe_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_subscribe_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -376,6 +382,7 @@ void unsubscribe_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_usubscribe_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -423,6 +430,7 @@ void my_groups_command(char* command) {
     else 
         show_groups(reply, N);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -490,6 +498,7 @@ void ulist_command() {
         show_users(reply);
     }
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -562,6 +571,7 @@ void post_command(char* command) {
     sscanf(reply, "%s %s", aux, status);
     validate_post_reply(reply, aux, status);
 
+    // free memory
     free(message);
     free(reply);
 }
@@ -685,6 +695,8 @@ void retrieve_command(char* command) {
             file_came_before = 0;
         }
     }
+
+    // free memory
     free(message);
     free(reply);
 }
@@ -1462,7 +1474,10 @@ void receive_data_TCP(char *FName, char *Fsize) {
         fwrite(buffer, ret, 1, fp);
         bytes_to_read -= ret;   
     }
+
     fclose(fp);
+    // free memory
+    free(buffer);
 }
 
 

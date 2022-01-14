@@ -127,6 +127,7 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -137,6 +138,7 @@ void register_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -154,6 +156,7 @@ void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -164,6 +167,7 @@ void unregister_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -182,6 +186,7 @@ void login_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -192,6 +197,7 @@ void login_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -210,6 +216,7 @@ void logout_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user 
+        free(reply);
         return;
     }
 
@@ -221,6 +228,7 @@ void logout_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -237,6 +245,7 @@ void groups_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -246,6 +255,7 @@ void groups_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -265,6 +275,7 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -275,6 +286,7 @@ void subscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -293,6 +305,7 @@ void unsubscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -303,6 +316,7 @@ void unsubscribe_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -319,6 +333,7 @@ void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
     send_reply_UDP(reply, fd, addr);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -328,6 +343,7 @@ void my_groups_command(char *message, int fd, struct sockaddr_in *addr) {
     }
 
     clear_string(message);
+    // free memory
     free(reply);
 }
 
@@ -346,6 +362,7 @@ void ulist_command(int fd, struct sockaddr_in *addr) {
     send_TCP(reply, fd);
 
     if (strcmp(reply, "ERR\n") == 0) { // if unexpected protocol message was received from user
+        free(reply);
         return;
     }
 
@@ -354,6 +371,7 @@ void ulist_command(int fd, struct sockaddr_in *addr) {
         printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
+    // free memory
     free(reply);
 }
 
@@ -388,6 +406,7 @@ void post_command(int fd, struct sockaddr_in *addr) {
     if (!validate_post_message(UID, GID, Tsize, text)) {
         strcpy(reply, "RPT NOK\n");
         send_TCP(reply, fd);
+        free(reply);
         return;
     }
 
@@ -420,6 +439,7 @@ void post_command(int fd, struct sockaddr_in *addr) {
         printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
+    // free memory
     free(reply);
 }
 
@@ -441,11 +461,13 @@ void retrieve_command(int fd, struct sockaddr_in *addr) {
     if (!validate_retrieve_message(UID, GID, MID)) {
         strcpy(reply, "RRT NOK\n");
         send_TCP(reply, fd);
+        free(reply);
         return;
     }
     if (!group_has_messages(GID, MID)) {
         strcpy(reply, "RRT EOF\n");
         send_TCP(reply, fd);
+        free(reply);
         return;
     }
 
@@ -456,6 +478,7 @@ void retrieve_command(int fd, struct sockaddr_in *addr) {
         printf("Request with IP %s on port %s.\n", user_ip, user_port);
     }
 
+    // free memory
     free(reply);
 }
 
@@ -740,6 +763,7 @@ void process_my_groups_message(char *message, char *reply) {
     // validate user input
     if (!validate_UID(UID) || !user_is_logged_in(UID)) {
         strcpy(reply, "RGM E_USR\n");
+        free(aux_string);
         return;
     }
 
@@ -751,6 +775,7 @@ void process_my_groups_message(char *message, char *reply) {
     number_of_groups = get_my_groups(my_groups_list, UID);
     if (number_of_groups == 0) {
         strcpy(reply, "RGM 0\n");
+        free(my_groups_list);
         return;
     }
 
@@ -761,7 +786,10 @@ void process_my_groups_message(char *message, char *reply) {
 
     sprintf(reply, "RGM %d ", my_groups_list->no_groups);
     strcat(reply, aux_string);
+
+    // free memory
     free(aux_string);
+    free(my_groups_list);
 }
 
 
@@ -792,6 +820,9 @@ void process_ulist_message(char *buffer, char *reply) {
     get_users_of_group(user_list, GID, GName);
 
     sprintf(reply, "RUL OK %s %s\n", GName, user_list);
+
+    // free memory
+    free(user_list);
 }
 
 
@@ -1141,11 +1172,13 @@ int check_password(char *pass, char *user_pass_path) {
     read_pass[Fsize] = '\0';
 
     if (strcmp(pass, read_pass)) {
+        free(read_pass); // free memory
         return 0;
     }
-    else {
-        return 1;
-    }
+    
+    // free memory
+    free(read_pass);
+    return 1;
 }
 
 
@@ -1373,7 +1406,7 @@ void swap_groups(int g1, int g2, GROUPLIST *list) {
 
 
 // convert GROUPLIST to string
-char *GROUPLIST_to_string(GROUPLIST *list/* , char *reply */) {
+char *GROUPLIST_to_string(GROUPLIST *list) {
 
     int i = 0;
     char *aux_string = (char *)malloc(MAX_REPLY_SIZE);

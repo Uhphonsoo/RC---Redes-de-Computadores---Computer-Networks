@@ -113,6 +113,9 @@ int main(int argc, char *argv[]) {
     freeaddrinfo(res_TCP);
     close(fd_TCP);
 
+    // free memory
+    free(Group_list);
+
     return EXIT_SUCCESS;
 }
 
