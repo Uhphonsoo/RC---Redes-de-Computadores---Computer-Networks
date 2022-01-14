@@ -744,7 +744,7 @@ void process_unsubscribe_message(char *message, char *reply) {
 
 void process_my_groups_message(char *message, char *reply) {
 
-    int  number_of_tokens, number_of_groups;
+    int  number_of_tokens, number_of_groups, index, i;
     char aux[MAX_SIZE];
     char UID[MAX_SIZE];
     char *aux_string;
@@ -771,12 +771,21 @@ void process_my_groups_message(char *message, char *reply) {
     my_groups_list = malloc(sizeof(*my_groups_list));
     initialize_group_list(my_groups_list);
 
+    // update existing information from file system
+    get_groups(Group_list);
+
     // get number of groups to which user is subscribed
     number_of_groups = get_my_groups(my_groups_list, UID);
     if (number_of_groups == 0) {
         strcpy(reply, "RGM 0\n");
         free(my_groups_list);
         return;
+    }
+
+    // update my group list's last message with the file systems' group's last message
+    for (i = 0; i < number_of_groups; i++) {
+        index = get_index(Group_list, my_groups_list->group_no[i]);
+        strcpy(my_groups_list->last_message_available[i], Group_list->last_message_available[index]);
     }
 
     // convert GROUPLIST into a string
