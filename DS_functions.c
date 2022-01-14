@@ -957,6 +957,8 @@ int unregister_user(char *UID, char *pass) {
         return 0;
     }
 
+    unsubscribe_from_groups(UID);
+
     delete_file(user_pass_path);
     delete_file(user_login_path);
 
@@ -1179,6 +1181,39 @@ int check_password(char *pass, char *user_pass_path) {
     // free memory
     free(read_pass);
     return 1;
+}
+
+
+// unsubscribe user from all groups it's subscribed to
+void unsubscribe_from_groups(char *UID) {
+
+    struct dirent *dir_i, *dir_j;
+    char user_file[MAX_SIZE];
+    char group_path[MAX_SIZE];
+    char user_file_path[MAX_SIZE];
+    char groups_path[MAX_SIZE] = "GROUPS/";
+    DIR *d_i, *d_j;
+
+    sprintf(user_file, "%s.txt", UID);
+    
+    d_i = opendir(groups_path);
+    while ((dir_i = readdir(d_i)) != NULL) {
+        if (dir_i->d_name[0] == '.') {
+            continue;
+        }
+        
+        sprintf(group_path, "GROUPS/%s", dir_i->d_name);
+        d_j = opendir(group_path);
+        while ((dir_j = readdir(d_j)) != NULL) {
+            if (dir_j->d_name[0] == '.') {
+                continue;
+            }
+            if (strcmp(dir_j->d_name, user_file) == 0) {
+                sprintf(user_file_path, "GROUPS/%s/%s", dir_i->d_name, user_file);
+                delete_file(user_file_path);
+            }
+        }
+    }
 }
 
 
