@@ -45,16 +45,17 @@ int validate_post_message(char *UID, char *GID, char *Tsize, char *text);
 int validate_retrieve_message(char *UID, char *GID, char *MID);
 
 // user related functions
-int user_is_registered(char *UID);
-int user_is_logged_in(char *UID);
-int user_is_subscribed_to_group(char *UID, char *GID);
-int register_user(char *UID, char *pass);
-int unregister_user(char *UID, char *pass);
-int login_user(char *UID, char *pass);
-int logout_user(char *UID, char *pass);
-int subscribe_user(char *UID, char *GID);
-int unsubscribe_user(char *UID, char *GID);
-int check_password(char *pass, char *user_pass_path);
+int  user_is_registered(char *UID);
+int  user_is_logged_in(char *UID);
+int  user_is_subscribed_to_group(char *UID, char *GID);
+int  register_user(char *UID, char *pass);
+int  unregister_user(char *UID, char *pass);
+int  login_user(char *UID, char *pass);
+int  logout_user(char *UID, char *pass);
+int  subscribe_user(char *UID, char *GID);
+int  unsubscribe_user(char *UID, char *GID);
+int  check_password(char *pass, char *user_pass_path);
+void unsubscribe_from_groups(char *UID);
 
 // group related functions
 int create_new_group(char *GID, char *GName);

@@ -387,7 +387,7 @@ void show_groups(char* reply, char* N_string) {
     char MID[MAX_SIZE];
     char GName[MAX_SIZE];
 
-    for (i = 3; i < 3*N + 1; i++) {
+    for (i = 3; i < 3*N + 1; i++) { // while there are groups to print
         get_nth_token(reply, i++, GID);
         get_nth_token(reply, i++, GName);
         get_nth_token(reply, i, MID);
@@ -409,6 +409,7 @@ void show_users(char* reply) {
         return;
     }
 
+    // get group's name
     get_nth_token(reply, i++, GName);
     printf("> Group name: %s\n", GName);
     printf(">> Subscribed users:\n");
@@ -419,7 +420,7 @@ void show_users(char* reply) {
         return;
     }
 
-    while (i <= number_of_tokens) {
+    while (i <= number_of_tokens) { // while there are tokens
 
         get_nth_token(reply, i++, UID);
         printf(">> User ID: %s\n", UID);
@@ -427,6 +428,7 @@ void show_users(char* reply) {
 }
 
 
+// prints messages in reply
 void  show_messages(char* reply) {
 
     int N = 0, i = 4, j = 0, k = 0, length = strlen(reply);
@@ -506,6 +508,7 @@ void clear_string(char* string) {
 }
 
 
+// terminates a string after n tokens
 void terminate_string_after_n_tokens(char* string, int n) {
 
     int ret = 0, i = 0;
@@ -525,6 +528,7 @@ void terminate_string_after_n_tokens(char* string, int n) {
         return;
     }
 
+    // find desired token
     for (i = 0; i < length; i++) {
         if (i != 0 && !isspace(string[i]) && last_read_character_was_space) {
             ret++;
@@ -547,6 +551,7 @@ void terminate_string_after_n_tokens(char* string, int n) {
 }
 
 
+// converts string inside quotes to string with no quotes
 void strip_quotes_from_string(char *string) {
 
     int i = 0;
@@ -559,6 +564,7 @@ void strip_quotes_from_string(char *string) {
 }
 
 
+// returns 1 if string is empty and 0 otherwise
 int is_empty_string(char* string) {
 
     if (string == NULL) {
