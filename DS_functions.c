@@ -1274,7 +1274,8 @@ int get_group_name(char *GID, char *GName) {
     Fsize = get_file_size(fp);
 
     fread(GName, Fsize, 1, fp);
-    GName[2] = '\0';
+
+    GName[Fsize] = '\0';
 
     return 1;
 }
