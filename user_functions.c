@@ -235,6 +235,7 @@ void showuid_command() {
         printf("> No user is logged in.\n");
 }
 
+
 void exit_command(char* command) {
 
     char aux[MAX_SIZE];

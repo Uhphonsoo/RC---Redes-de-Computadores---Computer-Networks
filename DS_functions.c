@@ -1591,7 +1591,7 @@ int get_number_of_messages(char *GID, char *MID) {
 }
 
 
-// updates the value each group's of last message available based on file system's current state
+// updates the value of each group's last message available based on file system's current state
 void update_last_available_message(GROUPLIST *list, char *GID, int i) {
 
     int current_MID_int = 0, largest_MID_int = 0;
