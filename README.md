@@ -1,4 +1,4 @@
-# Project for RC - Redes de Computadores - Computer Networks
+# Project for RC - Project for Redes de Computadores (Computer Networks)
 
 Developed by João Silva, Pedro Silva and Maria Varanda.
 
